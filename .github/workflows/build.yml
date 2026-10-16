@@ -2,39 +2,64 @@ name: Build APK
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Skeniraj repozitorij
+      - name: 📥 Preuzmi kod repozitorija
         uses: actions/checkout@v4
 
-      - name: Postavi Java
+      - name: ⚙️ Postavi Java okruženje
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Postavi Flutter
+      - name: 🐦 Postavi Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.x'
+          flutter-version: '3.19.6'
           cache: true
 
-      - name: Kreiraj projekt i postavi okruženje
-        run: |
-          flutter create -t app . --org com.tino.prijevoz --project-name prijevoz_kalkulator
-
-      - name: Provjeri ovisnosti
+      - name: 📦 Provjeri ovisnosti
         run: flutter pub get
 
-      - name: Izgradi APK
+      - name: 🌐 Dodaj dozvolu za internet u AndroidManifest
+        run: |
+          mkdir -p android/app/src/main
+          cat <<EOF > android/app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <application
+                  android:label="prijevoz_kalkulator"
+                  android:name="\${applicationName}"
+                  android:icon="@mipmap/ic_launcher">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:launchMode="singleTop"
+                      android:theme="@style/LaunchTheme"
+                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+                      android:hardwareAccelerated="true"
+                      android:windowSoftInputMode="adjustResize">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+      - name: 🔨 Izgradi APK
         run: flutter build apk --release
 
-      - name: Spremi APK
+      - name: 💾 Spremi APK
         uses: actions/upload-artifact@v4
         with:
           name: kalkulator-prijevoza-apk
