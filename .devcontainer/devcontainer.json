@@ -1,0 +1,7 @@
+{
+  "name": "Flutter Dev Container",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/flutter:1": {}
+  }
+}
