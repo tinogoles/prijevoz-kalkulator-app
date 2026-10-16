@@ -85,27 +85,41 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
     },
   ];
 
+  // Opći podaci
   final TextEditingController _nazivKalkulacijeController = TextEditingController(text: 'Izlet - Ruta po točkama');
+
+  // Podaci prijevoznika
   final TextEditingController _nazivPrijevoznikaController = TextEditingController(text: 'Moj Prijevoz d.o.o.');
+  final TextEditingController _vlasnikPrijevoznikaController = TextEditingController(text: 'Ivan Horvat');
   final TextEditingController _oibPrijevoznikaController = TextEditingController(text: '12345678901');
   final TextEditingController _adresaPrijevoznikaController = TextEditingController(text: 'Zagrebačka cesta 10, Zagreb');
+  final TextEditingController _telefonPrijevoznikaController = TextEditingController(text: '+385 91 123 4567');
+  final TextEditingController _emailPrijevoznikaController = TextEditingController(text: 'info@mojprijevoz.hr');
 
-  final TextEditingController _nazivKlijentaController = TextEditingController(text: 'Turistička agencija / Klijent');
-  final TextEditingController _kontaktKlijentaController = TextEditingController(text: 'info@klijent.com');
+  // Podaci klijenta
+  final TextEditingController _nazivKlijentaController = TextEditingController(text: 'Turistička agencija d.o.o.');
+  final TextEditingController _vlasnikKlijentaController = TextEditingController(text: 'Marko Marić');
+  final TextEditingController _oibKlijentaController = TextEditingController(text: '98765432109');
+  final TextEditingController _adresaKlijentaController = TextEditingController(text: 'Riva 5, Split');
+  final TextEditingController _telefonKlijentaController = TextEditingController(text: '+385 98 765 4321');
+  final TextEditingController _emailKlijentaController = TextEditingController(text: 'info@klijent.hr');
 
+  // Ruta
   final TextEditingController _polazisteController = TextEditingController(text: 'Zagreb');
   final TextEditingController _odrediste1Controller = TextEditingController();
   final TextEditingController _odrediste2Controller = TextEditingController();
   final TextEditingController _konacnoOdredisteController = TextEditingController(text: 'Split');
 
+  // Datumi i dani
   final TextEditingController _datumPolaskaController = TextEditingController(text: '2026-06-01');
   final TextEditingController _datumPovratkaController = TextEditingController(text: '2026-06-03');
-  
-  double _bazaKmJednosmjerno = 390.0;
-  bool _povratnoPutovanje = true; 
+  int _izracunatiBrojDana = 3;
 
-  final TextEditingController _kmController = TextEditingController(text: '780'); 
-  final TextEditingController _cestarinaController = TextEditingController(text: '35.00'); 
+  double _bazaKmJednosmjerno = 390.0;
+  bool _povratnoPutovanje = true;
+
+  final TextEditingController _kmController = TextEditingController(text: '780');
+  final TextEditingController _cestarinaController = TextEditingController(text: '35.00');
 
   bool _koristiAutocestu = true;
   String _odabranaAutocesta = 'HAC (Hrvatske autoceste)';
@@ -117,12 +131,19 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
     'Bez autoceste / Lokalna cesta'
   ];
 
+  // Troškovi
   final TextEditingController _cijenaGorivaController = TextEditingController(text: '1.45');
   final TextEditingController _dnevnicaController = TextEditingController(text: '80');
-  final TextEditingController _brojDanaController = TextEditingController(text: '3');
-  
+
+  // Noćenje
+  String _tkoPlacaNocenje = 'Prijevoznik plaća';
+  final List<String> _opcijeNocenja = [
+    'Prijevoznik plaća',
+    'Klijent/Agencija plaća (0€ za nas)',
+    'Bez noćenja'
+  ];
   final TextEditingController _cijenaNocenjaController = TextEditingController(text: '60');
-  String _tkoPlacaNocenje = 'Prijevoznik placa'; 
+
   final TextEditingController _marzaController = TextEditingController(text: '20');
 
   final Map<String, double> _potrosnjaVozila = {
@@ -141,7 +162,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
   double _ukupniCistiTrosak = 0;
   double _zarada = 0;
   double _ukupnaCijenaPonude = 0;
-  
+
   bool _kalkulacijaIzradena = false;
   bool _isLoadingRoute = false;
 
@@ -149,19 +170,31 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
   void initState() {
     super.initState();
     _odabranoVozilo = _potrosnjaVozila.keys.first;
+    _preracunajBrojDana();
     _azurirajKilometreICestarinu();
+  }
+
+  void _preracunajBrojDana() {
+    try {
+      DateTime d1 = DateTime.parse(_datumPolaskaController.text.trim());
+      DateTime d2 = DateTime.parse(_datumPovratkaController.text.trim());
+      int razlika = d2.difference(d1).inDays + 1;
+      setState(() {
+        _izracunatiBrojDana = razlika > 0 ? razlika : 1;
+      });
+    } catch (_) {
+      // U slučaju krivog formata datuma ostavljamo zadano
+    }
   }
 
   void _automatskiDetektirajCestarinu(List<String> tocke) {
     String spojeneTocke = tocke.join(' ').toLowerCase();
-    bool pronadeno = false;
 
     for (var relacija in _bazaRelacijaCestarina) {
       List<String> kljucneRijeci = relacija['kljucneRijeci'];
       bool pogodak = kljucneRijeci.every((rijec) => spojeneTocke.contains(rijec));
 
       if (pogodak) {
-        pronadeno = true;
         setState(() {
           _koristiAutocestu = true;
           _odabranaAutocesta = relacija['nazivAutoceste'];
@@ -179,7 +212,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
 
   Future<void> _izracunajRutuMultiPoint() async {
     List<String> tocke = [];
-    
+
     if (_polazisteController.text.trim().isNotEmpty) tocke.add(_polazisteController.text.trim());
     if (_odrediste1Controller.text.trim().isNotEmpty) tocke.add(_odrediste1Controller.text.trim());
     if (_odrediste2Controller.text.trim().isNotEmpty) tocke.add(_odrediste2Controller.text.trim());
@@ -266,11 +299,11 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
   void _azurirajKilometreICestarinu() {
     double faktor = _povratnoPutovanje ? 2.0 : 1.0;
     _kmController.text = (_bazaKmJednosmjerno * faktor).toStringAsFixed(0);
-    
+
     if (!_koristiAutocestu) {
       _cestarinaController.text = '0.00';
     }
-    
+
     _izracunajTroskove();
   }
 
@@ -280,30 +313,30 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
     if (_odrediste1Controller.text.isNotEmpty) dijelovi.add(_odrediste1Controller.text);
     if (_odrediste2Controller.text.isNotEmpty) dijelovi.add(_odrediste2Controller.text);
     if (_konacnoOdredisteController.text.isNotEmpty) dijelovi.add(_konacnoOdredisteController.text);
-    
+
     String relacijaTekst = dijelovi.join(' -> ');
     return relacijaTekst.isEmpty ? 'Nije definirano' : relacijaTekst;
   }
 
   void _izracunajTroskove() {
+    _preracunajBrojDana();
+
     setState(() {
       double km = double.tryParse(_kmController.text) ?? 0;
       double cestarina = double.tryParse(_cestarinaController.text) ?? 0;
       double cijenaGoriva = double.tryParse(_cijenaGorivaController.text) ?? 0;
       double dnevnicaPoDanu = double.tryParse(_dnevnicaController.text) ?? 0;
-      int brojDana = int.tryParse(_brojDanaController.text) ?? 1;
-      
       double cijenaNocenjaPoDanu = double.tryParse(_cijenaNocenjaController.text) ?? 0;
       double marzaPostotak = double.tryParse(_marzaController.text) ?? 0;
 
       double potrosnjaNa100km = _potrosnjaVozila[_odabranoVozilo] ?? 9.0;
-      int brojNocenja = (brojDana > 1) ? (brojDana - 1) : 0;
+      int brojNocenja = (_izracunatiBrojDana > 1) ? (_izracunatiBrojDana - 1) : 0;
 
       _trosakGoriva = (km / 100) * potrosnjaNa100km * cijenaGoriva;
       _trosakCestarine = _koristiAutocestu ? cestarina : 0;
-      _trosakVozaca = dnevnicaPoDanu * (brojDana > 0 ? brojDana : 1);
+      _trosakVozaca = dnevnicaPoDanu * _izracunatiBrojDana;
 
-      if (_tkoPlacaNocenje == 'Prijevoznik placa') {
+      if (_tkoPlacaNocenje == 'Prijevoznik plaća') {
         _trosakNocenja = cijenaNocenjaPoDanu * brojNocenja;
       } else {
         _trosakNocenja = 0;
@@ -327,7 +360,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
       ),
     );
   }
-
   Future<void> _generirajInternuKalkulacijuPdf() async {
     final pdf = pw.Document();
     final String idKalkulacije = 'KALK-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
@@ -346,35 +378,70 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                   pw.Text('ID: $idKalkulacije', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
                 ],
               ),
-              pw.Divider(height: 20),
-              pw.Text('Naziv: ${_nazivKalkulacijeController.text}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-              pw.Text('Klijent: ${_nazivKlijentaController.text}'),
-              pw.Text('Ruta: ${_dohvatiOpisRelacije()} (${_povratnoPutovanje ? "Povratno putovanje" : "Jednosmjerno"})'),
-              pw.Text('Autocesta: ${_koristiAutocestu ? _odabranaAutocesta : "Bez korištenja autoceste"}'),
-              pw.Text('Vozilo: $_odabranoVozilo (${_kmController.text} km ukupno)'),
+              pw.Divider(height: 15),
+              pw.Text('Naziv kalkulacije: ${_nazivKalkulacijeController.text}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+              pw.SizedBox(height: 8),
+              pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Expanded(
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text('PRIJEVOZNIK:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                        pw.Text(_nazivPrijevoznikaController.text, style: const pw.TextStyle(fontSize: 9)),
+                        pw.Text('Vlasnik: ${_vlasnikPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 9)),
+                        pw.Text('OIB: ${_oibPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 9)),
+                        pw.Text('Adresa: ${_adresaPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 9)),
+                        pw.Text('Tel: ${_telefonPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 9)),
+                        pw.Text('Email: ${_emailPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 9)),
+                      ],
+                    ),
+                  ),
+                  pw.Expanded(
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text('KLIJENT / AGENCIJA:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                        pw.Text(_nazivKlijentaController.text, style: const pw.TextStyle(fontSize: 9)),
+                        pw.Text('Kontakt: ${_vlasnikKlijentaController.text}', style: const pw.TextStyle(fontSize: 9)),
+                        pw.Text('OIB: ${_oibKlijentaController.text}', style: const pw.TextStyle(fontSize: 9)),
+                        pw.Text('Adresa: ${_adresaKlijentaController.text}', style: const pw.TextStyle(fontSize: 9)),
+                        pw.Text('Tel: ${_telefonKlijentaController.text}', style: const pw.TextStyle(fontSize: 9)),
+                        pw.Text('Email: ${_emailKlijentaController.text}', style: const pw.TextStyle(fontSize: 9)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              pw.Divider(height: 15),
+              pw.Text('Ruta: ${_dohvatiOpisRelacije()} (${_povratnoPutovanje ? "Povratno" : "Jednosmjerno"})'),
+              pw.Text('Termin: ${_datumPolaskaController.text} do ${_datumPovratkaController.text} ($_izracunatiBrojDana dana)'),
+              pw.Text('Autocesta: ${_koristiAutocestu ? _odabranaAutocesta : "Bez autoceste"}'),
+              pw.Text('Vozilo: $_odabranoVozilo (${_kmController.text} km)'),
               pw.SizedBox(height: 15),
               pw.Table.fromTextArray(
                 headers: ['Stavka troska', 'Iznos'],
                 data: [
                   ['Gorivo', '${_trosakGoriva.toStringAsFixed(2)} €'],
                   ['Cestarina', '${_trosakCestarine.toStringAsFixed(2)} €'],
-                  ['Dnevnice vozaca', '${_trosakVozaca.toStringAsFixed(2)} €'],
-                  ['Nocenje', '${_trosakNocenja.toStringAsFixed(2)} € ($_tkoPlacaNocenje)'],
-                  ['Cisti troskovi ukupno', '${_ukupniCistiTrosak.toStringAsFixed(2)} €'],
-                  ['Planirana marza (${_marzaController.text}%)', '${_zarada.toStringAsFixed(2)} €'],
+                  ['Dnevnice vozača ($_izracunatiBrojDana dana)', '${_trosakVozaca.toStringAsFixed(2)} €'],
+                  ['Noćenje vozača', '${_trosakNocenja.toStringAsFixed(2)} € ($_tkoPlacaNocenje)'],
+                  ['Čisti troškovi ukupno', '${_ukupniCistiTrosak.toStringAsFixed(2)} €'],
+                  ['Planirana marža (${_marzaController.text}%)', '${_zarada.toStringAsFixed(2)} €'],
                 ],
                 headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
                 headerDecoration: const pw.BoxDecoration(color: PdfColors.red900),
-                cellPadding: const pw.EdgeInsets.all(6),
+                cellPadding: const pw.EdgeInsets.all(5),
               ),
-              pw.SizedBox(height: 20),
+              pw.SizedBox(height: 15),
               pw.Container(
                 padding: const pw.EdgeInsets.all(10),
                 decoration: const pw.BoxDecoration(color: PdfColors.grey300),
                 child: pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text('KONACNA CIJENA ZA KLIJENTA:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    pw.Text('KONAČNA CIJENA ZA PONUDU:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
                     pw.Text('${_ukupnaCijenaPonude.toStringAsFixed(2)} €', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
                   ],
                 ),
@@ -407,9 +474,11 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text(_nazivPrijevoznikaController.text, style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
-                      pw.Text('Adresa: ${_adresaPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 10)),
-                      pw.Text('OIB: ${_oibPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 10)),
+                      pw.Text(_nazivPrijevoznikaController.text, style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+                      pw.Text('Vlasnik/Odg. osoba: ${_vlasnikPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 9)),
+                      pw.Text('Adresa: ${_adresaPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 9)),
+                      pw.Text('OIB: ${_oibPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 9)),
+                      pw.Text('Tel: ${_telefonPrijevoznikaController.text} | Email: ${_emailPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 9)),
                     ],
                   ),
                   pw.Column(
@@ -417,48 +486,50 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                     children: [
                       pw.Text('PONUDA ZA PRIJEVOZ', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
                       pw.Text('Predmet: ${_nazivKalkulacijeController.text}', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
-                      pw.Text('Datum: ${DateTime.now().toLocal().toString().split(' ')[0]}', style: const pw.TextStyle(fontSize: 10)),
+                      pw.Text('Datum: ${DateTime.now().toLocal().toString().split(' ')[0]}', style: const pw.TextStyle(fontSize: 9)),
                     ],
                   ),
                 ],
               ),
-              pw.Divider(height: 30),
-              pw.Text('Za klijenta:', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
-              pw.Text('Naziv: ${_nazivKlijentaController.text}'),
-              pw.Text('Kontakt: ${_kontaktKlijentaController.text}'),
-              pw.SizedBox(height: 25),
+              pw.Divider(height: 20),
+              pw.Text('Za klijenta:', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+              pw.Text('${_nazivKlijentaController.text} (Kontakt: ${_vlasnikKlijentaController.text})', style: const pw.TextStyle(fontSize: 10)),
+              pw.Text('Adresa: ${_adresaKlijentaController.text} | OIB: ${_oibKlijentaController.text}', style: const pw.TextStyle(fontSize: 9)),
+              pw.Text('Tel: ${_telefonKlijentaController.text} | Email: ${_emailKlijentaController.text}', style: const pw.TextStyle(fontSize: 9)),
+              pw.SizedBox(height: 20),
               pw.Container(
-                padding: const pw.EdgeInsets.all(15),
+                padding: const pw.EdgeInsets.all(12),
                 decoration: const pw.BoxDecoration(
-                  color: PdfColors.grey200, 
-                  borderRadius: pw.BorderRadius.all(pw.Radius.circular(8)),
+                  color: PdfColors.grey200,
+                  borderRadius: pw.BorderRadius.all(pw.Radius.circular(6)),
                 ),
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Text('SPECIFIKACIJA USLUGE', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
-                    pw.SizedBox(height: 10),
-                    pw.Text('Ruta: ${_dohvatiOpisRelacije()} (${_povratnoPutovanje ? "Povratno putovanje" : "Jednosmjerno"})', style: pw.TextStyle(fontSize: 12)),
-                    pw.Text('Autocesta: ${_koristiAutocestu ? _odabranaAutocesta : "Lokalna cesta (bez autoceste)"}', style: pw.TextStyle(fontSize: 12)),
-                    pw.Text('Tip vozila: $_odabranoVozilo', style: pw.TextStyle(fontSize: 12)),
-                    pw.Text('Datum polaska: ${_datumPolaskaController.text}', style: pw.TextStyle(fontSize: 12)),
-                    pw.Text('Datum povratka: ${_datumPovratkaController.text}', style: pw.TextStyle(fontSize: 12)),
+                    pw.Text('SPECIFIKACIJA USLUGE', style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
+                    pw.SizedBox(height: 8),
+                    pw.Text('Ruta: ${_dohvatiOpisRelacije()} (${_povratnoPutovanje ? "Povratno putovanje" : "Jednosmjerno"})', style: const pw.TextStyle(fontSize: 11)),
+                    pw.Text('Datum polaska: ${_datumPolaskaController.text}', style: const pw.TextStyle(fontSize: 11)),
+                    pw.Text('Datum povratka: ${_datumPovratkaController.text} (Trajanje: $_izracunatiBrojDana dana)', style: const pw.TextStyle(fontSize: 11)),
+                    pw.Text('Autocesta: ${_koristiAutocestu ? _odabranaAutocesta : "Lokalna cesta (bez autoceste)"}', style: const pw.TextStyle(fontSize: 11)),
+                    pw.Text('Kategorija vozila: $_odabranoVozilo', style: const pw.TextStyle(fontSize: 11)),
+                    pw.Text('Status noćenja vozača: $_tkoPlacaNocenje', style: const pw.TextStyle(fontSize: 11)),
                   ],
                 ),
               ),
-              pw.SizedBox(height: 30),
+              pw.SizedBox(height: 25),
               pw.Container(
                 alignment: pw.Alignment.centerRight,
-                padding: const pw.EdgeInsets.all(15),
+                padding: const pw.EdgeInsets.all(12),
                 decoration: const pw.BoxDecoration(
-                  color: PdfColors.orange800, 
-                  borderRadius: pw.BorderRadius.all(pw.Radius.circular(8)),
+                  color: PdfColors.orange800,
+                  borderRadius: pw.BorderRadius.all(pw.Radius.circular(6)),
                 ),
                 child: pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text('UKUPNA CIJENA USLUGE:', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
-                    pw.Text('${_ukupnaCijenaPonude.toStringAsFixed(2)} €', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+                    pw.Text('UKUPNA CIJENA USLUGE:', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+                    pw.Text('${_ukupnaCijenaPonude.toStringAsFixed(2)} €', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
                   ],
                 ),
               ),
@@ -491,6 +562,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // PODACI O RUTI
             Card(
               elevation: 3,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -499,9 +571,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Planiranje Rute po Točkama (Primarno)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0284C7))),
-                    const SizedBox(height: 8),
-                    const Text('Unesite relaciju (Polazište -> Međuodredišta -> Konačno odredište):', style: TextStyle(fontSize: 12, color: Colors.black87)),
+                    const Text('Planiranje Rute po Točkama (OSRM)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0284C7))),
                     const SizedBox(height: 12),
                     TextField(controller: _polazisteController, decoration: const InputDecoration(labelText: '1) Polazište (obavezno)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.trip_origin))),
                     const SizedBox(height: 8),
@@ -511,11 +581,11 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                     const SizedBox(height: 8),
                     TextField(controller: _konacnoOdredisteController, decoration: const InputDecoration(labelText: '4) Konačno odredište (obavezno)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.location_on))),
                     const SizedBox(height: 12),
-                    
+
                     ElevatedButton.icon(
                       onPressed: _isLoadingRoute ? null : _izracunajRutuMultiPoint,
-                      icon: _isLoadingRoute 
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                      icon: _isLoadingRoute
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                           : const Icon(Icons.route, color: Colors.white),
                       label: Text(_isLoadingRoute ? 'Izračunavam dionice...' : 'Izračunaj kilometre po točkama (OSRM)'),
                       style: ElevatedButton.styleFrom(
@@ -551,6 +621,55 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
             ),
             const SizedBox(height: 16),
 
+            // DATUMI I DANI
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Termin i Trajanje Putovanja', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0284C7))),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _datumPolaskaController,
+                            decoration: const InputDecoration(labelText: 'Datum polaska (GGGG-MM-DD)', border: OutlineInputBorder()),
+                            onChanged: (_) => _izracunajTroskove(),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _datumPovratkaController,
+                            decoration: const InputDecoration(labelText: 'Datum povratka (GGGG-MM-DD)', border: OutlineInputBorder()),
+                            onChanged: (_) => _izracunajTroskove(),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Izračunato trajanje:', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text('$_izracunatiBrojDana dana (${_izracunatiBrojDana > 1 ? _izracunatiBrojDana - 1 : 0} noćenja)', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0284C7))),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // AUTOCESTA
             Card(
               elevation: 2,
               color: Colors.amber.shade50,
@@ -564,7 +683,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                     const SizedBox(height: 8),
                     SwitchListTile(
                       title: const Text('Hoće li se koristiti autocesta?', style: TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: const Text('Automatski uključeno prema ruti (možete ručno isključiti)', style: TextStyle(fontSize: 11)),
                       value: _koristiAutocestu,
                       activeColor: const Color(0xFFEA580C),
                       contentPadding: EdgeInsets.zero,
@@ -579,37 +697,17 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
                         value: _odabranaAutocesta,
-                        decoration: const InputDecoration(
-                          labelText: 'Odabrani sustav naplate / autocesta',
-                          border: OutlineInputBorder(),
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                        items: _opcijeAutocesta.map((autocesta) {
-                          return DropdownMenuItem<String>(
-                            value: autocesta,
-                            child: Text(autocesta, style: const TextStyle(fontWeight: FontWeight.w500)),
-                          );
-                        }).toList(),
+                        decoration: const InputDecoration(labelText: 'Sustav naplate / Autocesta', border: OutlineInputBorder(), filled: true, fillColor: Colors.white),
+                        items: _opcijeAutocesta.map((autocesta) => DropdownMenuItem(value: autocesta, child: Text(autocesta))).toList(),
                         onChanged: (val) {
-                          if (val != null) {
-                            setState(() {
-                              _odabranaAutocesta = val;
-                            });
-                          }
+                          if (val != null) setState(() => _odabranaAutocesta = val);
                         },
                       ),
                       const SizedBox(height: 12),
                       TextField(
                         controller: _cestarinaController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Iznos cestarine (€)',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.toll),
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
+                        decoration: const InputDecoration(labelText: 'Iznos cestarine (€)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.toll), filled: true, fillColor: Colors.white),
                         onChanged: (_) => _izracunajTroskove(),
                       ),
                     ],
@@ -619,6 +717,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
             ),
             const SizedBox(height: 16),
 
+            // NAZIV PONUDE
             Card(
               elevation: 2,
               color: Colors.blue.shade50,
@@ -632,13 +731,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                     const SizedBox(height: 8),
                     TextField(
                       controller: _nazivKalkulacijeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Naziv',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.bookmark),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
+                      decoration: const InputDecoration(labelText: 'Naziv izleta / predmeta ponude', border: OutlineInputBorder(), prefixIcon: Icon(Icons.bookmark), filled: true, fillColor: Colors.white),
                     ),
                   ],
                 ),
@@ -646,6 +739,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
             ),
             const SizedBox(height: 16),
 
+            // PODACI PRIJEVOZNIKA
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -654,17 +748,62 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Podaci Prijevoznika i Klijenta', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('Podaci Prijevoznika', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
-                    TextField(controller: _nazivPrijevoznikaController, decoration: const InputDecoration(labelText: 'Naziv Prijevoznika', border: OutlineInputBorder(), prefixIcon: Icon(Icons.business))),
-                    const SizedBox(height: 12),
-                    TextField(controller: _nazivKlijentaController, decoration: const InputDecoration(labelText: 'Naziv Klijenta / Agencije', border: OutlineInputBorder(), prefixIcon: Icon(Icons.person_outline))),
+                    TextField(controller: _nazivPrijevoznikaController, decoration: const InputDecoration(labelText: 'Naziv tvrtke / obrta', border: OutlineInputBorder())),
+                    const SizedBox(height: 8),
+                    TextField(controller: _vlasnikPrijevoznikaController, decoration: const InputDecoration(labelText: 'Vlasnik / Odgovorna osoba', border: OutlineInputBorder())),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(child: TextField(controller: _oibPrijevoznikaController, decoration: const InputDecoration(labelText: 'OIB Prijevoznika', border: OutlineInputBorder()))),
+                        const SizedBox(width: 8),
+                        Expanded(child: TextField(controller: _telefonPrijevoznikaController, decoration: const InputDecoration(labelText: 'Telefon', border: OutlineInputBorder()))),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(controller: _adresaPrijevoznikaController, decoration: const InputDecoration(labelText: 'Adresa', border: OutlineInputBorder())),
+                    const SizedBox(height: 8),
+                    TextField(controller: _emailPrijevoznikaController, decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder())),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 16),
 
+            // PODACI KLIJENTA
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Podaci Klijenta / Agencije', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    TextField(controller: _nazivKlijentaController, decoration: const InputDecoration(labelText: 'Naziv Klijenta / Agencije', border: OutlineInputBorder())),
+                    const SizedBox(height: 8),
+                    TextField(controller: _vlasnikKlijentaController, decoration: const InputDecoration(labelText: 'Kontakt osoba / Vlasnik', border: OutlineInputBorder())),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(child: TextField(controller: _oibKlijentaController, decoration: const InputDecoration(labelText: 'OIB Klijenta', border: OutlineInputBorder()))),
+                        const SizedBox(width: 8),
+                        Expanded(child: TextField(controller: _telefonKlijentaController, decoration: const InputDecoration(labelText: 'Telefon', border: OutlineInputBorder()))),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(controller: _adresaKlijentaController, decoration: const InputDecoration(labelText: 'Adresa', border: OutlineInputBorder())),
+                    const SizedBox(height: 8),
+                    TextField(controller: _emailKlijentaController, decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder())),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // PARAMETRI TROŠKOVA & NOĆENJE
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -678,9 +817,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                     DropdownButtonFormField<String>(
                       value: _odabranoVozilo,
                       decoration: const InputDecoration(labelText: 'Kategorija Vozila', border: OutlineInputBorder(), prefixIcon: Icon(Icons.directions_bus)),
-                      items: _potrosnjaVozila.keys.map((String key) {
-                        return DropdownMenuItem<String>(value: key, child: Text(key, style: const TextStyle(fontSize: 14)));
-                      }).toList(),
+                      items: _potrosnjaVozila.keys.map((String key) => DropdownMenuItem(value: key, child: Text(key))).toList(),
                       onChanged: (newValue) {
                         if (newValue != null) {
                           setState(() {
@@ -698,6 +835,31 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                         Expanded(child: TextField(controller: _dnevnicaController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Dnevnica/dan (€)', border: OutlineInputBorder()), onChanged: (_) => _izracunajTroskove())),
                       ],
                     ),
+                    const SizedBox(height: 16),
+                    const Text('Parametri Noćenja Vozača:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: _tkoPlacaNocenje,
+                      decoration: const InputDecoration(labelText: 'Plaćanje noćenja', border: OutlineInputBorder()),
+                      items: _opcijeNocenja.map((opcija) => DropdownMenuItem(value: opcija, child: Text(opcija))).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            _tkoPlacaNocenje = val;
+                            _izracunajTroskove();
+                          });
+                        }
+                      },
+                    ),
+                    if (_tkoPlacaNocenje == 'Prijevoznik plaća') ...[
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _cijenaNocenjaController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'Cijena noćenja po noći (€)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.hotel)),
+                        onChanged: (_) => _izracunajTroskove(),
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     TextField(
                       controller: _marzaController,
@@ -711,6 +873,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
             ),
             const SizedBox(height: 16),
 
+            // TIPKE ZA SPREMANJE I REZULTAT
             ElevatedButton.icon(
               onPressed: _spremiKalkulaciju,
               icon: const Icon(Icons.calculate, color: Colors.white),
@@ -737,8 +900,9 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                       Text('Rezultat kalkulacije: "${_nazivKalkulacijeController.text}"', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.amber)),
                       const Divider(color: Colors.white24, height: 20),
                       _prikaziRedak('Trošak Goriva:', '${_trosakGoriva.toStringAsFixed(2)} €'),
-                      _prikaziRedak('Trošak Cestarine:', '${_trosakCestarine.toStringAsFixed(2)} € (${_koristiAutocestu ? _odabranaAutocesta : "Bez autoceste"})'),
-                      _prikaziRedak('Ukupno Dnevnice:', '${_trosakVozaca.toStringAsFixed(2)} €'),
+                      _prikaziRedak('Trošak Cestarine:', '${_trosakCestarine.toStringAsFixed(2)} €'),
+                      _prikaziRedak('Ukupno Dnevnice ($_izracunatiBrojDana d.):', '${_trosakVozaca.toStringAsFixed(2)} €'),
+                      _prikaziRedak('Ukupno Noćenje:', '${_trosakNocenja.toStringAsFixed(2)} € ($_tkoPlacaNocenje)'),
                       const Divider(color: Colors.white24, height: 20),
                       _prikaziRedak('Čisti Troškovi:', '${_ukupniCistiTrosak.toStringAsFixed(2)} €', isBold: true),
                       _prikaziRedak('Planirana Zarada:', '${_zarada.toStringAsFixed(2)} €', color: Colors.amber),
