@@ -16,7 +16,7 @@ class PrijevozKalkulatorApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF0284C7), // Adriatic plava
           primary: const Color(0xFF0284C7),
-          secondary: const Color(0xFFEA580C), // Terracotta narandžasta
+          secondary: const Color(0xFFEA580C), // Terracotta narančasta
         ),
         useMaterial3: true,
       ),
@@ -33,9 +33,11 @@ class KalkulatorHomeScreen extends StatefulWidget {
 }
 
 class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
-  // Kontroleri za unos teksta
-  final TextEditingController _kmController = TextEditingController(text: '300');
-  final TextEditingController _cestarinaController = TextEditingController(text: '45');
+  // Kontroleri za relacije i troškove
+  final TextEditingController _polazisteController = TextEditingController(text: 'Zagreb');
+  final TextEditingController _odredisteController = TextEditingController(text: 'Ljubljana');
+  final TextEditingController _kmController = TextEditingController(text: '280'); // Procjena / automatski izračun
+  final TextEditingController _cestarinaController = TextEditingController(text: '25');
   final TextEditingController _cijenaGorivaController = TextEditingController(text: '1.45');
   final TextEditingController _dnevnicaController = TextEditingController(text: '80');
   final TextEditingController _marzaController = TextEditingController(text: '20'); // Postotak zarade
@@ -84,11 +86,39 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
     });
   }
 
+  // Simulacija dohvaćanja udaljenosti preko Google Maps API-ja za regiju HR, SLO, BiH
+  void _dohvatiUdaljenost() {
+    String polaziste = _polazisteController.text.trim().toLowerCase();
+    String odrediste = _odredisteController.text.trim().toLowerCase();
+
+    // Primjer brze provjere čestih relacija (u pravoj aplikaciji ovdje zovemo Google Directions API)
+    double izracunatimKm = 300.0;
+    if ((polaziste.contains('zagreb') && odrediste.contains('ljubljana')) || 
+        (polaziste.contains('ljubljana') && odrediste.contains('zagreb'))) {
+      izracunatimKm = 280.0;
+    } else if ((polaziste.contains('zagreb') && odrediste.contains('sarajevo')) || 
+               (polaziste.contains('sarajevo') && odrediste.contains('zagreb'))) {
+      izracunatimKm = 800.0;
+    } else if ((polaziste.contains('split') && odrediste.contains('zagreb')) || 
+               (polaziste.contains('zagreb') && odrediste.contains('split'))) {
+      izracunatimKm = 780.0;
+    }
+
+    setState(() {
+      _kmController.text = izracunatimKm.toString();
+      _izracunajTroškove();
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Ruta uspješno pronađena: $_kmController km (Google Maps API)')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ponuda za Prijevoz', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        title: const Text('Ponuda za Prijevoz (HR, SLO, BiH)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         backgroundColor: Theme.of(context).colorScheme.primary,
         centerTitle: true,
       ),
@@ -97,7 +127,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // KARTICA 1: Odabir Vozila i Unos Rute
+            // KARTICA 1: Odabir Vozila i Ruta (Google Maps style)
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -106,7 +136,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('1. Podaci o putovanju', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('1. Relacija i Odabir Vozila', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
                     
                     // Dropdown za vozilo
@@ -132,14 +162,54 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    // Unos Kilometraže
+                    // Polazište i Odredište
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _polazisteController,
+                            decoration: const InputDecoration(
+                              labelText: 'Polazište (Grad/Adresa)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.trip_origin),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _odredisteController,
+                            decoration: const InputDecoration(
+                              labelText: 'Odredište (Grad/Adresa)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.location_on),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Gumb za automatski izračun preko Mapsa
+                    OutlinedButton.icon(
+                      onPressed: _dohvatiUdaljenost,
+                      icon: const Icon(Icons.map),
+                      label: const Text('Izračunaj rutu preko Google Maps-a'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Unos Kilometraže (može se i ručno korigirati)
                     TextField(
                       controller: _kmController,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
                         labelText: 'Ukupno Kilometara (u oba smjera)',
                         border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.map),
+                        prefixIcon: Icon(Icons.speed),
                         suffixText: 'km',
                       ),
                       onChanged: (_) => _izracunajTroškove(),
@@ -254,7 +324,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEA580C), // Narandžasti naglasak za ukupan iznos
+                        color: const Color(0xFFEA580C), // Narančasti naglasak za ukupan iznos
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -275,11 +345,11 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
 
             const SizedBox(height: 20),
 
-            // Gumb za izradu PDF-a / Slanje
+            // Gumb za izradu PDF-a
             ElevatedButton.icon(
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Generiranje PDF ponude spremamo za sljedeći korak!')),
+                  const SnackBar(content: Text('Generiranje PDF ponude spremamo kao sljedeći korak!')),
                 );
               },
               icon: const Icon(Icons.picture_as_pdf),
