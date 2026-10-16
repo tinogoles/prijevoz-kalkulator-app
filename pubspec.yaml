@@ -10,8 +10,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  pdf: ^3.10.4
+  pdf: ^3.10.7
   printing: ^5.11.1
+  http: ^1.2.0
+  shared_preferences: ^2.2.3
 
 dev_dependencies:
   flutter_test:
