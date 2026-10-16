@@ -49,6 +49,12 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
   final TextEditingController _cestarinaController = TextEditingController(text: '25');
   final TextEditingController _cijenaGorivaController = TextEditingController(text: '1.45');
   final TextEditingController _dnevnicaController = TextEditingController(text: '80');
+  final TextEditingController _brojDanaController = TextEditingController(text: '1');
+  
+  // Novi kontroleri za noćenje
+  final TextEditingController _cijenaNocenjaController = TextEditingController(text: '60');
+  String _tkoPlacaNocenje = 'Prijevoznik plaća'; // Opcije: 'Prijevoznik plaća' ili 'Klijent snosi trošak'
+
   final TextEditingController _marzaController = TextEditingController(text: '20'); // Postotak zarade
 
   // Kategorije vozila i potrošnja (L/100km)
@@ -65,6 +71,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
   double _trosakGoriva = 0;
   double _trosakCestarine = 0;
   double _trosakVozača = 0;
+  double _trosakNocenja = 0;
   double _ukupniCistiTrosak = 0;
   double _zarada = 0;
   double _UkupnaCijenaPonude = 0;
@@ -81,17 +88,28 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
       double km = double.tryParse(_kmController.text) ?? 0;
       double cestarina = double.tryParse(_cestarinaController.text) ?? 0;
       double cijenaGoriva = double.tryParse(_cijenaGorivaController.text) ?? 0;
-      double dnevnica = double.tryParse(_dnevnicaController.text) ?? 0;
+      double dnevnicaPoDanu = double.tryParse(_dnevnicaController.text) ?? 0;
+      int brojDana = int.tryParse(_brojDanaController.text) ?? 1;
+      
+      double cijenaNocenjaPoDanu = double.tryParse(_cijenaNocenjaController.text) ?? 0;
       double marzaPostotak = double.tryParse(_marzaController.text) ?? 0;
 
       double potrosnjaNa100km = _potrosnjaVozila[_odabranoVozilo] ?? 9.0;
+      int brojNocenja = (brojDana > 1) ? (brojDana - 1) : 0; // Broj noćenja obično je broj dana minus 1
 
       // Izračuni
       _trosakGoriva = (km / 100) * potrosnjaNa100km * cijenaGoriva;
       _trosakCestarine = cestarina;
-      _trosakVozača = dnevnica;
+      _trosakVozača = dnevnicaPoDanu * (brojDana > 0 ? brojDana : 1);
 
-      _ukupniCistiTrosak = _trosakGoriva + _trosakCestarine + _trosakVozača;
+      // Ako prijevoznik plaća noćenje, uračunavamo ga u trošak. Ako plaća klijent, trošak noćenja za prijevoznika je 0.
+      if (_tkoPlacaNocenje == 'Prijevoznik plaća') {
+        _trosakNocenja = cijenaNocenjaPoDanu * brojNocenja;
+      } else {
+        _trosakNocenja = 0;
+      }
+
+      _ukupniCistiTrosak = _trosakGoriva + _trosakCestarine + _trosakVozača + _trosakNocenja;
       _zarada = _ukupniCistiTrosak * (marzaPostotak / 100);
       _UkupnaCijenaPonude = _ukupniCistiTrosak + _zarada;
     });
@@ -315,7 +333,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
 
             const SizedBox(height: 16),
 
-            // KARTICA 2: Parametri Troškova
+            // KARTICA 2: Parametri Troškova, Dnevnica, Broj Dana i Noćenje
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -324,7 +342,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('4. Procjena Troškova', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('4. Procjena Troškova, Dnevnice i Noćenja', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
 
                     Row(
@@ -365,7 +383,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                             controller: _dnevnicaController,
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
-                              labelText: 'Dnevnica (€)',
+                              labelText: 'Dnevnica/dan (€)',
                               border: OutlineInputBorder(),
                               prefixIcon: Icon(Icons.person),
                             ),
@@ -375,17 +393,70 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: TextField(
-                            controller: _marzaController,
+                            controller: _brojDanaController,
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
-                              labelText: 'Marža (%)',
+                              labelText: 'Broj dana puta',
                               border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.percent),
+                              prefixIcon: Icon(Icons.calendar_today),
                             ),
                             onChanged: (_) => _izracunajTroškove(),
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Polja za noćenje
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _cijenaNocenjaController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Noćenje / noć (€)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.hotel),
+                            ),
+                            onChanged: (_) => _izracunajTroškove(),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: _tkoPlacaNocenje,
+                            decoration: const InputDecoration(
+                              labelText: 'Trošak noćenja snosi',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: const [
+                              DropdownMenuItem(value: 'Prijevoznik plaća', child: Text('Prijevoznik')),
+                              DropdownMenuItem(value: 'Klijent snosi trošak', child: Text('Klijent')),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() {
+                                  _tkoPlacaNocenje = val;
+                                  _izracunajTroškove();
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    TextField(
+                      controller: _marzaController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Marža (%)',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.percent),
+                      ),
+                      onChanged: (_) => _izracunajTroškove(),
                     ),
                   ],
                 ),
@@ -409,7 +480,8 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
 
                     _prikaziRedak('Trošak Goriva:', '${_trosakGoriva.toStringAsFixed(2)} €'),
                     _prikaziRedak('Trošak Cestarine:', '${_trosakCestarine.toStringAsFixed(2)} €'),
-                    _prikaziRedak('Dnevnica Vozača:', '${_trosakVozača.toStringAsFixed(2)} €'),
+                    _prikaziRedak('Ukupno Dnevnice:', '${_trosakVozača.toStringAsFixed(2)} €'),
+                    _prikaziRedak('Trošak Noćenja:', '${_trosakNocenja.toStringAsFixed(2)} € ($_tkoPlacaNocenje)'),
                     const Divider(color: Colors.white24, height: 20),
                     _prikaziRedak('Čisti Troškovi:', '${_ukupniCistiTrosak.toStringAsFixed(2)} €', isBold: true),
                     _prikaziRedak('Planirana Zarada:', '${_zarada.toStringAsFixed(2)} €', color: Colors.amber),
@@ -443,7 +515,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
             ElevatedButton.icon(
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Generiranje PDF ponude s podacima prijevoznika i klijenta slijedi!')),
+                  const SnackBar(content: Text('Spremni smo za ugradnju PDF generatora!')),
                 );
               },
               icon: const Icon(Icons.picture_as_pdf),
