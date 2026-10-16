@@ -30,7 +30,7 @@ jobs:
         run: flutter pub get
 
       - name: 🛠️ Generiraj Android strukturu (v2 embedding)
-        run: flutter create . --platforms=android --org com.example
+        run: flutter create . --platforms=android --org com.example --project-name=prijevoz_kalkulator
 
       - name: 🌐 Dodaj dozvolu za internet u AndroidManifest
         run: |
