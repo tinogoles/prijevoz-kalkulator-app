@@ -107,7 +107,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
   final TextEditingController _nazivKlijentaController = TextEditingController(text: 'Turistička agencija / Klijent');
   final TextEditingController _kontaktKlijentaController = TextEditingController(text: 'info@klijent.com');
 
-  // Nova polja za točke rute
+  // Točke rute
   final TextEditingController _polazisteController = TextEditingController(text: 'Zagreb');
   final TextEditingController _odrediste1Controller = TextEditingController();
   final TextEditingController _odrediste2Controller = TextEditingController();
@@ -158,7 +158,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
     _azurirajKilometreICestarinu();
   }
 
-  // Besplatni OpenStreetMap (Nominatim + OSRM) za automatski izračun svih dionica
+  // Besplatni OpenStreetMap (Nominatim + OSRM) za višetroškovni izračun rute
   Future<void> _izracunajRutuMultiPoint() async {
     List<String> tocke = [];
     
@@ -179,7 +179,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
     });
 
     try {
-      // 1. Pretvaranje naziva svih unesenih točaka u koordinate
       Future<Map<String, double>?> getCoords(String query) async {
         final url = Uri.parse('https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(query)}&format=json&limit=1');
         final response = await http.get(url, headers: {'User-Agent': 'PrijevozKalkulatorApp'});
@@ -205,9 +204,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
         }
       }
 
-      // 2. Izračun kilometara između svih uzastopnih točaka
       double ukupnoMetara = 0;
-
       for (int i = 0; i < koordinate.length - 1; i++) {
         var start = koordinate[i];
         var end = koordinate[i + 1];
@@ -233,7 +230,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Izračunata ruta za ${tocke.length} točke/a: ${kmJedanSmjer.toStringAsFixed(1)} km (1 smjer)'), backgroundColor: Colors.green),
+        SnackBar(content: Text('Izračunata ruta (${tocke.length} točke): ${kmJedanSmjer.toStringAsFixed(1)} km (1 smjer)'), backgroundColor: Colors.green),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -387,57 +384,4 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
 
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
-      name: 'Kalkulacija_${_nazivKalkulacijeController.text}.pdf',
-    );
-  }
-
-  Future<void> _generirajPdfPonudu() async {
-    final pdf = pw.Document();
-
-    pdf.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        build: (pw.Context context) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(_nazivPrijevoznikaController.text, style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
-                      pw.Text('Adresa: ${_adresaPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 10)),
-                      pw.Text('OIB: ${_oibPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 10)),
-                    ],
-                  ),
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.end,
-                    children: [
-                      pw.Text('PONUDA ZA PRIJEVOZ', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
-                      pw.Text('Predmet: ${_nazivKalkulacijeController.text}', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
-                      pw.Text('Datum: ${DateTime.now().toLocal().toString().split(' ')[0]}', style: const pw.TextStyle(fontSize: 10)),
-                    ],
-                  ),
-                ],
-              ),
-              pw.Divider(height: 30),
-              pw.Text('Za klijenta:', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
-              pw.Text('Naziv: ${_nazivKlijentaController.text}'),
-              pw.Text('Kontakt: ${_kontaktKlijentaController.text}'),
-              pw.SizedBox(height: 25),
-              pw.Container(
-                padding: const pw.EdgeInsets.all(15),
-                decoration: const pw.BoxDecoration(
-                  color: PdfColors.grey200, 
-                  borderRadius: pw.BorderRadius.all(pw.Radius.circular(8)),
-                ),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text('SPECIFIKACIJA USLUGE', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
-                    pw.SizedBox(height: 10),
-                    pw.Text('Relacija / Ruta: ${_dohvatiOpisRelacije()} (${_povratnoPutovanje ? "Povratno putovanje" : "Jednosmjerno"})', style: pw.TextStyle(fontSize: 12)),
-                    pw.Text('Tip vozila: $_odabranoVozilo', style: pw.TextStyle(fontSize: 12)),
-                    pw.Text('Datum polaska: ${_datumPolaskaController.text}', style: pw.TextStyle(fontSize
+      name: '
