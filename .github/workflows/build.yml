@@ -1,4 +1,4 @@
-name: Automatska izrada Android APK-a
+name: Build APK
 
 on:
   push:
@@ -12,43 +12,29 @@ jobs:
       - name: Skeniraj repozitorij
         uses: actions/checkout@v4
 
-      - name: Postavi Java okruženje
+      - name: Postavi Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Postavi Flutter SDK
+      - name: Postavi Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.19.x'
           cache: true
 
-      - name: Kreiraj novi Flutter projekt u privremenoj mapi
+      - name: Kreiraj projekt i postavi okruženje
         run: |
-          flutter create -t app temp_app --org com.tino.prijevoz
-          cp -r temp_app/android .
-          cp -r temp_app/ios .
-          cp -r temp_app/web .
-          cp -r temp_app/linux .
-          cp -r temp_app/macos .
-          cp -r temp_app/windows .
-          cp temp_app/pubspec.yaml .
-          rm -rf temp_app
+          flutter create -t app . --org com.tino.prijevoz --project-name prijevoz_kalkulator
 
-      - name: Ubaci naš kod i konfiguraciju
-        run: |
-          # Ovdje osiguravamo da se koristi naš lib/main.dart i naš pubspec.yaml ako postoji, 
-          # ili ćemo kopirati ono što ste već spremili.
-          echo "Provjera datoteka..."
-
-      - name: Instaliraj pakete
+      - name: Provjeri ovisnosti
         run: flutter pub get
 
-      - name: Izgradi Android APK (Release)
+      - name: Izgradi APK
         run: flutter build apk --release
 
-      - name: Spremi APK kao GitHub artefakt
+      - name: Spremi APK
         uses: actions/upload-artifact@v4
         with:
           name: kalkulator-prijevoza-apk
