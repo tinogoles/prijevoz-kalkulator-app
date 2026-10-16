@@ -459,7 +459,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-                    const Text('Definiranje točaka rute:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0284C7))),
+                    const Text('Definiranje točaka rute (Sekvencijalno):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0284C7))),
                     const SizedBox(height: 8),
                     TextField(controller: _tocka1Controller, decoration: const InputDecoration(labelText: '1) Polazište (obavezno)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.trip_origin))),
                     const SizedBox(height: 8),
@@ -556,91 +556,4 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                             onChanged: (val) {
                               if (val != null) {
                                 setState(() {
-                                  _tkoPlacaNocenje = val;
-                                  _izracunajTroskove();
-                                });
-                              }
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _marzaController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Marza (%)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.percent)),
-                      onChanged: (_) => _izracunajTroskove(),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _spremiKalkulaciju,
-              icon: const Icon(Icons.calculate, color: Colors.white),
-              label: const Text('IZRADI I PRIKAŽI KALKULACIJU', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: const Color(0xFF0284C7),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (_kalkulacijaIzradena) ...[
-              Card(
-                color: const Color(0xFF0C4A6E),
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Rezultat kalkulacije: "${_nazivKalkulacijeController.text}"', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.amber)),
-                      const Divider(color: Colors.white24, height: 20),
-                      _prikaziRedak('Trosak Goriva:', '${_trosakGoriva.toStringAsFixed(2)} €'),
-                      _prikaziRedak('Trosak Cestarine (HAC/AZM):', '${_trosakCestarine.toStringAsFixed(2)} €'),
-                      _prikaziRedak('Ukupno Dnevnice:', '${_trosakVozaca.toStringAsFixed(2)} €'),
-                      _prikaziRedak('Trosak Nocenja:', '${_trosakNocenja.toStringAsFixed(2)} € ($_tkoPlacaNocenje)'),
-                      const Divider(color: Colors.white24, height: 20),
-                      _prikaziRedak('Cisti Troskovi:', '${_ukupniCistiTrosak.toStringAsFixed(2)} €', isBold: true),
-                      _prikaziRedak('Planirana Zarada:', '${_zarada.toStringAsFixed(2)} €', color: Colors.amber),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(color: const Color(0xFFEA580C), borderRadius: BorderRadius.circular(12)),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('KONACNA CIJENA ZA PONUDU:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
-                            Text('${_ukupnaCijenaPonude.toStringAsFixed(2)} €', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _prikaziRedak(String naziv, String iznos, {bool isBold = false, Color color = Colors.white70}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(naziv, style: TextStyle(color: color, fontSize: 14, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
-          Text(iznos, style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
-        ],
-      ),
-    );
-  }
-}
+                                  _tkoPlacaNocenje = val
