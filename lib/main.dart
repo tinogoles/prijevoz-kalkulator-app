@@ -33,6 +33,15 @@ class KalkulatorHomeScreen extends StatefulWidget {
 }
 
 class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
+  // Kontroleri za podatke prijevoznika
+  final TextEditingController _nazivPrijevoznikaController = TextEditingController(text: 'Moj Prijevoz d.o.o.');
+  final TextEditingController _oibPrijevoznikaController = TextEditingController(text: '12345678901');
+  final TextEditingController _adresaPrijevoznikaController = TextEditingController(text: 'Zagrebačka cesta 10, Zagreb');
+
+  // Kontroleri za podatke klijenta
+  final TextEditingController _nazivKlijentaController = TextEditingController(text: 'Turistička agencija / Klijent');
+  final TextEditingController _kontaktKlijentaController = TextEditingController(text: 'info@klijent.com');
+
   // Kontroleri za relacije i troškove
   final TextEditingController _polazisteController = TextEditingController(text: 'Zagreb');
   final TextEditingController _odredisteController = TextEditingController(text: 'Ljubljana');
@@ -42,7 +51,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
   final TextEditingController _dnevnicaController = TextEditingController(text: '80');
   final TextEditingController _marzaController = TextEditingController(text: '20'); // Postotak zarade
 
-  // Točne kategorije vozila i potrošnja (L/100km) prema vašoj floti
+  // Kategorije vozila i potrošnja (L/100km)
   final Map<String, double> _potrosnjaVozila = {
     'Kombi 8+1 (9L / 100km)': 9.0,
     'Mini bus <20 (15L / 100km)': 15.0,
@@ -88,7 +97,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
     });
   }
 
-  // Simulacija dohvaćanja udaljenosti za regiju HR, SLO, BiH
   void _dohvatiUdaljenost() {
     String polaziste = _polazisteController.text.trim().toLowerCase();
     String odrediste = _odredisteController.text.trim().toLowerCase();
@@ -128,6 +136,93 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // KARTICA 0.1: Podaci Prijevoznika
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('1. Podaci Prijevoznika (Vaša tvrtka/obrt)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _nazivPrijevoznikaController,
+                      decoration: const InputDecoration(
+                        labelText: 'Naziv Prijevoznika',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.business),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _oibPrijevoznikaController,
+                            decoration: const InputDecoration(
+                              labelText: 'OIB',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.badge),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _adresaPrijevoznikaController,
+                            decoration: const InputDecoration(
+                              labelText: 'Adresa',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.home),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // KARTICA 0.2: Podaci Klijenta
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('2. Podaci Klijenta (Naručitelja)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _nazivKlijentaController,
+                      decoration: const InputDecoration(
+                        labelText: 'Naziv Klijenta / Agencije',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.person_outline),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _kontaktKlijentaController,
+                      decoration: const InputDecoration(
+                        labelText: 'Kontakt (Email / Telefon)',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.contact_mail),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
             // KARTICA 1: Odabir Vozila i Ruta
             Card(
               elevation: 2,
@@ -137,10 +232,9 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('1. Odabir Vozila i Relacija', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('3. Odabir Vozila i Relacija', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
                     
-                    // Dropdown za vozilo s vašom flotom
                     DropdownButtonFormField<String>(
                       value: _odabranoVozilo,
                       decoration: const InputDecoration(
@@ -165,7 +259,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    // Polazište i Odredište
                     Row(
                       children: [
                         Expanded(
@@ -231,7 +324,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('2. Procjena Troškova', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('4. Procjena Troškova', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
 
                     Row(
@@ -311,7 +404,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('3. Razrada Ponude', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                    const Text('5. Razrada Ponude', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                     const Divider(color: Colors.white24, height: 20),
 
                     _prikaziRedak('Trošak Goriva:', '${_trosakGoriva.toStringAsFixed(2)} €'),
@@ -350,7 +443,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
             ElevatedButton.icon(
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Generiranje PDF ponude spremamo kao sljedeći korak!')),
+                  const SnackBar(content: Text('Generiranje PDF ponude s podacima prijevoznika i klijenta slijedi!')),
                 );
               },
               icon: const Icon(Icons.picture_as_pdf),
