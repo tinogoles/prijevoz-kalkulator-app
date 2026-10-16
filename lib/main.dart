@@ -36,20 +36,21 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
   // Kontroleri za relacije i troškove
   final TextEditingController _polazisteController = TextEditingController(text: 'Zagreb');
   final TextEditingController _odredisteController = TextEditingController(text: 'Ljubljana');
-  final TextEditingController _kmController = TextEditingController(text: '280'); // Procjena / automatski izračun
+  final TextEditingController _kmController = TextEditingController(text: '280');
   final TextEditingController _cestarinaController = TextEditingController(text: '25');
   final TextEditingController _cijenaGorivaController = TextEditingController(text: '1.45');
   final TextEditingController _dnevnicaController = TextEditingController(text: '80');
   final TextEditingController _marzaController = TextEditingController(text: '20'); // Postotak zarade
 
-  // Popis vozila i prosječna potrošnja (L/100km)
+  // Točne kategorije vozila i potrošnja (L/100km) prema vašoj floti
   final Map<String, double> _potrosnjaVozila = {
-    'Kombi (8+1) - 10 L/100km': 10.0,
-    'Mini Autobus (19+1) - 16 L/100km': 16.0,
-    'Veliki Autobus (49+1) - 28 L/100km': 28.0,
+    'Kombi 8+1 (9L / 100km)': 9.0,
+    'Mini bus <20 (15L / 100km)': 15.0,
+    'Midi bus 35 (30L / 100km)': 30.0,
+    'Veliki autobus 50 (35L / 100km)': 35.0,
   };
 
-  String _odabranoVozilo = 'Kombi (8+1) - 10 L/100km';
+  late String _odabranoVozilo;
 
   // Rezultati izračuna
   double _trosakGoriva = 0;
@@ -62,6 +63,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
   @override
   void initState() {
     super.initState();
+    _odabranoVozilo = _potrosnjaVozila.keys.first;
     _izracunajTroškove();
   }
 
@@ -73,7 +75,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
       double dnevnica = double.tryParse(_dnevnicaController.text) ?? 0;
       double marzaPostotak = double.tryParse(_marzaController.text) ?? 0;
 
-      double potrosnjaNa100km = _potrosnjaVozila[_odabranoVozilo] ?? 10.0;
+      double potrosnjaNa100km = _potrosnjaVozila[_odabranoVozilo] ?? 9.0;
 
       // Izračuni
       _trosakGoriva = (km / 100) * potrosnjaNa100km * cijenaGoriva;
@@ -86,12 +88,11 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
     });
   }
 
-  // Simulacija dohvaćanja udaljenosti preko Google Maps API-ja za regiju HR, SLO, BiH
+  // Simulacija dohvaćanja udaljenosti za regiju HR, SLO, BiH
   void _dohvatiUdaljenost() {
     String polaziste = _polazisteController.text.trim().toLowerCase();
     String odrediste = _odredisteController.text.trim().toLowerCase();
 
-    // Primjer brze provjere čestih relacija (u pravoj aplikaciji ovdje zovemo Google Directions API)
     double izracunatimKm = 300.0;
     if ((polaziste.contains('zagreb') && odrediste.contains('ljubljana')) || 
         (polaziste.contains('ljubljana') && odrediste.contains('zagreb'))) {
@@ -110,7 +111,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Ruta uspješno pronađena: $_kmController km (Google Maps API)')),
+      SnackBar(content: Text('Ruta izračunata: $_kmController km')),
     );
   }
 
@@ -118,7 +119,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ponuda za Prijevoz (HR, SLO, BiH)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        title: const Text('Kalkulator Prijevoza (HR, SLO, BiH)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         backgroundColor: Theme.of(context).colorScheme.primary,
         centerTitle: true,
       ),
@@ -127,7 +128,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // KARTICA 1: Odabir Vozila i Ruta (Google Maps style)
+            // KARTICA 1: Odabir Vozila i Ruta
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -136,14 +137,14 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('1. Relacija i Odabir Vozila', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('1. Odabir Vozila i Relacija', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
                     
-                    // Dropdown za vozilo
+                    // Dropdown za vozilo s vašom flotom
                     DropdownButtonFormField<String>(
                       value: _odabranoVozilo,
                       decoration: const InputDecoration(
-                        labelText: 'Odaberite Vozilo',
+                        labelText: 'Kategorija Vozila',
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.directions_bus),
                       ),
@@ -155,8 +156,10 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                       }).toList(),
                       onChanged: (newValue) {
                         if (newValue != null) {
-                          _odabranoVozilo = newValue;
-                          _izracunajTroškove();
+                          setState(() {
+                            _odabranoVozilo = newValue;
+                            _izracunajTroškove();
+                          });
                         }
                       },
                     ),
@@ -169,7 +172,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                           child: TextField(
                             controller: _polazisteController,
                             decoration: const InputDecoration(
-                              labelText: 'Polazište (Grad/Adresa)',
+                              labelText: 'Polazište',
                               border: OutlineInputBorder(),
                               prefixIcon: Icon(Icons.trip_origin),
                             ),
@@ -180,7 +183,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                           child: TextField(
                             controller: _odredisteController,
                             decoration: const InputDecoration(
-                              labelText: 'Odredište (Grad/Adresa)',
+                              labelText: 'Odredište',
                               border: OutlineInputBorder(),
                               prefixIcon: Icon(Icons.location_on),
                             ),
@@ -190,11 +193,10 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    // Gumb za automatski izračun preko Mapsa
                     OutlinedButton.icon(
                       onPressed: _dohvatiUdaljenost,
                       icon: const Icon(Icons.map),
-                      label: const Text('Izračunaj rutu preko Google Maps-a'),
+                      label: const Text('Izračunaj udaljenost (Ruta)'),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -202,7 +204,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    // Unos Kilometraže (može se i ručno korigirati)
                     TextField(
                       controller: _kmController,
                       keyboardType: TextInputType.number,
@@ -302,7 +303,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
 
             // KARTICA 3: RAZRADA I REZULTAT
             Card(
-              color: const Color(0xFF0C4A6E), // Tamno plava
+              color: const Color(0xFF0C4A6E),
               elevation: 4,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: Padding(
@@ -324,7 +325,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEA580C), // Narančasti naglasak za ukupan iznos
+                        color: const Color(0xFFEA580C),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
