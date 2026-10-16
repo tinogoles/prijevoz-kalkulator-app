@@ -103,6 +103,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
   final TextEditingController _adresaKlijentaController = TextEditingController(text: 'Riva 5, Split');
   final TextEditingController _telefonKlijentaController = TextEditingController(text: '+385 98 765 4321');
   final TextEditingController _emailKlijentaController = TextEditingController(text: 'info@klijent.hr');
+  bool _klijentUSustavuPdv = true;
 
   // Ruta
   final TextEditingController _polazisteController = TextEditingController(text: 'Zagreb');
@@ -131,7 +132,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
     'Bez autoceste / Lokalna cesta'
   ];
 
-  // Troškovi
+  // Troškovi (bruto - s uključenim PDV-om)
   final TextEditingController _cijenaGorivaController = TextEditingController(text: '1.45');
   final TextEditingController _dnevnicaController = TextEditingController(text: '80');
 
@@ -155,12 +156,24 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
 
   late String _odabranoVozilo;
 
-  double _trosakGoriva = 0;
-  double _trosakCestarine = 0;
-  double _trosakVozaca = 0;
-  double _trosakNocenja = 0;
+  // Izračunate varijable troškova
+  double _trosakGorivaBruto = 0;
+  double _trosakGorivaPdv = 0;
+  
+  double _trosakCestarineBruto = 0;
+  double _trosakCestarinePdv = 0;
+
+  double _trosakVozaca = 0; // Dnevnice nemaju PDV (neoporezivo/izuzeto)
+
+  double _trosakNocenjaBruto = 0;
+  double _trosakNocenjaPdv = 0;
+
+  double _ukupniUlazniPdv = 0;
   double _ukupniCistiTrosak = 0;
   double _zarada = 0;
+  
+  double _osnovicaNeto = 0;
+  double _iznosIzlaznogPdv = 0;
   double _ukupnaCijenaPonude = 0;
 
   bool _kalkulacijaIzradena = false;
@@ -182,9 +195,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
       setState(() {
         _izracunatiBrojDana = razlika > 0 ? razlika : 1;
       });
-    } catch (_) {
-      // U slučaju krivog formata datuma ostavljamo zadano
-    }
+    } catch (_) {}
   }
 
   void _automatskiDetektirajCestarinu(List<String> tocke) {
@@ -323,28 +334,57 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
 
     setState(() {
       double km = double.tryParse(_kmController.text) ?? 0;
-      double cestarina = double.tryParse(_cestarinaController.text) ?? 0;
-      double cijenaGoriva = double.tryParse(_cijenaGorivaController.text) ?? 0;
+      double cestarinaBruto = double.tryParse(_cestarinaController.text) ?? 0;
+      double cijenaGorivaBruto = double.tryParse(_cijenaGorivaController.text) ?? 0;
       double dnevnicaPoDanu = double.tryParse(_dnevnicaController.text) ?? 0;
-      double cijenaNocenjaPoDanu = double.tryParse(_cijenaNocenjaController.text) ?? 0;
+      double cijenaNocenjaBruto = double.tryParse(_cijenaNocenjaController.text) ?? 0;
       double marzaPostotak = double.tryParse(_marzaController.text) ?? 0;
 
       double potrosnjaNa100km = _potrosnjaVozila[_odabranoVozilo] ?? 9.0;
       int brojNocenja = (_izracunatiBrojDana > 1) ? (_izracunatiBrojDana - 1) : 0;
 
-      _trosakGoriva = (km / 100) * potrosnjaNa100km * cijenaGoriva;
-      _trosakCestarine = _koristiAutocestu ? cestarina : 0;
+      // 1. Gorivo (Bruto, Neto i PDV 25%)
+      _trosakGorivaBruto = (km / 100) * potrosnjaNa100km * cijenaGorivaBruto;
+      double gorivoNeto = _trosakGorivaBruto / 1.25;
+      _trosakGorivaPdv = _trosakGorivaBruto - gorivoNeto;
+
+      // 2. Cestarina (Bruto, Neto i PDV 25%)
+      _trosakCestarineBruto = _koristiAutocestu ? cestarinaBruto : 0;
+      double cestarinaNeto = _trosakCestarineBruto / 1.25;
+      _trosakCestarinePdv = _trosakCestarineBruto - cestarinaNeto;
+
+      // 3. Dnevnice vozača (Neoporezivo / nemaju PDV)
       _trosakVozaca = dnevnicaPoDanu * _izracunatiBrojDana;
 
+      // 4. Noćenje (Bruto, Neto i PDV 25%)
       if (_tkoPlacaNocenje == 'Prijevoznik plaća') {
-        _trosakNocenja = cijenaNocenjaPoDanu * brojNocenja;
+        _trosakNocenjaBruto = cijenaNocenjaBruto * brojNocenja;
       } else {
-        _trosakNocenja = 0;
+        _trosakNocenjaBruto = 0;
       }
+      double nocenjeNeto = _trosakNocenjaBruto / 1.25;
+      _trosakNocenjaPdv = _trosakNocenjaBruto - nocenjeNeto;
 
-      _ukupniCistiTrosak = _trosakGoriva + _trosakCestarine + _trosakVozaca + _trosakNocenja;
+      // Ukupni ulazni PDV na troškove
+      _ukupniUlazniPdv = _trosakGorivaPdv + _trosakCestarinePdv + _trosakNocenjaPdv;
+
+      // Čisti trošak (zbroj neto vrijednosti troškova + dnevnice)
+      _ukupniCistiTrosak = gorivoNeto + cestarinaNeto + _trosakVozaca + nocenjeNeto;
+      
+      // Planirana zarada
       _zarada = _ukupniCistiTrosak * (marzaPostotak / 100);
-      _ukupnaCijenaPonude = _ukupniCistiTrosak + _zarada;
+      
+      // Osnovica za naplatu
+      _osnovicaNeto = _ukupniCistiTrosak + _zarada;
+      
+      // Izlazni PDV i ukupna cijena
+      if (_klijentUSustavuPdv) {
+        _iznosIzlaznogPdv = _osnovicaNeto * 0.25;
+        _ukupnaCijenaPonude = _osnovicaNeto + _iznosIzlaznogPdv;
+      } else {
+        _iznosIzlaznogPdv = 0;
+        _ukupnaCijenaPonude = _osnovicaNeto;
+      }
     });
   }
 
@@ -393,8 +433,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                         pw.Text('Vlasnik: ${_vlasnikPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 9)),
                         pw.Text('OIB: ${_oibPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 9)),
                         pw.Text('Adresa: ${_adresaPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 9)),
-                        pw.Text('Tel: ${_telefonPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 9)),
-                        pw.Text('Email: ${_emailPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 9)),
                       ],
                     ),
                   ),
@@ -404,11 +442,9 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                       children: [
                         pw.Text('KLIJENT / AGENCIJA:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
                         pw.Text(_nazivKlijentaController.text, style: const pw.TextStyle(fontSize: 9)),
-                        pw.Text('Kontakt: ${_vlasnikKlijentaController.text}', style: const pw.TextStyle(fontSize: 9)),
+                        pw.Text('U sustavu PDV-a: ${_klijentUSustavuPdv ? "DA" : "NE"}', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
                         pw.Text('OIB: ${_oibKlijentaController.text}', style: const pw.TextStyle(fontSize: 9)),
                         pw.Text('Adresa: ${_adresaKlijentaController.text}', style: const pw.TextStyle(fontSize: 9)),
-                        pw.Text('Tel: ${_telefonKlijentaController.text}', style: const pw.TextStyle(fontSize: 9)),
-                        pw.Text('Email: ${_emailKlijentaController.text}', style: const pw.TextStyle(fontSize: 9)),
                       ],
                     ),
                   ),
@@ -417,32 +453,43 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
               pw.Divider(height: 15),
               pw.Text('Ruta: ${_dohvatiOpisRelacije()} (${_povratnoPutovanje ? "Povratno" : "Jednosmjerno"})'),
               pw.Text('Termin: ${_datumPolaskaController.text} do ${_datumPovratkaController.text} ($_izracunatiBrojDana dana)'),
-              pw.Text('Autocesta: ${_koristiAutocestu ? _odabranaAutocesta : "Bez autoceste"}'),
               pw.Text('Vozilo: $_odabranoVozilo (${_kmController.text} km)'),
-              pw.SizedBox(height: 15),
+              pw.SizedBox(height: 12),
               pw.Table.fromTextArray(
-                headers: ['Stavka troska', 'Iznos'],
+                headers: ['Stavka troška (Bruto)', 'Iznos s PDV-om', 'Uključeni PDV (25%)'],
                 data: [
-                  ['Gorivo', '${_trosakGoriva.toStringAsFixed(2)} €'],
-                  ['Cestarina', '${_trosakCestarine.toStringAsFixed(2)} €'],
-                  ['Dnevnice vozača ($_izracunatiBrojDana dana)', '${_trosakVozaca.toStringAsFixed(2)} €'],
-                  ['Noćenje vozača', '${_trosakNocenja.toStringAsFixed(2)} € ($_tkoPlacaNocenje)'],
-                  ['Čisti troškovi ukupno', '${_ukupniCistiTrosak.toStringAsFixed(2)} €'],
-                  ['Planirana marža (${_marzaController.text}%)', '${_zarada.toStringAsFixed(2)} €'],
+                  ['Gorivo', '${_trosakGorivaBruto.toStringAsFixed(2)} €', '${_trosakGorivaPdv.toStringAsFixed(2)} €'],
+                  ['Cestarina', '${_trosakCestarineBruto.toStringAsFixed(2)} €', '${_trosakCestarinePdv.toStringAsFixed(2)} €'],
+                  ['Dnevnice vozača ($_izracunatiBrojDana dana)', '${_trosakVozaca.toStringAsFixed(2)} €', '0.00 € (neoporezivo)'],
+                  ['Noćenje vozača', '${_trosakNocenjaBruto.toStringAsFixed(2)} €', '${_trosakNocenjaPdv.toStringAsFixed(2)} €'],
+                  ['UKUPNO ULAZNI PDV', '---', '${_ukupniUlazniPdv.toStringAsFixed(2)} €'],
                 ],
-                headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+                headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white, fontSize: 10),
                 headerDecoration: const pw.BoxDecoration(color: PdfColors.red900),
+                cellStyle: const pw.TextStyle(fontSize: 9),
                 cellPadding: const pw.EdgeInsets.all(5),
               ),
               pw.SizedBox(height: 15),
               pw.Container(
                 padding: const pw.EdgeInsets.all(10),
                 decoration: const pw.BoxDecoration(color: PdfColors.grey300),
-                child: pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                child: pw.Column(
                   children: [
-                    pw.Text('KONAČNA CIJENA ZA PONUDU:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                    pw.Text('${_ukupnaCijenaPonude.toStringAsFixed(2)} €', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
+                    pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text('Čisti troškovi (neto):'), pw.Text('${_ukupniCistiTrosak.toStringAsFixed(2)} €')]),
+                    pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text('Planirana marža (${_marzaController.text}%):'), pw.Text('${_zarada.toStringAsFixed(2)} €')]),
+                    pw.Divider(),
+                    if (_klijentUSustavuPdv) ...[
+                      pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text('Osnovica (neto):'), pw.Text('${_osnovicaNeto.toStringAsFixed(2)} €')]),
+                      pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text('Izlazni PDV (25%):'), pw.Text('${_iznosIzlaznogPdv.toStringAsFixed(2)} €')]),
+                      pw.Divider(),
+                    ],
+                    pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.Text('KONAČNA CIJENA ZA PONUDU:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                        pw.Text('${_ukupnaCijenaPonude.toStringAsFixed(2)} €', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 15)),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -475,7 +522,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
                       pw.Text(_nazivPrijevoznikaController.text, style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
-                      pw.Text('Vlasnik/Odg. osoba: ${_vlasnikPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 9)),
                       pw.Text('Adresa: ${_adresaPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 9)),
                       pw.Text('OIB: ${_oibPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 9)),
                       pw.Text('Tel: ${_telefonPrijevoznikaController.text} | Email: ${_emailPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 9)),
@@ -495,7 +541,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
               pw.Text('Za klijenta:', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
               pw.Text('${_nazivKlijentaController.text} (Kontakt: ${_vlasnikKlijentaController.text})', style: const pw.TextStyle(fontSize: 10)),
               pw.Text('Adresa: ${_adresaKlijentaController.text} | OIB: ${_oibKlijentaController.text}', style: const pw.TextStyle(fontSize: 9)),
-              pw.Text('Tel: ${_telefonKlijentaController.text} | Email: ${_emailKlijentaController.text}', style: const pw.TextStyle(fontSize: 9)),
               pw.SizedBox(height: 20),
               pw.Container(
                 padding: const pw.EdgeInsets.all(12),
@@ -511,25 +556,45 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                     pw.Text('Ruta: ${_dohvatiOpisRelacije()} (${_povratnoPutovanje ? "Povratno putovanje" : "Jednosmjerno"})', style: const pw.TextStyle(fontSize: 11)),
                     pw.Text('Datum polaska: ${_datumPolaskaController.text}', style: const pw.TextStyle(fontSize: 11)),
                     pw.Text('Datum povratka: ${_datumPovratkaController.text} (Trajanje: $_izracunatiBrojDana dana)', style: const pw.TextStyle(fontSize: 11)),
-                    pw.Text('Autocesta: ${_koristiAutocestu ? _odabranaAutocesta : "Lokalna cesta (bez autoceste)"}', style: const pw.TextStyle(fontSize: 11)),
+                    pw.Text('Autocesta: ${_koristiAutocestu ? _odabranaAutocesta : "Lokalna cesta"}', style: const pw.TextStyle(fontSize: 11)),
                     pw.Text('Kategorija vozila: $_odabranoVozilo', style: const pw.TextStyle(fontSize: 11)),
-                    pw.Text('Status noćenja vozača: $_tkoPlacaNocenje', style: const pw.TextStyle(fontSize: 11)),
                   ],
                 ),
               ),
               pw.SizedBox(height: 25),
               pw.Container(
-                alignment: pw.Alignment.centerRight,
                 padding: const pw.EdgeInsets.all(12),
                 decoration: const pw.BoxDecoration(
                   color: PdfColors.orange800,
                   borderRadius: pw.BorderRadius.all(pw.Radius.circular(6)),
                 ),
-                child: pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                child: pw.Column(
                   children: [
-                    pw.Text('UKUPNA CIJENA USLUGE:', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
-                    pw.Text('${_ukupnaCijenaPonude.toStringAsFixed(2)} €', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+                    if (_klijentUSustavuPdv) ...[
+                      pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          pw.Text('Cijena bez PDV-a (Osnovica):', style: pw.TextStyle(fontSize: 12, color: PdfColors.white)),
+                          pw.Text('${_osnovicaNeto.toStringAsFixed(2)} €', style: pw.TextStyle(fontSize: 12, color: PdfColors.white)),
+                        ],
+                      ),
+                      pw.SizedBox(height: 4),
+                      pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          pw.Text('PDV (25%):', style: pw.TextStyle(fontSize: 12, color: PdfColors.white)),
+                          pw.Text('${_iznosIzlaznogPdv.toStringAsFixed(2)} €', style: pw.TextStyle(fontSize: 12, color: PdfColors.white)),
+                        ],
+                      ),
+                      pw.Divider(color: PdfColors.white),
+                    ],
+                    pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.Text(_klijentUSustavuPdv ? 'UKUPNA CIJENA S PDV-om:' : 'UKUPNA CIJENA USLUGE:', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+                        pw.Text('${_ukupnaCijenaPonude.toStringAsFixed(2)} €', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -562,7 +627,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // PODACI O RUTI
+            // RUTA
             Card(
               elevation: 3,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -621,7 +686,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
             ),
             const SizedBox(height: 16),
 
-            // DATUMI I DANI
+            // DATUMI
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -679,7 +744,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Korištenje Autoceste i Cestarina', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFEA580C))),
+                    const Text('Korištenje Autoceste i Cestarina (s PDV-om)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFEA580C))),
                     const SizedBox(height: 8),
                     SwitchListTile(
                       title: const Text('Hoće li se koristiti autocesta?', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -707,7 +772,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                       TextField(
                         controller: _cestarinaController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'Iznos cestarine (€)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.toll), filled: true, fillColor: Colors.white),
+                        decoration: const InputDecoration(labelText: 'Iznos cestarine (€, bruto s PDV-om)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.toll), filled: true, fillColor: Colors.white),
                         onChanged: (_) => _izracunajTroskove(),
                       ),
                     ],
@@ -739,7 +804,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
             ),
             const SizedBox(height: 16),
 
-            // PODACI PRIJEVOZNIKA
+            // PRIJEVOZNIK
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -771,7 +836,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
             ),
             const SizedBox(height: 16),
 
-            // PODACI KLIJENTA
+            // KLIJENT
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -783,6 +848,23 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                     const Text('Podaci Klijenta / Agencije', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
                     TextField(controller: _nazivKlijentaController, decoration: const InputDecoration(labelText: 'Naziv Klijenta / Agencije', border: OutlineInputBorder())),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<bool>(
+                      value: _klijentUSustavuPdv,
+                      decoration: const InputDecoration(labelText: 'U sustavu PDV-a?', border: OutlineInputBorder(), prefixIcon: Icon(Icons.receipt_long)),
+                      items: const [
+                        DropdownMenuItem(value: true, child: Text('Da (Iskazati PDV 25%)')),
+                        DropdownMenuItem(value: false, child: Text('Ne (Samo ukupni iznos)')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            _klijentUSustavuPdv = val;
+                            _izracunajTroskove();
+                          });
+                        }
+                      },
+                    ),
                     const SizedBox(height: 8),
                     TextField(controller: _vlasnikKlijentaController, decoration: const InputDecoration(labelText: 'Kontakt osoba / Vlasnik', border: OutlineInputBorder())),
                     const SizedBox(height: 8),
@@ -803,7 +885,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
             ),
             const SizedBox(height: 16),
 
-            // PARAMETRI TROŠKOVA & NOĆENJE
+            // VOZILO, GORIVO, NOĆENJE
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -812,7 +894,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Vozilo i Parametri Troškova', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('Vozilo i Parametri Troškova (s PDV-om)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       value: _odabranoVozilo,
@@ -830,7 +912,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        Expanded(child: TextField(controller: _cijenaGorivaController, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Gorivo (€/L)', border: OutlineInputBorder()), onChanged: (_) => _izracunajTroskove())),
+                        Expanded(child: TextField(controller: _cijenaGorivaController, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Gorivo (€/L, bruto)', border: OutlineInputBorder()), onChanged: (_) => _izracunajTroskove())),
                         const SizedBox(width: 8),
                         Expanded(child: TextField(controller: _dnevnicaController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Dnevnica/dan (€)', border: OutlineInputBorder()), onChanged: (_) => _izracunajTroskove())),
                       ],
@@ -856,7 +938,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                       TextField(
                         controller: _cijenaNocenjaController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'Cijena noćenja po noći (€)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.hotel)),
+                        decoration: const InputDecoration(labelText: 'Cijena noćenja po noći (€, bruto)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.hotel)),
                         onChanged: (_) => _izracunajTroskove(),
                       ),
                     ],
@@ -873,7 +955,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
             ),
             const SizedBox(height: 16),
 
-            // TIPKE ZA SPREMANJE I REZULTAT
+            // SPREMANJE I REZULTATI
             ElevatedButton.icon(
               onPressed: _spremiKalkulaciju,
               icon: const Icon(Icons.calculate, color: Colors.white),
@@ -899,21 +981,27 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                     children: [
                       Text('Rezultat kalkulacije: "${_nazivKalkulacijeController.text}"', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.amber)),
                       const Divider(color: Colors.white24, height: 20),
-                      _prikaziRedak('Trošak Goriva:', '${_trosakGoriva.toStringAsFixed(2)} €'),
-                      _prikaziRedak('Trošak Cestarine:', '${_trosakCestarine.toStringAsFixed(2)} €'),
-                      _prikaziRedak('Ukupno Dnevnice ($_izracunatiBrojDana d.):', '${_trosakVozaca.toStringAsFixed(2)} €'),
-                      _prikaziRedak('Ukupno Noćenje:', '${_trosakNocenja.toStringAsFixed(2)} € ($_tkoPlacaNocenje)'),
+                      _prikaziRedak('Trošak Goriva (bruto):', '${_trosakGorivaBruto.toStringAsFixed(2)} € (PDV: ${_trosakGorivaPdv.toStringAsFixed(2)} €)'),
+                      _prikaziRedak('Trošak Cestarine (bruto):', '${_trosakCestarineBruto.toStringAsFixed(2)} € (PDV: ${_trosakCestarinePdv.toStringAsFixed(2)} €)'),
+                      _prikaziRedak('Dnevnice vozača (${_izracunatiBrojDana} d.):', '${_trosakVozaca.toStringAsFixed(2)} €'),
+                      _prikaziRedak('Noćenje vozača (bruto):', '${_trosakNocenjaBruto.toStringAsFixed(2)} € (PDV: ${_trosakNocenjaPdv.toStringAsFixed(2)} €)'),
+                      _prikaziRedak('Ukupni PDV na troškove:', '${_ukupniUlazniPdv.toStringAsFixed(2)} €', color: Colors.amberAccent),
                       const Divider(color: Colors.white24, height: 20),
-                      _prikaziRedak('Čisti Troškovi:', '${_ukupniCistiTrosak.toStringAsFixed(2)} €', isBold: true),
+                      _prikaziRedak('Čisti Troškovi (neto):', '${_ukupniCistiTrosak.toStringAsFixed(2)} €', isBold: true),
                       _prikaziRedak('Planirana Zarada:', '${_zarada.toStringAsFixed(2)} €', color: Colors.amber),
-                      const SizedBox(height: 16),
+                      const Divider(color: Colors.white24, height: 20),
+                      if (_klijentUSustavuPdv) ...[
+                        _prikaziRedak('Osnovica (Bez PDV-a):', '${_osnovicaNeto.toStringAsFixed(2)} €'),
+                        _prikaziRedak('Izlazni PDV (25%):', '${_iznosIzlaznogPdv.toStringAsFixed(2)} €'),
+                        const SizedBox(height: 8),
+                      ],
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(color: const Color(0xFFEA580C), borderRadius: BorderRadius.circular(12)),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('KONAČNA CIJENA ZA PONUDU:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                            Text(_klijentUSustavuPdv ? 'UKUPNA CIJENA S PDV-om:' : 'UKUPNA CIJENA USLUGE:', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
                             Text('${_ukupnaCijenaPonude.toStringAsFixed(2)} €', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                           ],
                         ),
@@ -958,8 +1046,8 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(naziv, style: TextStyle(color: color, fontSize: 14, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
-          Text(iznos, style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
+          Text(naziv, style: TextStyle(color: color, fontSize: 13, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
+          Text(iznos, style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
         ],
       ),
     );
