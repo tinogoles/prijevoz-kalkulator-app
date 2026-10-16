@@ -38,7 +38,6 @@ class KalkulatorHomeScreen extends StatefulWidget {
 }
 
 class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
-  // Službene relacije za automatsku detekciju i cjenike
   final List<Map<String, dynamic>> _bazaRelacijaCestarina = [
     {
       'kljucneRijeci': ['zagreb', 'split'],
@@ -86,7 +85,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
     },
   ];
 
-  // Kontroleri
   final TextEditingController _nazivKalkulacijeController = TextEditingController(text: 'Izlet - Ruta po točkama');
   final TextEditingController _nazivPrijevoznikaController = TextEditingController(text: 'Moj Prijevoz d.o.o.');
   final TextEditingController _oibPrijevoznikaController = TextEditingController(text: '12345678901');
@@ -95,7 +93,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
   final TextEditingController _nazivKlijentaController = TextEditingController(text: 'Turistička agencija / Klijent');
   final TextEditingController _kontaktKlijentaController = TextEditingController(text: 'info@klijent.com');
 
-  // 4 polja za rute (Primarni unos)
   final TextEditingController _polazisteController = TextEditingController(text: 'Zagreb');
   final TextEditingController _odrediste1Controller = TextEditingController();
   final TextEditingController _odrediste2Controller = TextEditingController();
@@ -110,7 +107,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
   final TextEditingController _kmController = TextEditingController(text: '780'); 
   final TextEditingController _cestarinaController = TextEditingController(text: '35.00'); 
 
-  // Opcije za autocestu
   bool _koristiAutocestu = true;
   String _odabranaAutocesta = 'HAC (Hrvatske autoceste)';
   final List<String> _opcijeAutocesta = [
@@ -156,7 +152,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
     _azurirajKilometreICestarinu();
   }
 
-  // Automatska detekcija cestarine prema unesenim točkama
   void _automatskiDetektirajCestarinu(List<String> tocke) {
     String spojeneTocke = tocke.join(' ').toLowerCase();
     bool pronadeno = false;
@@ -180,14 +175,8 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
         break;
       }
     }
-
-    // Ako relacija nije u poznatoj bazi autocesta, ostavljamo korisniku slobodu ili postavljamo na 0 ako je lokalno
-    if (!pronadeno && tocke.length >= 2) {
-      // Može ostaviti zadnje ili automatski uključiti/isključiti prema želji
-    }
   }
 
-  // Sekvencijalni izračun rute (1 -> 2 -> 3 -> 4) preko OSRM-a
   Future<void> _izracunajRutuMultiPoint() async {
     List<String> tocke = [];
     
@@ -258,7 +247,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
         _azurirajKilometreICestarinu();
       });
 
-      // Pokreni automatsku detekciju autoceste na temelju unesenih točaka
       _automatskiDetektirajCestarinu(tocke);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -503,7 +491,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 1. PRIMARNI DIO: UNOS RUTE PO TOČKAMA
             Card(
               elevation: 3,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -564,7 +551,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
             ),
             const SizedBox(height: 16),
 
-            // 2. KORIŠTENJE AUTOCESTE I CESTARINA (Automatski s mogućnošću ručnog isključivanja/uređivanja)
             Card(
               elevation: 2,
               color: Colors.amber.shade50,
@@ -576,4 +562,118 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                   children: [
                     const Text('Korištenje Autoceste i Cestarina', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFEA580C))),
                     const SizedBox(height: 8),
-                    SwitchListTile
+                    SwitchListTile(
+                      title: const Text('Hoće li se koristiti autocesta?', style: TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: const Text('Automatski uključeno prema ruti (možete ručno isključiti)', style: TextStyle(fontSize: 11)),
+                      value: _koristiAutocestu,
+                      activeColor: const Color(0xFFEA580C),
+                      contentPadding: EdgeInsets.zero,
+                      onChanged: (bool value) {
+                        setState(() {
+                          _koristiAutocestu = value;
+                          _azurirajKilometreICestarinu();
+                        });
+                      },
+                    ),
+                    if (_koristiAutocestu) ...[
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: _odabranaAutocesta,
+                        decoration: const InputDecoration(
+                          labelText: 'Odabrani sustav naplate / autocesta',
+                          border: OutlineInputBorder(),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        items: _opcijeAutocesta.map((autocesta) {
+                          return DropdownMenuItem<String>(
+                            value: autocesta,
+                            child: Text(autocesta, style: const TextStyle(fontWeight: FontWeight.w500)),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() {
+                              _odabranaAutocesta = val;
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _cestarinaController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Iznos cestarine (€)',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.toll),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        onChanged: (_) => _izracunajTroskove(),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            Card(
+              elevation: 2,
+              color: Colors.blue.shade50,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Naziv kalkulacije / ponude', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0284C7))),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _nazivKalkulacijeController,
+                      decoration: const InputDecoration(
+                        labelText: 'Naziv',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.bookmark),
+                        filled: true,
+                        fillColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Podaci Prijevoznika i Klijenta', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    TextField(controller: _nazivPrijevoznikaController, decoration: const InputDecoration(labelText: 'Naziv Prijevoznika', border: OutlineInputBorder(), prefixIcon: Icon(Icons.business))),
+                    const SizedBox(height: 12),
+                    TextField(controller: _nazivKlijentaController, decoration: const InputDecoration(labelText: 'Naziv Klijenta / Agencije', border: OutlineInputBorder(), prefixIcon: Icon(Icons.person_outline))),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Vozilo i Parametri Troškova', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: _odabrano
