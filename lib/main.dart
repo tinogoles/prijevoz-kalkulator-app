@@ -38,7 +38,6 @@ class KalkulatorHomeScreen extends StatefulWidget {
 }
 
 class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
-  // Službene relacije prema cjenicima
   final List<Map<String, dynamic>> _sluzbeneRelacije = [
     {
       'naziv': 'A1: Zagreb - Split (HAC)',
@@ -98,7 +97,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
     },
   ];
 
-  // Kontroleri
   final TextEditingController _nazivKalkulacijeController = TextEditingController(text: 'Izlet - Split');
   final TextEditingController _nazivPrijevoznikaController = TextEditingController(text: 'Moj Prijevoz d.o.o.');
   final TextEditingController _oibPrijevoznikaController = TextEditingController(text: '12345678901');
@@ -108,10 +106,10 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
   final TextEditingController _kontaktKlijentaController = TextEditingController(text: 'info@klijent.com');
 
   // 4 zasebna polja za lokacije rute
-  final TextEditingController _tocka1Controller = TextEditingController(text: 'Zagreb'); // Polazište
-  final TextEditingController _tocka2Controller = TextEditingController(); // Međuodredište A (opcionalno)
-  final TextEditingController _tocka3Controller = TextEditingController(); // Međuodredište B (opcionalno)
-  final TextEditingController _tocka4Controller = TextEditingController(text: 'Split'); // Konačno odredište
+  final TextEditingController _tocka1Controller = TextEditingController(text: 'Zagreb');
+  final TextEditingController _tocka2Controller = TextEditingController();
+  final TextEditingController _tocka3Controller = TextEditingController();
+  final TextEditingController _tocka4Controller = TextEditingController(text: 'Split');
 
   final TextEditingController _datumPolaskaController = TextEditingController(text: '2026-06-01');
   final TextEditingController _datumPovratkaController = TextEditingController(text: '2026-06-03');
@@ -158,7 +156,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
     _azurirajKilometreICestarinu();
   }
 
-  // Sekvencijalni izračun rute (1 -> 2 -> 3 -> 4) preko OSRM-a
   Future<void> _izracunajRutuMultiPoint() async {
     List<String> aktivneTocke = [];
     
@@ -169,7 +166,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
 
     if (aktivneTocke.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Morate unijeti barem Polazište (1) i Konačno odredište (4).'), backgroundColor: Colors.orange),
+        const SnackBar(content: Text('Unesite barem Polazište (1) i Konačno odredište (4).'), backgroundColor: Colors.orange),
       );
       return;
     }
@@ -205,7 +202,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
       }
 
       double ukupnoMetara = 0;
-      // Sekvencijalno zbrajanje dionica: (1 -> 2) + (2 -> 3) + (3 -> 4)
       for (int i = 0; i < koordinate.length - 1; i++) {
         var start = koordinate[i];
         var end = koordinate[i + 1];
@@ -488,7 +484,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // PRETRAŽIVAČ SLUŽBENIH CESTARINA
             Card(
               elevation: 3,
               color: Colors.amber.shade50,
@@ -532,8 +527,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Naziv Kalkulacije
             Card(
               elevation: 2,
               color: Colors.blue.shade50,
@@ -560,8 +553,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Podaci prijevoznika
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -586,8 +577,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Podaci klijenta
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -606,8 +595,6 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // VOZILO I 4 ZASEBNA POLJA ZA RUTE
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -640,7 +627,4 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                     const SizedBox(height: 8),
                     TextField(controller: _tocka2Controller, decoration: const InputDecoration(labelText: '2) Međuodredište A (opcionalno)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.add_location_alt_outlined))),
                     const SizedBox(height: 8),
-                    TextField(controller: _tocka3Controller, decoration: const InputDecoration(labelText: '3) Međuodredište B (opcionalno)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.add_location_alt_outlined))),
-                    const SizedBox(height: 8),
-                    TextField(controller: _tocka4Controller, decoration: const InputDecoration(labelText: '4) Konačno odredište (obavezno)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.location_on))),
-                    const SizedBox(height: 12),
+                    TextField(controller: _tocka3Controller
