@@ -29,32 +29,12 @@ jobs:
       - name: 📦 Provjeri ovisnosti
         run: flutter pub get
 
+      - name: 🛠️ Generiraj Android strukturu (v2 embedding)
+        run: flutter create . --platforms=android --org com.example
+
       - name: 🌐 Dodaj dozvolu za internet u AndroidManifest
         run: |
-          mkdir -p android/app/src/main
-          cat <<EOF > android/app/src/main/AndroidManifest.xml
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <uses-permission android:name="android.permission.INTERNET"/>
-              <application
-                  android:label="prijevoz_kalkulator"
-                  android:name="\${applicationName}"
-                  android:icon="@mipmap/ic_launcher">
-                  <activity
-                      android:name=".MainActivity"
-                      android:exported="true"
-                      android:launchMode="singleTop"
-                      android:theme="@style/LaunchTheme"
-                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-                      android:hardwareAccelerated="true"
-                      android:windowSoftInputMode="adjustResize">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN"/>
-                          <category android:name="android.intent.category.LAUNCHER"/>
-                      </intent-filter>
-                  </activity>
-              </application>
-          </manifest>
-          EOF
+          sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"/>' android/app/src/main/AndroidManifest.xml
 
       - name: 🔨 Izgradi APK
         run: flutter build apk --release
