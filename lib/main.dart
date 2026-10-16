@@ -289,8 +289,33 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
     setState(() {
       double km = double.tryParse(_kmController.text) ?? 0;
       double cestarina = double.tryParse(_cestarinaController.text) ?? 0;
-      double cijenaGoriva = double.try
-        void _spremiKalkulaciju() {
+      double cijenaGoriva = double.tryParse(_cijenaGorivaController.text) ?? 0;
+      double dnevnicaPoDanu = double.tryParse(_dnevnicaController.text) ?? 0;
+      int brojDana = int.tryParse(_brojDanaController.text) ?? 1;
+      
+      double cijenaNocenjaPoDanu = double.tryParse(_cijenaNocenjaController.text) ?? 0;
+      double marzaPostotak = double.tryParse(_marzaController.text) ?? 0;
+
+      double potrosnjaNa100km = _potrosnjaVozila[_odabranoVozilo] ?? 9.0;
+      int brojNocenja = (brojDana > 1) ? (brojDana - 1) : 0;
+
+      _trosakGoriva = (km / 100) * potrosnjaNa100km * cijenaGoriva;
+      _trosakCestarine = _koristiAutocestu ? cestarina : 0;
+      _trosakVozaca = dnevnicaPoDanu * (brojDana > 0 ? brojDana : 1);
+
+      if (_tkoPlacaNocenje == 'Prijevoznik placa') {
+        _trosakNocenja = cijenaNocenjaPoDanu * brojNocenja;
+      } else {
+        _trosakNocenja = 0;
+      }
+
+      _ukupniCistiTrosak = _trosakGoriva + _trosakCestarine + _trosakVozaca + _trosakNocenja;
+      _zarada = _ukupniCistiTrosak * (marzaPostotak / 100);
+      _ukupnaCijenaPonude = _ukupniCistiTrosak + _zarada;
+    });
+  }
+
+  void _spremiKalkulaciju() {
     _izracunajTroskove();
     setState(() {
       _kalkulacijaIzradena = true;
@@ -336,7 +361,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                   ['Dnevnice vozaca', '${_trosakVozaca.toStringAsFixed(2)} €'],
                   ['Nocenje', '${_trosakNocenja.toStringAsFixed(2)} € ($_tkoPlacaNocenje)'],
                   ['Cisti troskovi ukupno', '${_ukupniCistiTrosak.toStringAsFixed(2)} €'],
-                  ['Planirana marza (${_marzaController.text}\%)', '${_zarada.toStringAsFixed(2)} €'],
+                  ['Planirana marza (${_marzaController.text}%)', '${_zarada.toStringAsFixed(2)} €'],
                 ],
                 headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
                 headerDecoration: const pw.BoxDecoration(color: PdfColors.red900),
@@ -585,5 +610,194 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                           filled: true,
                           fillColor: Colors.white,
                         ),
-                        onChanged: (_) => _iz
-                        
+                        onChanged: (_) => _izracunajTroskove(),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            Card(
+              elevation: 2,
+              color: Colors.blue.shade50,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Naziv kalkulacije / ponude', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0284C7))),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _nazivKalkulacijeController,
+                      decoration: const InputDecoration(
+                        labelText: 'Naziv',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.bookmark),
+                        filled: true,
+                        fillColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Podaci Prijevoznika i Klijenta', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    TextField(controller: _nazivPrijevoznikaController, decoration: const InputDecoration(labelText: 'Naziv Prijevoznika', border: OutlineInputBorder(), prefixIcon: Icon(Icons.business))),
+                    const SizedBox(height: 12),
+                    TextField(controller: _nazivKlijentaController, decoration: const InputDecoration(labelText: 'Naziv Klijenta / Agencije', border: OutlineInputBorder(), prefixIcon: Icon(Icons.person_outline))),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Vozilo i Parametri Troškova', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: _odabranoVozilo,
+                      decoration: const InputDecoration(labelText: 'Kategorija Vozila', border: OutlineInputBorder(), prefixIcon: Icon(Icons.directions_bus)),
+                      items: _potrosnjaVozila.keys.map((String key) {
+                        return DropdownMenuItem<String>(value: key, child: Text(key, style: const TextStyle(fontSize: 14)));
+                      }).toList(),
+                      onChanged: (newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            _odabranoVozilo = newValue;
+                            _azurirajKilometreICestarinu();
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(child: TextField(controller: _cijenaGorivaController, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Gorivo (€/L)', border: OutlineInputBorder()), onChanged: (_) => _izracunajTroskove())),
+                        const SizedBox(width: 8),
+                        Expanded(child: TextField(controller: _dnevnicaController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Dnevnica/dan (€)', border: OutlineInputBorder()), onChanged: (_) => _izracunajTroskove())),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _marzaController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Marža (%)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.percent)),
+                      onChanged: (_) => _izracunajTroskove(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            ElevatedButton.icon(
+              onPressed: _spremiKalkulaciju,
+              icon: const Icon(Icons.calculate, color: Colors.white),
+              label: const Text('1. KORAK: IZRADI I SPREMI KALKULACIJU', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: const Color(0xFF0284C7),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            if (_kalkulacijaIzradena) ...[
+              Card(
+                color: const Color(0xFF0C4A6E),
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Rezultat kalkulacije: "${_nazivKalkulacijeController.text}"', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.amber)),
+                      const Divider(color: Colors.white24, height: 20),
+                      _prikaziRedak('Trošak Goriva:', '${_trosakGoriva.toStringAsFixed(2)} €'),
+                      _prikaziRedak('Trošak Cestarine:', '${_trosakCestarine.toStringAsFixed(2)} € (${_koristiAutocestu ? _odabranaAutocesta : "Bez autoceste"})'),
+                      _prikaziRedak('Ukupno Dnevnice:', '${_trosakVozaca.toStringAsFixed(2)} €'),
+                      const Divider(color: Colors.white24, height: 20),
+                      _prikaziRedak('Čisti Troškovi:', '${_ukupniCistiTrosak.toStringAsFixed(2)} €', isBold: true),
+                      _prikaziRedak('Planirana Zarada:', '${_zarada.toStringAsFixed(2)} €', color: Colors.amber),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(color: const Color(0xFFEA580C), borderRadius: BorderRadius.circular(12)),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('KONAČNA CIJENA ZA PONUDU:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                            Text('${_ukupnaCijenaPonude.toStringAsFixed(2)} €', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: _generirajInternuKalkulacijuPdf,
+                icon: const Icon(Icons.archive, color: Colors.red),
+                label: const Text('Spremi internu kalkulaciju (PDF Arhiva)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.red)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: const BorderSide(color: Colors.red, width: 1.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: _generirajPdfPonudu,
+                icon: const Icon(Icons.picture_as_pdf),
+                label: const Text('2. KORAK: GENERIRAJ PONUDU ZA KLIJENTA', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: const Color(0xFF16A34A),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _prikaziRedak(String naziv, String iznos, {bool isBold = false, Color color = Colors.white70}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(naziv, style: TextStyle(color: color, fontSize: 14, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
+          Text(iznos, style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
+        ],
+      ),
+    );
+  }
+}
