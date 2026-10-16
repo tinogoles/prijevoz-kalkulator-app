@@ -107,7 +107,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
   final TextEditingController _nazivKlijentaController = TextEditingController(text: 'Turistička agencija / Klijent');
   final TextEditingController _kontaktKlijentaController = TextEditingController(text: 'info@klijent.com');
 
-  // Točke rute
+  // 4 polja za rute
   final TextEditingController _polazisteController = TextEditingController(text: 'Zagreb');
   final TextEditingController _odrediste1Controller = TextEditingController();
   final TextEditingController _odrediste2Controller = TextEditingController();
@@ -158,7 +158,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
     _azurirajKilometreICestarinu();
   }
 
-  // Besplatni OpenStreetMap (Nominatim + OSRM) za višetroškovni izračun rute
+  // Sekvencijalni izračun rute (1 -> 2 -> 3 -> 4)
   Future<void> _izracunajRutuMultiPoint() async {
     List<String> tocke = [];
     
