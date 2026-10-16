@@ -289,31 +289,8 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
     setState(() {
       double km = double.tryParse(_kmController.text) ?? 0;
       double cestarina = double.tryParse(_cestarinaController.text) ?? 0;
-      double cijenaGoriva = double.tryParse(_cijenaGorivaController.text) ?? 0;
-      double dnevnicaPoDanu = double.tryParse(_dnevnicaController.text) ?? 0;
-      int brojDana = int.tryParse(_brojDanaController.text) ?? 1;
-      
-      double cijenaNocenjaPoDanu = double.tryParse(_cijenaNocenjaController.text) ?? 0;
-      double marzaPostotak = double.tryParse(_marzaController.text) ?? 0;
-
-      double potrosnjaNa100km = _potrosnjaVozila[_odabranoVozilo] ?? 9.0;
-      int brojNocenja = (brojDana > 1) ? (brojDana - 1) : 0;
-
-      _trosakGoriva = (km / 100) * potrosnjaNa100km * cijenaGoriva;
-      _trosakCestarine = _koristiAutocestu ? cestarina : 0;
-      _trosakVozaca = dnevnicaPoDanu * (brojDana > 0 ? brojDana : 1);
-
-      if (_tkoPlacaNocenje == 'Prijevoznik placa') {
-        _trosakNocenja = cijenaNocenjaPoDanu * brojNocenja;
-      } else {
-        _trosakNocenja = 0;
-      }
-
-      _ukupniCistiTrosak = _trosakGoriva + _trosakCestarine + _trosakVozaca + _trosakNocenja;
-      _zarada = _ukupniCistiTrosak * (marzaPostotak / 100);
-      _ukupnaCijenaPonude = _ukupniCistiTrosak + _zarada;
-    });
-  }void _spremiKalkulaciju() {
+      double cijenaGoriva = double.try
+        void _spremiKalkulaciju() {
     _izracunajTroskove();
     setState(() {
       _kalkulacijaIzradena = true;
@@ -362,4 +339,251 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                   ['Planirana marza (${_marzaController.text}\%)', '${_zarada.toStringAsFixed(2)} €'],
                 ],
                 headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
-                headerDecoration: const pw
+                headerDecoration: const pw.BoxDecoration(color: PdfColors.red900),
+                cellPadding: const pw.EdgeInsets.all(6),
+              ),
+              pw.SizedBox(height: 20),
+              pw.Container(
+                padding: const pw.EdgeInsets.all(10),
+                decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('KONACNA CIJENA ZA KLIJENTA:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    pw.Text('${_ukupnaCijenaPonude.toStringAsFixed(2)} €', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'Kalkulacija_${_nazivKalkulacijeController.text}.pdf',
+    );
+  }
+
+  Future<void> _generirajPdfPonudu() async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(_nazivPrijevoznikaController.text, style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
+                      pw.Text('Adresa: ${_adresaPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 10)),
+                      pw.Text('OIB: ${_oibPrijevoznikaController.text}', style: const pw.TextStyle(fontSize: 10)),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text('PONUDA ZA PRIJEVOZ', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
+                      pw.Text('Predmet: ${_nazivKalkulacijeController.text}', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                      pw.Text('Datum: ${DateTime.now().toLocal().toString().split(' ')[0]}', style: const pw.TextStyle(fontSize: 10)),
+                    ],
+                  ),
+                ],
+              ),
+              pw.Divider(height: 30),
+              pw.Text('Za klijenta:', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+              pw.Text('Naziv: ${_nazivKlijentaController.text}'),
+              pw.Text('Kontakt: ${_kontaktKlijentaController.text}'),
+              pw.SizedBox(height: 25),
+              pw.Container(
+                padding: const pw.EdgeInsets.all(15),
+                decoration: const pw.BoxDecoration(
+                  color: PdfColors.grey200, 
+                  borderRadius: pw.BorderRadius.all(pw.Radius.circular(8)),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('SPECIFIKACIJA USLUGE', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
+                    pw.SizedBox(height: 10),
+                    pw.Text('Ruta: ${_dohvatiOpisRelacije()} (${_povratnoPutovanje ? "Povratno putovanje" : "Jednosmjerno"})', style: pw.TextStyle(fontSize: 12)),
+                    pw.Text('Autocesta: ${_koristiAutocestu ? _odabranaAutocesta : "Lokalna cesta (bez autoceste)"}', style: pw.TextStyle(fontSize: 12)),
+                    pw.Text('Tip vozila: $_odabranoVozilo', style: pw.TextStyle(fontSize: 12)),
+                    pw.Text('Datum polaska: ${_datumPolaskaController.text}', style: pw.TextStyle(fontSize: 12)),
+                    pw.Text('Datum povratka: ${_datumPovratkaController.text}', style: pw.TextStyle(fontSize: 12)),
+                  ],
+                ),
+              ),
+              pw.SizedBox(height: 30),
+              pw.Container(
+                alignment: pw.Alignment.centerRight,
+                padding: const pw.EdgeInsets.all(15),
+                decoration: const pw.BoxDecoration(
+                  color: PdfColors.orange800, 
+                  borderRadius: pw.BorderRadius.all(pw.Radius.circular(8)),
+                ),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('UKUPNA CIJENA USLUGE:', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+                    pw.Text('${_ukupnaCijenaPonude.toStringAsFixed(2)} €', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+                  ],
+                ),
+              ),
+              pw.Spacer(),
+              pw.Center(
+                child: pw.Text('Zahvaljujemo na povjerenju! Ponuda vrijedi 15 dana od datuma izdavanja.', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'Ponuda_${_nazivKalkulacijeController.text}.pdf',
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Kalkulator Prijevoza (HR, SLO, BiH)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Card(
+              elevation: 3,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Planiranje Rute po Točkama (Primarno)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0284C7))),
+                    const SizedBox(height: 8),
+                    const Text('Unesite relaciju (Polazište -> Međuodredišta -> Konačno odredište):', style: TextStyle(fontSize: 12, color: Colors.black87)),
+                    const SizedBox(height: 12),
+                    TextField(controller: _polazisteController, decoration: const InputDecoration(labelText: '1) Polazište (obavezno)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.trip_origin))),
+                    const SizedBox(height: 8),
+                    TextField(controller: _odrediste1Controller, decoration: const InputDecoration(labelText: '2) Međuodredište A (opcionalno)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.add_location_alt_outlined))),
+                    const SizedBox(height: 8),
+                    TextField(controller: _odrediste2Controller, decoration: const InputDecoration(labelText: '3) Međuodredište B (opcionalno)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.add_location_alt_outlined))),
+                    const SizedBox(height: 8),
+                    TextField(controller: _konacnoOdredisteController, decoration: const InputDecoration(labelText: '4) Konačno odredište (obavezno)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.location_on))),
+                    const SizedBox(height: 12),
+                    
+                    ElevatedButton.icon(
+                      onPressed: _isLoadingRoute ? null : _izracunajRutuMultiPoint,
+                      icon: _isLoadingRoute 
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                          : const Icon(Icons.route, color: Colors.white),
+                      label: Text(_isLoadingRoute ? 'Izračunavam dionice...' : 'Izračunaj kilometre po točkama (OSRM)'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0284C7),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    CheckboxListTile(
+                      title: const Text('Povratno putovanje (U oba smjera)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: const Text('Automatski množi kilometre s 2', style: TextStyle(fontSize: 12)),
+                      value: _povratnoPutovanje,
+                      activeColor: Theme.of(context).colorScheme.primary,
+                      contentPadding: EdgeInsets.zero,
+                      onChanged: (bool? value) {
+                        setState(() {
+                          _povratnoPutovanje = value ?? true;
+                          _azurirajKilometreICestarinu();
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _kmController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Ukupno Kilometara', border: OutlineInputBorder(), prefixIcon: Icon(Icons.speed), suffixText: 'km'),
+                      onChanged: (_) => _izracunajTroskove(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            Card(
+              elevation: 2,
+              color: Colors.amber.shade50,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Korištenje Autoceste i Cestarina', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFEA580C))),
+                    const SizedBox(height: 8),
+                    SwitchListTile(
+                      title: const Text('Hoće li se koristiti autocesta?', style: TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: const Text('Automatski uključeno prema ruti (možete ručno isključiti)', style: TextStyle(fontSize: 11)),
+                      value: _koristiAutocestu,
+                      activeColor: const Color(0xFFEA580C),
+                      contentPadding: EdgeInsets.zero,
+                      onChanged: (bool value) {
+                        setState(() {
+                          _koristiAutocestu = value;
+                          _azurirajKilometreICestarinu();
+                        });
+                      },
+                    ),
+                    if (_koristiAutocestu) ...[
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: _odabranaAutocesta,
+                        decoration: const InputDecoration(
+                          labelText: 'Odabrani sustav naplate / autocesta',
+                          border: OutlineInputBorder(),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        items: _opcijeAutocesta.map((autocesta) {
+                          return DropdownMenuItem<String>(
+                            value: autocesta,
+                            child: Text(autocesta, style: const TextStyle(fontWeight: FontWeight.w500)),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() {
+                              _odabranaAutocesta = val;
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _cestarinaController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Iznos cestarine (€)',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.toll),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        onChanged: (_) => _iz
+                        
