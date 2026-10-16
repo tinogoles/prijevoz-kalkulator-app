@@ -38,16 +38,13 @@ class KalkulatorHomeScreen extends StatefulWidget {
 }
 
 class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
-  // Službene relacije prema cjenicima
-  final List<Map<String, dynamic>> _sluzbeneRelacije = [
+  // Službene relacije za automatsku detekciju i cjenike
+  final List<Map<String, dynamic>> _bazaRelacijaCestarina = [
     {
-      'naziv': 'A1: Zagreb - Split (HAC)',
-      'polaziste': 'Zagreb',
-      'odrediste1': '',
-      'odrediste2': '',
-      'konacnoOdrediste': 'Split',
+      'kljucneRijeci': ['zagreb', 'split'],
+      'nazivAutoceste': 'HAC (Hrvatske autoceste)',
       'kmJednosmjerno': 390.0,
-      'cestarinaJednosmjerno': {
+      'cestarine': {
         'Kombi 8+1 (9L / 100km)': 17.50,
         'Mini bus <20 (15L / 100km)': 27.60,
         'Midi bus 35 (30L / 100km)': 41.85,
@@ -55,13 +52,10 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
       }
     },
     {
-      'naziv': 'A2: Zagreb - Trakošćan (AZM)',
-      'polaziste': 'Zagreb',
-      'odrediste1': '',
-      'odrediste2': '',
-      'konacnoOdrediste': 'Trakošćan',
+      'kljucneRijeci': ['zagreb', 'trakošćan', 'trakoscan'],
+      'nazivAutoceste': 'AZM (Zagreb - Macelj)',
       'kmJednosmjerno': 60.0,
-      'cestarinaJednosmjerno': {
+      'cestarine': {
         'Kombi 8+1 (9L / 100km)': 4.00,
         'Mini bus <20 (15L / 100km)': 6.70,
         'Midi bus 35 (30L / 100km)': 10.00,
@@ -69,13 +63,10 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
       }
     },
     {
-      'naziv': 'A3: Zagreb - Lipovac (HAC)',
-      'polaziste': 'Zagreb',
-      'odrediste1': '',
-      'odrediste2': '',
-      'konacnoOdrediste': 'Lipovac',
+      'kljucneRijeci': ['zagreb', 'lipovac'],
+      'nazivAutoceste': 'HAC (Hrvatske autoceste)',
       'kmJednosmjerno': 250.0,
-      'cestarinaJednosmjerno': {
+      'cestarine': {
         'Kombi 8+1 (9L / 100km)': 18.60,
         'Mini bus <20 (15L / 100km)': 25.50,
         'Midi bus 35 (30L / 100km)': 37.40,
@@ -83,13 +74,10 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
       }
     },
     {
-      'naziv': 'Međunarodna: Zagreb - Ljubljana (SLO)',
-      'polaziste': 'Zagreb',
-      'odrediste1': '',
-      'odrediste2': '',
-      'konacnoOdrediste': 'Ljubljana',
+      'kljucneRijeci': ['zagreb', 'ljubljana'],
+      'nazivAutoceste': 'DARS (Slovenske autoceste)',
       'kmJednosmjerno': 140.0,
-      'cestarinaJednosmjerno': {
+      'cestarine': {
         'Kombi 8+1 (9L / 100km)': 16.00,
         'Mini bus <20 (15L / 100km)': 25.00,
         'Midi bus 35 (30L / 100km)': 40.00,
@@ -99,7 +87,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
   ];
 
   // Kontroleri
-  final TextEditingController _nazivKalkulacijeController = TextEditingController(text: 'Izlet - Split');
+  final TextEditingController _nazivKalkulacijeController = TextEditingController(text: 'Izlet - Ruta po točkama');
   final TextEditingController _nazivPrijevoznikaController = TextEditingController(text: 'Moj Prijevoz d.o.o.');
   final TextEditingController _oibPrijevoznikaController = TextEditingController(text: '12345678901');
   final TextEditingController _adresaPrijevoznikaController = TextEditingController(text: 'Zagrebačka cesta 10, Zagreb');
@@ -107,7 +95,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
   final TextEditingController _nazivKlijentaController = TextEditingController(text: 'Turistička agencija / Klijent');
   final TextEditingController _kontaktKlijentaController = TextEditingController(text: 'info@klijent.com');
 
-  // 4 polja za rute
+  // 4 polja za rute (Primarni unos)
   final TextEditingController _polazisteController = TextEditingController(text: 'Zagreb');
   final TextEditingController _odrediste1Controller = TextEditingController();
   final TextEditingController _odrediste2Controller = TextEditingController();
@@ -117,11 +105,21 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
   final TextEditingController _datumPovratkaController = TextEditingController(text: '2026-06-03');
   
   double _bazaKmJednosmjerno = 390.0;
-  double _bazaCestarinaJednosmjerno = 17.50;
   bool _povratnoPutovanje = true; 
 
   final TextEditingController _kmController = TextEditingController(text: '780'); 
   final TextEditingController _cestarinaController = TextEditingController(text: '35.00'); 
+
+  // Opcije za autocestu
+  bool _koristiAutocestu = true;
+  String _odabranaAutocesta = 'HAC (Hrvatske autoceste)';
+  final List<String> _opcijeAutocesta = [
+    'HAC (Hrvatske autoceste)',
+    'AZM (Zagreb - Macelj)',
+    'DARS (Slovenske autoceste)',
+    'Autoceste FBiH / RS',
+    'Bez autoceste / Lokalna cesta'
+  ];
 
   final TextEditingController _cijenaGorivaController = TextEditingController(text: '1.45');
   final TextEditingController _dnevnicaController = TextEditingController(text: '80');
@@ -158,7 +156,38 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
     _azurirajKilometreICestarinu();
   }
 
-  // Sekvencijalni izračun rute (1 -> 2 -> 3 -> 4)
+  // Automatska detekcija cestarine prema unesenim točkama
+  void _automatskiDetektirajCestarinu(List<String> tocke) {
+    String spojeneTocke = tocke.join(' ').toLowerCase();
+    bool pronadeno = false;
+
+    for (var relacija in _bazaRelacijaCestarina) {
+      List<String> kljucneRijeci = relacija['kljucneRijeci'];
+      bool pogodak = kljucneRijeci.every((rijec) => spojeneTocke.contains(rijec));
+
+      if (pogodak) {
+        pronadeno = true;
+        setState(() {
+          _koristiAutocestu = true;
+          _odabranaAutocesta = relacija['nazivAutoceste'];
+          Map<String, dynamic> cestarineMap = relacija['cestarine'];
+          if (cestarineMap.containsKey(_odabranoVozilo)) {
+            double jednosmjernaCestarina = cestarineMap[_odabranoVozilo];
+            double faktor = _povratnoPutovanje ? 2.0 : 1.0;
+            _cestarinaController.text = (jednosmjernaCestarina * faktor).toStringAsFixed(2);
+          }
+        });
+        break;
+      }
+    }
+
+    // Ako relacija nije u poznatoj bazi autocesta, ostavljamo korisniku slobodu ili postavljamo na 0 ako je lokalno
+    if (!pronadeno && tocke.length >= 2) {
+      // Može ostaviti zadnje ili automatski uključiti/isključiti prema želji
+    }
+  }
+
+  // Sekvencijalni izračun rute (1 -> 2 -> 3 -> 4) preko OSRM-a
   Future<void> _izracunajRutuMultiPoint() async {
     List<String> tocke = [];
     
@@ -229,8 +258,11 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
         _azurirajKilometreICestarinu();
       });
 
+      // Pokreni automatsku detekciju autoceste na temelju unesenih točaka
+      _automatskiDetektirajCestarinu(tocke);
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Izračunata ruta (${tocke.length} točke): ${kmJedanSmjer.toStringAsFixed(1)} km (1 smjer)'), backgroundColor: Colors.green),
+        SnackBar(content: Text('Izračunato (${tocke.length} točke): ${kmJedanSmjer.toStringAsFixed(1)} km (1 smjer)'), backgroundColor: Colors.green),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -246,30 +278,12 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
   void _azurirajKilometreICestarinu() {
     double faktor = _povratnoPutovanje ? 2.0 : 1.0;
     _kmController.text = (_bazaKmJednosmjerno * faktor).toStringAsFixed(0);
-    _cestarinaController.text = (_bazaCestarinaJednosmjerno * faktor).toStringAsFixed(2);
+    
+    if (!_koristiAutocestu) {
+      _cestarinaController.text = '0.00';
+    }
+    
     _izracunajTroskove();
-  }
-
-  void _primjeniSluzbenuRelaciju(Map<String, dynamic> relacija) {
-    setState(() {
-      _polazisteController.text = relacija['polaziste'];
-      _odrediste1Controller.text = relacija['odrediste1'] ?? '';
-      _odrediste2Controller.text = relacija['odrediste2'] ?? '';
-      _konacnoOdredisteController.text = relacija['konacnoOdrediste'];
-      _bazaKmJednosmjerno = relacija['kmJednosmjerno'];
-      
-      Map<String, dynamic> cestarineMap = relacija['cestarinaJednosmjerno'];
-      if (cestarineMap.containsKey(_odabranoVozilo)) {
-        _bazaCestarinaJednosmjerno = cestarineMap[_odabranoVozilo];
-      }
-
-      _nazivKalkulacijeController.text = relacija['naziv'] + (_povratnoPutovanje ? ' (Povratno)' : ' (Jednosmjerno)');
-      _azurirajKilometreICestarinu();
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Učitano iz cjenika: ${relacija['naziv']}'), backgroundColor: Colors.blue),
-    );
   }
 
   String _dohvatiOpisRelacije() {
@@ -298,7 +312,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
       int brojNocenja = (brojDana > 1) ? (brojDana - 1) : 0;
 
       _trosakGoriva = (km / 100) * potrosnjaNa100km * cijenaGoriva;
-      _trosakCestarine = cestarina;
+      _trosakCestarine = _koristiAutocestu ? cestarina : 0;
       _trosakVozaca = dnevnicaPoDanu * (brojDana > 0 ? brojDana : 1);
 
       if (_tkoPlacaNocenje == 'Prijevoznik placa') {
@@ -347,18 +361,19 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
               pw.Divider(height: 20),
               pw.Text('Naziv: ${_nazivKalkulacijeController.text}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
               pw.Text('Klijent: ${_nazivKlijentaController.text}'),
-              pw.Text('Ruta / Relacija: ${_dohvatiOpisRelacije()} (${_povratnoPutovanje ? "Povratno putovanje" : "Jednosmjerno"})'),
+              pw.Text('Ruta: ${_dohvatiOpisRelacije()} (${_povratnoPutovanje ? "Povratno putovanje" : "Jednosmjerno"})'),
+              pw.Text('Autocesta: ${_koristiAutocestu ? _odabranaAutocesta : "Bez korištenja autoceste"}'),
               pw.Text('Vozilo: $_odabranoVozilo (${_kmController.text} km ukupno)'),
               pw.SizedBox(height: 15),
               pw.Table.fromTextArray(
                 headers: ['Stavka troska', 'Iznos'],
                 data: [
                   ['Gorivo', '${_trosakGoriva.toStringAsFixed(2)} €'],
-                  ['Cestarina (HAC/AZM cjenik)', '${_trosakCestarine.toStringAsFixed(2)} €'],
+                  ['Cestarina', '${_trosakCestarine.toStringAsFixed(2)} €'],
                   ['Dnevnice vozaca', '${_trosakVozaca.toStringAsFixed(2)} €'],
                   ['Nocenje', '${_trosakNocenja.toStringAsFixed(2)} € ($_tkoPlacaNocenje)'],
                   ['Cisti troskovi ukupno', '${_ukupniCistiTrosak.toStringAsFixed(2)} €'],
-                  ['Planirana marza (${_marzaController.text}%)', '${_zarada.toStringAsFixed(2)} €'],
+                  ['Planirana marza (${_marzaController.text}\%)', '${_zarada.toStringAsFixed(2)} €'],
                 ],
                 headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
                 headerDecoration: const pw.BoxDecoration(color: PdfColors.red900),
@@ -435,7 +450,8 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                   children: [
                     pw.Text('SPECIFIKACIJA USLUGE', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
                     pw.SizedBox(height: 10),
-                    pw.Text('Relacija / Ruta: ${_dohvatiOpisRelacije()} (${_povratnoPutovanje ? "Povratno putovanje" : "Jednosmjerno"})', style: pw.TextStyle(fontSize: 12)),
+                    pw.Text('Ruta: ${_dohvatiOpisRelacije()} (${_povratnoPutovanje ? "Povratno putovanje" : "Jednosmjerno"})', style: pw.TextStyle(fontSize: 12)),
+                    pw.Text('Autocesta: ${_koristiAutocestu ? _odabranaAutocesta : "Lokalna cesta (bez autoceste)"}', style: pw.TextStyle(fontSize: 12)),
                     pw.Text('Tip vozila: $_odabranoVozilo', style: pw.TextStyle(fontSize: 12)),
                     pw.Text('Datum polaska: ${_datumPolaskaController.text}', style: pw.TextStyle(fontSize: 12)),
                     pw.Text('Datum povratka: ${_datumPovratkaController.text}', style: pw.TextStyle(fontSize: 12)),
@@ -487,180 +503,44 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // PRETRAŽIVAČ SLUŽBENIH CESTARINA
+            // 1. PRIMARNI DIO: UNOS RUTE PO TOČKAMA
             Card(
               elevation: 3,
-              color: Colors.amber.shade50,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.search, color: Color(0xFFEA580C)),
-                        SizedBox(width: 8),
-                        Text('Pretrazivac cjenika (A1 HAC, A2 AZM, A3 HAC)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFFEA580C))),
-                      ],
-                    ),
+                    const Text('Planiranje Rute po Točkama (Primarno)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0284C7))),
                     const SizedBox(height: 8),
-                    const Text('Odaberite relaciju s autocesta za automatski unos cestarina i kilometara:', style: TextStyle(fontSize: 12, color: Colors.black87)),
+                    const Text('Unesite relaciju (Polazište -> Međuodredišta -> Konačno odredište):', style: TextStyle(fontSize: 12, color: Colors.black87)),
                     const SizedBox(height: 12),
-                    DropdownButtonFormField<Map<String, dynamic>>(
-                      decoration: const InputDecoration(
-                        labelText: 'Brzi odabir relacije iz cjenika',
-                        border: OutlineInputBorder(),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
-                      items: _sluzbeneRelacije.map((relacija) {
-                        return DropdownMenuItem<Map<String, dynamic>>(
-                          value: relacija,
-                          child: Text(relacija['naziv'], style: const TextStyle(fontWeight: FontWeight.w500)),
-                        );
-                      }).toList(),
-                      onChanged: (selectedRelacija) {
-                        if (selectedRelacija != null) {
-                          _primjeniSluzbenuRelaciju(selectedRelacija);
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Naziv Kalkulacije
-            Card(
-              elevation: 2,
-              color: Colors.blue.shade50,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Naziv kalkulacije / ponude', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0284C7))),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _nazivKalkulacijeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Naziv (npr. Izlet Split A1)',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.bookmark),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Podaci prijevoznika
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Podaci Prijevoznika', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 12),
-                    TextField(controller: _nazivPrijevoznikaController, decoration: const InputDecoration(labelText: 'Naziv Prijevoznika', border: OutlineInputBorder(), prefixIcon: Icon(Icons.business))),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(child: TextField(controller: _oibPrijevoznikaController, decoration: const InputDecoration(labelText: 'OIB', border: OutlineInputBorder(), prefixIcon: Icon(Icons.badge)))),
-                        const SizedBox(width: 8),
-                        Expanded(child: TextField(controller: _adresaPrijevoznikaController, decoration: const InputDecoration(labelText: 'Adresa', border: OutlineInputBorder(), prefixIcon: Icon(Icons.home)))),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Podaci klijenta
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Podaci Klijenta (Agencije)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 12),
-                    TextField(controller: _nazivKlijentaController, decoration: const InputDecoration(labelText: 'Naziv Klijenta', border: OutlineInputBorder(), prefixIcon: Icon(Icons.person_outline))),
-                    const SizedBox(height: 12),
-                    TextField(controller: _kontaktKlijentaController, decoration: const InputDecoration(labelText: 'Kontakt (Email / Tel)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.contact_mail))),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // VOZILO I PLANIRANJE RUTE PO TOČKAMA (1, 2, 3, 4)
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Vozilo i Planiranje Rute (do 4 točke)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      value: _odabranoVozilo,
-                      decoration: const InputDecoration(labelText: 'Kategorija Vozila', border: OutlineInputBorder(), prefixIcon: Icon(Icons.directions_bus)),
-                      items: _potrosnjaVozila.keys.map((String key) {
-                        return DropdownMenuItem<String>(value: key, child: Text(key, style: const TextStyle(fontSize: 14)));
-                      }).toList(),
-                      onChanged: (newValue) {
-                        if (newValue != null) {
-                          setState(() {
-                            _odabranoVozilo = newValue;
-                            _azurirajKilometreICestarinu();
-                          });
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('Unos točaka na ruti:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0284C7))),
-                    const SizedBox(height: 8),
                     TextField(controller: _polazisteController, decoration: const InputDecoration(labelText: '1) Polazište (obavezno)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.trip_origin))),
                     const SizedBox(height: 8),
-                    TextField(controller: _odrediste1Controller, decoration: const InputDecoration(labelText: '2) Međuodredište A (neobavezno)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.add_location_alt_outlined))),
+                    TextField(controller: _odrediste1Controller, decoration: const InputDecoration(labelText: '2) Međuodredište A (opcionalno)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.add_location_alt_outlined))),
                     const SizedBox(height: 8),
-                    TextField(controller: _odrediste2Controller, decoration: const InputDecoration(labelText: '3) Međuodredište B (neobavezno)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.add_location_alt_outlined))),
+                    TextField(controller: _odrediste2Controller, decoration: const InputDecoration(labelText: '3) Međuodredište B (opcionalno)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.add_location_alt_outlined))),
                     const SizedBox(height: 8),
                     TextField(controller: _konacnoOdredisteController, decoration: const InputDecoration(labelText: '4) Konačno odredište (obavezno)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.location_on))),
                     const SizedBox(height: 12),
                     
-                    // Gumb za izračun po točkama
                     ElevatedButton.icon(
                       onPressed: _isLoadingRoute ? null : _izracunajRutuMultiPoint,
                       icon: _isLoadingRoute 
                           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
                           : const Icon(Icons.route, color: Colors.white),
-                      label: Text(_isLoadingRoute ? 'Izračunavam sve dionice...' : 'Izračunaj kilometre po unesenim točkama'),
+                      label: Text(_isLoadingRoute ? 'Izračunavam dionice...' : 'Izračunaj kilometre po točkama (OSRM)'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF0284C7),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     CheckboxListTile(
                       title: const Text('Povratno putovanje (U oba smjera)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      subtitle: const Text('Automatski množi kilometre i cestarinu s 2', style: TextStyle(fontSize: 12)),
+                      subtitle: const Text('Automatski množi kilometre s 2', style: TextStyle(fontSize: 12)),
                       value: _povratnoPutovanje,
                       activeColor: Theme.of(context).colorScheme.primary,
                       contentPadding: EdgeInsets.zero,
@@ -672,18 +552,10 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                       },
                     ),
                     const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(child: TextField(controller: _datumPolaskaController, decoration: const InputDecoration(labelText: 'Datum polaska', border: OutlineInputBorder(), prefixIcon: Icon(Icons.calendar_today)))),
-                        const SizedBox(width: 8),
-                        Expanded(child: TextField(controller: _datumPovratkaController, decoration: const InputDecoration(labelText: 'Datum povratka', border: OutlineInputBorder(), prefixIcon: Icon(Icons.event)))),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
                     TextField(
                       controller: _kmController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Ukupno Kilometara (s uračunatim smjerom)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.speed), suffixText: 'km'),
+                      decoration: const InputDecoration(labelText: 'Ukupno Kilometara', border: OutlineInputBorder(), prefixIcon: Icon(Icons.speed), suffixText: 'km'),
                       onChanged: (_) => _izracunajTroskove(),
                     ),
                   ],
@@ -692,160 +564,16 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Parametri troškova
+            // 2. KORIŠTENJE AUTOCESTE I CESTARINA (Automatski s mogućnošću ručnog isključivanja/uređivanja)
             Card(
               elevation: 2,
+              color: Colors.amber.shade50,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Parametri Troskova i Marza (Interno)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(child: TextField(controller: _cijenaGorivaController, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Gorivo (€/L)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.local_gas_station)), onChanged: (_) => _izracunajTroskove())),
-                        const SizedBox(width: 8),
-                        Expanded(child: TextField(controller: _cestarinaController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Cestarina (€)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.toll)), onChanged: (_) => _izracunajTroskove())),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(child: TextField(controller: _dnevnicaController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Dnevnica/dan (€)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.person)), onChanged: (_) => _izracunajTroskove())),
-                        const SizedBox(width: 8),
-                        Expanded(child: TextField(controller: _brojDanaController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Broj dana', border: OutlineInputBorder(), prefixIcon: Icon(Icons.date_range)), onChanged: (_) => _izracunajTroskove())),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(child: TextField(controller: _cijenaNocenjaController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Nocenje / noc (€)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.hotel)), onChanged: (_) => _izracunajTroskove())),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            value: _tkoPlacaNocenje,
-                            decoration: const InputDecoration(labelText: 'Nocenje placa', border: OutlineInputBorder()),
-                            items: const [
-                              DropdownMenuItem(value: 'Prijevoznik placa', child: Text('Prijevoznik')),
-                              DropdownMenuItem(value: 'Klijent snosi trosak', child: Text('Klijent')),
-                            ],
-                            onChanged: (val) {
-                              if (val != null) {
-                                setState(() {
-                                  _tkoPlacaNocenje = val;
-                                  _izracunajTroskove();
-                                });
-                              }
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _marzaController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Marza (%)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.percent)),
-                      onChanged: (_) => _izracunajTroskove(),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Gumb za izradu kalkulacije
-            ElevatedButton.icon(
-              onPressed: _spremiKalkulaciju,
-              icon: const Icon(Icons.calculate, color: Colors.white),
-              label: const Text('1. KORAK: IZRADI I SPREMI KALKULACIJU', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: const Color(0xFF0284C7),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Prikaz rezultata ako je kalkulacija izrađena
-            if (_kalkulacijaIzradena) ...[
-              Card(
-                color: const Color(0xFF0C4A6E),
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Rezultat kalkulacije: "${_nazivKalkulacijeController.text}"', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.amber)),
-                      const Divider(color: Colors.white24, height: 20),
-                      _prikaziRedak('Trosak Goriva:', '${_trosakGoriva.toStringAsFixed(2)} €'),
-                      _prikaziRedak('Trosak Cestarine (HAC/AZM):', '${_trosakCestarine.toStringAsFixed(2)} €'),
-                      _prikaziRedak('Ukupno Dnevnice:', '${_trosakVozaca.toStringAsFixed(2)} €'),
-                      _prikaziRedak('Trosak Nocenja:', '${_trosakNocenja.toStringAsFixed(2)} € ($_tkoPlacaNocenje)'),
-                      const Divider(color: Colors.white24, height: 20),
-                      _prikaziRedak('Cisti Troskovi:', '${_ukupniCistiTrosak.toStringAsFixed(2)} €', isBold: true),
-                      _prikaziRedak('Planirana Zarada:', '${_zarada.toStringAsFixed(2)} €', color: Colors.amber),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(color: const Color(0xFFEA580C), borderRadius: BorderRadius.circular(12)),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('KONACNA CIJENA ZA PONUDU:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
-                            Text('${_ukupnaCijenaPonude.toStringAsFixed(2)} €', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: _generirajInternuKalkulacijuPdf,
-                icon: const Icon(Icons.archive, color: Colors.red),
-                label: const Text('Spremi internu kalkulaciju (PDF Arhiva)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.red)),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  side: const BorderSide(color: Colors.red, width: 1.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: _generirajPdfPonudu,
-                icon: const Icon(Icons.picture_as_pdf),
-                label: const Text('2. KORAK: GENERIRAJ PONUDU ZA KLIJENTA', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: const Color(0xFF16A34A),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _prikaziRedak(String naziv, String iznos, {bool isBold = false, Color color = Colors.white70}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(naziv, style: TextStyle(color: color, fontSize: 14, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
-          Text(iznos, style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
-        ],
-      ),
-    );
-  }
-}
+                    const Text('Korištenje Autoceste i Cestarina', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFEA580C))),
+                    const SizedBox(height: 8),
+                    SwitchListTile
