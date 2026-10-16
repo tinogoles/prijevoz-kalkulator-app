@@ -270,11 +270,11 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
                 ],
                 headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
                 headerDecoration: const pw.BoxDecoration(color: PdfColors.red900),
-                cellPadding: const EdgeInsets.all(6),
+                cellPadding: const pw.EdgeInsets.all(6),
               ),
               pw.SizedBox(height: 20),
               pw.Container(
-                padding: const EdgeInsets.all(10),
+                padding: const pw.EdgeInsets.all(10),
                 decoration: const pw.BoxDecoration(color: PdfColors.grey300),
                 child: pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -333,7 +333,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
               pw.Text('Kontakt: ${_kontaktKlijentaController.text}'),
               pw.SizedBox(height: 25),
               pw.Container(
-                padding: const EdgeInsets.all(15),
+                padding: const pw.EdgeInsets.all(15),
                 decoration: const pw.BoxDecoration(
                   color: PdfColors.grey200, 
                   borderRadius: pw.BorderRadius.all(pw.Radius.circular(8)),
@@ -353,7 +353,7 @@ class _KalkulatorHomeScreenState extends State<KalkulatorHomeScreen> {
               pw.SizedBox(height: 30),
               pw.Container(
                 alignment: pw.Alignment.centerRight,
-                padding: const EdgeInsets.all(15),
+                padding: const pw.EdgeInsets.all(15),
                 decoration: const pw.BoxDecoration(
                   color: PdfColors.orange800, 
                   borderRadius: pw.BorderRadius.all(pw.Radius.circular(8)),
