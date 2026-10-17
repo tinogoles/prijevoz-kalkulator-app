@@ -2,9 +2,9 @@ name: Build Web Release
 
 on:
   push:
-  branches: [ "feature/web-support" ]
+    branches: [ "feature/web-support" ]
   pull_request:
-  branches: [ "feature/web-support" ]
+    branches: [ "feature/web-support" ]
 
 jobs:
   build:
@@ -26,7 +26,7 @@ jobs:
       run: flutter build web --release
 
     - name: Upload Web Artifact
-      uses: upload-artifact@v4
+      uses: actions/upload-artifact@v4
       with:
         name: web-release
         path: build/web
