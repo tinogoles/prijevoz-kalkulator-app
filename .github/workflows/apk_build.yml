@@ -26,6 +26,9 @@ jobs:
       - name: Dohvati pakete
         run: flutter pub get
 
+      - name: Nadogradi Android/Gradle strukturu
+        run: flutter create . --org com.example --project-name prijeloz_kalkulator --platforms=android
+
       - name: Izgradi APK paket
         run: flutter build apk --release
 
