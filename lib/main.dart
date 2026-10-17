@@ -295,17 +295,17 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   bool _isLoadingRoute = false;
   final List<Map<String, dynamic>> _bazaRelacijaCestarina = BazaCestarinaData.dioniceCestarina;
   final TextEditingController _nazivKalkulacijeController = TextEditingController(text: 'Izlet - Ruta');
-  final TextEditingController _polazisteController = TextEditingController(text: 'Zagreb');
+  final TextEditingController _polazisteController = TextEditingController(text: 'Split');
   final TextEditingController _odrediste1Controller = TextEditingController();
   final TextEditingController _odrediste2Controller = TextEditingController();
-  final TextEditingController _konacnoOdredisteController = TextEditingController(text: 'Split');
+  final TextEditingController _konacnoOdredisteController = TextEditingController(text: 'Zagreb');
   late TextEditingController _datumPolaskaController;
   late TextEditingController _datumPovratkaController;
   int _izracunatiBrojDana = 1;
   double _bazaKmJednosmjerno = 390.0;
   bool _povratnoPutovanje = true;
-  final TextEditingController _kmController = TextEditingController(text: '780');
-  final TextEditingController _cestarinaController = TextEditingController(text: '35.00');
+  final TextEditingController _kmController = TextEditingController(text: '822');
+  final TextEditingController _cestarinaController = TextEditingController(text: '0.00');
   
   bool _koristiAutocestu = true;
   String _odabranaAutocesta = 'HAC (Hrvatske autoceste)';
@@ -317,28 +317,40 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     'Bez autoceste / Lokalna cesta'
   ];
 
-  final TextEditingController _cijenaGorivaController = TextEditingController(text: '1.45');
-  final TextEditingController _dnevnicaController = TextEditingController(text: '80');
+  final TextEditingController _cijenaGorivaController = TextEditingController(text: '1.96');
+  final TextEditingController _dnevnicaController = TextEditingController(text: '50');
 
-  String _tkoPlacaNocenje = 'Prijevoznik plaća';
+  String _tkoPlacaNocenje = 'Bez noćenja';
   final List<String> _opcijeNocenja = [
     'Prijevoznik plaća',
     'Klijent/Agencija plaća (0€ za nas)',
     'Bez noćenja'
   ];
   final TextEditingController _cijenaNocenjaController = TextEditingController(text: '60');
-  final TextEditingController _marzaController = TextEditingController(text: '20');
+  final TextEditingController _marzaController = TextEditingController(text: '120');
 
   final Map<String, double> _potrosnjaVozila = {'Kombi 8+1': 9.0, 'Mini bus <20': 15.0, 'Midi bus 35': 30.0, 'Veliki autobus 50': 35.0};
   late String _odabranoVozilo;
   String? _trenutniIdUredjivanja;
+
+  final Map<String, String> _mapiranjeGradovaNaCestarinu = {
+    'split': 'dugopolje',
+    'zagreb': 'lučko',
+    'zadar': 'zadar',
+    'šibenik': 'šibenik',
+    'karlovac': 'karlovac',
+    'rijeka': 'rijeka',
+    'slavonski brod': 'slavonski brod',
+    'osijek': 'osijek',
+    'varaždin': 'varaždin',
+  };
 
   String _formatirajDatum(DateTime d) => '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}.';
 
   @override
   void initState() {
     super.initState();
-    _odabranoVozilo = _potrosnjaVozila.keys.first;
+    _odabranoVozilo = _potrosnjaVozila.keys.last; // Veliki autobus 50
     String danas = _formatirajDatum(DateTime.now());
     _datumPolaskaController = TextEditingController(text: danas);
     _datumPovratkaController = TextEditingController(text: danas);
@@ -432,82 +444,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       }
     } catch (_) {}
   }
-class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
-  // ... (vaši postojeći kontroleri i varijable)
-
-  // Ovdje ubacite mapu i funkciju za automatsko mapiranje gradova na naplatne kućice:
-  final Map<String, String> _mapiranjeGradovaNaCestarinu = {
-    'split': 'dugopolje',
-    'zagreb': 'lučko',
-    'zadar': 'zadar',
-    'šibenik': 'šibenik',
-    'karlovac': 'karlovac',
-    'rijeka': 'rijeka',
-    'slavonski brod': 'slavonski brod',
-    'osijek': 'osijek',
-    'varaždin': 'varaždin',
-  };
-
-  void _automatskiDetektirajCestarinuPoGradovima(String polaziste, String odrediste) {
-    String p = polaziste.trim().toLowerCase();
-    String o = odrediste.trim().toLowerCase();
-
-    String? cestarinaUlaz = _mapiranjeGradovaNaCestarinu[p];
-    String? cestarinaIzlaz = _mapiranjeGradovaNaCestarinu[o];
-
-    if (cestarinaUlaz != null && cestarinaIzlaz != null) {
-      for (var relacija in _bazaRelacijaCestarina) {
-        String ulazBaza = (relacija['ulaz'] ?? '').toString().toLowerCase();
-        String izlazBaza = (relacija['izlaz'] ?? '').toString().toLowerCase();
-
-        bool poklapanje = (ulazBaza.contains(cestarinaUlaz) && izlazBaza.contains(cestarinaIzlaz)) ||
-                          (ulazBaza.contains(cestarinaIzlaz) && izlazBaza.contains(cestarinaUlaz));
-
-        if (poklapanje) {
-          setState(() {
-            _koristiAutocestu = true;
-            Map<String, dynamic> cestarineMap = relacija['cijene'] ?? {};
-            if (cestarineMap.containsKey(_odabranoVozilo)) {
-              double jednosmjerna = cestarineMap[_odabranoVozilo];
-              _cestarinaController.text = (jednosmjerna * (_povratnoPutovanje ? 2.0 : 1.0)).toStringAsFixed(2);
-            }
-          });
-          break;
-        }
-      }
-    }
-  }
-  void _automatskiDetektirajCestarinu(List<String> tocke) {
-    String spojeneTocke = tocke.join(' ').toLowerCase();
-    for (var relacija in _bazaRelacijaCestarina) {
-      String ulaz = (relacija['ulaz'] ?? '').toString().toLowerCase();
-      String izlaz = (relacija['izlaz'] ?? '').toString().toLowerCase();
-      if (spojeneTocke.contains(ulaz) && spojeneTocke.contains(izlaz)) {
-        setState(() {
-          _koristiAutocestu = true;
-          Map<String, dynamic> cestarineMap = relacija['cijene'] ?? {};
-          if (cestarineMap.containsKey(_odabranoVozilo)) {
-            double jednosmjerna = cestarineMap[_odabranoVozilo];
-            _cestarinaController.text = (jednosmjerna * (_povratnoPutovanje ? 2.0 : 1.0)).toStringAsFixed(2);
-          }
-        });
-        break;
-      }
-    }
-  }
-
- // Mapa koja povezuje nazive gradova s najbližim ulazima/izlazima s autoceste
-  final Map<String, String> _mapiranjeGradovaNaCestarinu = {
-    'split': 'dugopolje',
-    'zagreb': 'lučko',
-    'zadar': 'zadar',
-    'šibenik': 'šibenik',
-    'karlovac': 'karlovac',
-    'rijeka': 'rijeka',
-    'slavonski brod': 'slavonski brod',
-    'osijek': 'osijek',
-    'varaždin': 'varaždin',
-  };
 
   void _automatskiDetektirajCestarinuPoGradovima(String polaziste, String odrediste) {
     String p = polaziste.trim().toLowerCase();
@@ -539,7 +475,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     }
   }
 
-  // OVDJE ZAMJENJUJETE SVOJU STARU METODU OVOM NOVOM:
   Future<void> _izracunajRutuMultiPoint() async {
     List<String> tocke = [];
     if (_polazisteController.text.trim().isNotEmpty) tocke.add(_polazisteController.text.trim());
@@ -580,7 +515,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
         _kmController.text = (_bazaKmJednosmjerno * (_povratnoPutovanje ? 2.0 : 1.0)).toStringAsFixed(0);
       });
       
-      // Pozivamo našu novu funkciju koja automatski prepoznaje cestarinu na temelju gradova
       _automatskiDetektirajCestarinuPoGradovima(_polazisteController.text, _konacnoOdredisteController.text);
 
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Izračunato: ${kmJedan.toStringAsFixed(1)} km'), backgroundColor: Colors.green));
@@ -743,6 +677,7 @@ class KalkulacijeTab extends StatelessWidget {
         itemCount: kalkulacije.length,
         itemBuilder: (ctx, idx) {
           var k = kalkulacije[idx];
+          bool klijentPdv = klijenti.firstWhere((kl) => kl.naziv == k.klijentNaziv, orElse: () => KlijentModel(id: '', uSustavuPdv: true)).uSustavuPdv;
           return Card(
             margin: const EdgeInsets.only(bottom: 12),
             elevation: 2,
@@ -769,7 +704,7 @@ class KalkulacijeTab extends StatelessWidget {
                         label: const Text('Uredi', style: TextStyle(color: Colors.blue)),
                       ),
                       TextButton.icon(
-                        onPressed: () => PdfGenerator.printajInternuKalkulaciju(k, prijevoznik),
+                        onPressed: () => PdfGenerator.printajInternuKalkulaciju(k, prijevoznik, klijentUsetPdv: klijentPdv),
                         icon: const Icon(Icons.print, size: 18, color: Colors.indigo),
                         label: const Text('Interna kalkulacija', style: TextStyle(color: Colors.indigo)),
                       ),
@@ -779,7 +714,7 @@ class KalkulacijeTab extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       TextButton.icon(
-                        onPressed: () => PdfGenerator.printajPonuduPdf(k, prijevoznik),
+                        onPressed: () => PdfGenerator.printajPonuduPdf(k, prijevoznik, klijentUsetPdv: klijentPdv),
                         icon: const Icon(Icons.picture_as_pdf, size: 18, color: Colors.green),
                         label: const Text('Ponuda PDF', style: TextStyle(color: Colors.green)),
                       ),
