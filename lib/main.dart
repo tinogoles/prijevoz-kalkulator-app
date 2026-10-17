@@ -1,5 +1,8 @@
 import 'package:prijevoz_kalkulator/services/cestarine_service.dart';
 import 'package:prijevoz_kalkulator/data/baza_cestarina_data.dart';
+import 'package:prijevoz_kalkulator/widgets/autocesta_sekcija_widget.dart';
+import 'package:prijevoz_kalkulator/widgets/nocenje_sekcija_widget.dart';
+import 'package:prijevoz_kalkulator/widgets/unos_rute_widget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -292,9 +295,17 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   bool _povratnoPutovanje = true;
   final TextEditingController _kmController = TextEditingController(text: '780');
   final TextEditingController _cestarinaController = TextEditingController(text: '35.00');
+  
   bool _koristiAutocestu = true;
   String _odabranaAutocesta = 'HAC (Hrvatske autoceste)';
-  final List<String> _opcijeAutocesta = ['HAC (Hrvatske autoceste)', 'AZM (Zagreb - Macelj)', 'DARS (Slovenske autoceste)', 'Autoceste FBiH / RS', 'Bez autoceste'];
+  final List<String> _opcijeAutocesta = [
+    'HAC (Hrvatske autoceste)',
+    'AZM (Zagreb - Macelj)',
+    'DARS (Slovenske autoceste)',
+    'Autoceste FBiH / RS',
+    'Bez autoceste / Lokalna cesta'
+  ];
+
   final TextEditingController _cijenaGorivaController = TextEditingController(text: '1.45');
   final TextEditingController _dnevnicaController = TextEditingController(text: '80');
 
@@ -495,42 +506,26 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               onChanged: (val) { widget.onKlijentChanged(val); setState(() {}); },
             ),
             const SizedBox(height: 12),
-            TextField(controller: _polazisteController, decoration: const InputDecoration(labelText: 'Polazište', border: OutlineInputBorder())),
-            const SizedBox(height: 8),
-            TextField(controller: _odrediste1Controller, decoration: const InputDecoration(labelText: 'Međuodredište A (opcionalno)', border: OutlineInputBorder())),
-            const SizedBox(height: 8),
-            TextField(controller: _odrediste2Controller, decoration: const InputDecoration(labelText: 'Međuodredište B (opcionalno)', border: OutlineInputBorder())),
-            const SizedBox(height: 8),
-            TextField(controller: _konacnoOdredisteController, decoration: const InputDecoration(labelText: 'Konačno odredište', border: OutlineInputBorder())),
-            const SizedBox(height: 8),
-            CheckboxListTile(
-              title: const Text('Povratno putovanje'),
-              value: _povratnoPutovanje,
-              onChanged: (val) {
+            UnosRuteWidget(
+              polazisteController: _polazisteController,
+              odrediste1Controller: _odrediste1Controller,
+              odrediste2Controller: _odrediste2Controller,
+              konacnoOdredisteController: _konacnoOdredisteController,
+              kmController: _kmController,
+              datumPolaskaController: _datumPolaskaController,
+              datumPovratkaController: _datumPovratkaController,
+              povratnoPutovanje: _povratnoPutovanje,
+              onPovratnoChanged: (val) {
                 setState(() {
                   _povratnoPutovanje = val ?? true;
                   _kmController.text = (_bazaKmJednosmjerno * (_povratnoPutovanje ? 2.0 : 1.0)).toStringAsFixed(0);
                 });
               },
-            ),
-            TextField(controller: _kmController, decoration: const InputDecoration(labelText: 'Kilometri', border: OutlineInputBorder())),
-            const SizedBox(height: 12),
-            Row(children: [
-              Expanded(child: TextField(controller: _datumPolaskaController, readOnly: true, onTap: () => _odaberiDatum(context, _datumPolaskaController), decoration: const InputDecoration(labelText: 'Polazak', border: OutlineInputBorder()))),
-              const SizedBox(width: 8),
-              Expanded(child: TextField(controller: _datumPovratkaController, readOnly: true, onTap: () => _odaberiDatum(context, _datumPovratkaController), decoration: const InputDecoration(labelText: 'Povratak', border: OutlineInputBorder()))),
-            ]),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Izračunato trajanje:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text('$_izracunatiBrojDana dana (${_izracunatiBrojDana > 1 ? _izracunatiBrojDana - 1 : 0} noćenja)', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0284C7))),
-                ],
-              ),
+              izracunatiBrojDana: _izracunatiBrojDana,
+              onOdaberiDatumPolaska: () => _odaberiDatum(context, _datumPolaskaController),
+              onOdaberiDatumPovratka: () => _odaberiDatum(context, _datumPovratkaController),
+              onIzracunajRutu: _izracunajRutuMultiPoint,
+              isLoadingRoute: _isLoadingRoute,
             ),
             const SizedBox(height: 12),
             TextField(controller: _nazivKalkulacijeController, decoration: const InputDecoration(labelText: 'Naziv kalkulacije', border: OutlineInputBorder())),
@@ -548,33 +543,34 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               Expanded(child: TextField(controller: _dnevnicaController, decoration: const InputDecoration(labelText: 'Dnevnica/dan (€)', border: OutlineInputBorder()))),
             ]),
             const SizedBox(height: 16),
-            const Text('Parametri Noćenja Vozača:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              value: _tkoPlacaNocenje,
-              decoration: const InputDecoration(labelText: 'Plaćanje noćenja', border: OutlineInputBorder()),
-              items: _opcijeNocenja.map((o) => DropdownMenuItem(value: o, child: Text(o))).toList(),
-              onChanged: (val) { if (val != null) setState(() => _tkoPlacaNocenje = val); },
+            NocenjeSekcijaWidget(
+              tkoPlacaNocenje: _tkoPlacaNocenje,
+              onTkoPlacaChanged: (val) { if (val != null) setState(() => _tkoPlacaNocenje = val); },
+              cijenaNocenjaController: _cijenaNocenjaController,
+              opcijeNocenja: _opcijeNocenja,
             ),
-            if (_tkoPlacaNocenje == 'Prijevoznik plaća') ...[
-              const SizedBox(height: 8),
-              TextField(controller: _cijenaNocenjaController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Cijena noćenja po noći (€, bruto)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.hotel))),
-            ],
             const SizedBox(height: 12),
             TextField(controller: _marzaController, decoration: const InputDecoration(labelText: 'Marža (%)', border: OutlineInputBorder())),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: _isLoadingRoute ? null : _izracunajRutuMultiPoint,
-              icon: const Icon(Icons.route),
-              label: Text(_isLoadingRoute ? 'Računam...' : 'Izračunaj kilometre preko OSRM'),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0284C7), foregroundColor: Colors.white),
+            const SizedBox(height: 16),
+            AutocestaSekcijaWidget(
+              koristiAutocestu: _koristiAutocestu,
+              onAutocestaChanged: (value) {
+                setState(() {
+                  _koristiAutocestu = value;
+                  if (!_koristiAutocestu) _cestarinaController.text = '0.00';
+                });
+              },
+              odabranaAutocesta: _odabranaAutocesta,
+              onAutocestaSelected: (val) { if (val != null) setState(() => _odabranaAutocesta = val); },
+              cestarinaController: _cestarinaController,
+              opcijeAutocesta: _opcijeAutocesta,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: _spremi,
               icon: const Icon(Icons.save),
               label: Text(_trenutniIdUredjivanja == null ? 'Spremi kalkulaciju' : 'Ažuriraj kalkulaciju'),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16A34A), foregroundColor: Colors.white),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16A34A), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14)),
             ),
           ],
         ),
