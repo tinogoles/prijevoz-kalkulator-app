@@ -294,8 +294,85 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
     );
   }
 }
+class IzracunTroskovaTab extends StatelessWidget {
+  final PrijevoznikModel prijevoznik;
+  final List<KlijentModel> klijenti;
+  final KlijentModel? aktivniKlijent;
+  final KalkulacijaModel? kalkulacijaZaUredivanje;
+  final Function(KlijentModel?) onKlijentChanged;
+  final Function(KalkulacijaModel) onSpremiKalkulaciju;
 
+  const IzracunTroskovaTab({
+    super.key,
+    required this.prijevoznik,
+    required this.klijenti,
+    required this.aktivniKlijent,
+    this.kalkulacijaZaUredivanje,
+    required this.onKlijentChanged,
+    required this.onSpremiKalkulaciju,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Text(
+          'Ekran za izračun troškova',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+}
+
+class KalkulacijeTab extends StatelessWidget {
+  final List<KalkulacijaModel> kalkulacije;
+  final PrijevoznikModel prijevoznik;
+  final List<KlijentModel> klijenti;
+  final Function(String) onObrisi;
+  final Function(KalkulacijaModel) onUredi;
+
+  const KalkulacijeTab({
+    super.key,
+    required this.kalkulacije,
+    required this.prijevoznik,
+    required this.klijenti,
+    required this.onObrisi,
+    required this.onUredi,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        'Arhiva kalkulacija (${kalkulacije.length})',
+        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+}
+
+class PostavkeTab extends StatelessWidget {
+  final PrijevoznikModel prijevoznik;
+  final List<KlijentModel> klijenti;
+  final VoidCallback onUpdate;
+
+  const PostavkeTab({
+    super.key,
+    required this.prijevoznik,
+    required this.klijenti,
+    required this.onUpdate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        'Postavke aplikacije',
+        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+}
 // Ostatak klasa za sučelje (IzracunTroskovaTab, KalkulacijeTab, PostavkeTab itd.) ostaje nepromijenjen ispod...
-import 'tabs/izracun_troskova_tab.dart';
-import 'tabs/kalkulacije_tab.dart';
-import 'tabs/postavke_tab.dart';
