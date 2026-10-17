@@ -22,9 +22,6 @@ jobs:
     - name: Disable analytics
       run: flutter config --no-analytics
 
-    - name: Add Web support
-      run: flutter create . --platforms=web
-
     - name: Install dependencies
       run: flutter pub get
 
