@@ -55,8 +55,10 @@ class PdfGenerator {
     double ukupnoNeto = gorivoNeto + cestarinaNeto + trosakVozaca + nocenjeNeto;
     double iznosMarze = ukupnoNeto * (marzaPosto / 100);
     double osnovicaZaPonudu = ukupnoNeto + iznosMarze;
+    
+    // Za klijenta u sustavu PDV-a računa se izlazni PDV, dok je za klijenta izvan sustava PDV 0, a ukupna cijena ista
     double izlazniPdv = klijentUsetPdv ? (osnovicaZaPonudu * 0.25) : 0.0;
-    double totalZaSve = osnovicaZaPonudu + izlazniPdv;
+    double totalZaSve = klijentUsetPdv ? (osnovicaZaPonudu + izlazniPdv) : kalkulacija.ukupnaCijena;
 
     Printing.layoutPdf(onLayout: (format) async {
       final pdf = pw.Document();
@@ -98,7 +100,7 @@ class PdfGenerator {
                   _buildRedTablice('Noćenje vozača', nocenjeNeto, nocenjePdv, nocenjeBrutoUkupno, font),
                 ],
               ),
-              pw.SizedBox(height: 15), // Uklonjen neispravan const
+              pw.SizedBox(height: 15),
 
               pw.Container(
                 padding: const pw.EdgeInsets.all(10),
@@ -112,6 +114,7 @@ class PdfGenerator {
                       _buildRedZbroja('Osnovica za ponudu:', '${osnovicaZaPonudu.toStringAsFixed(2)} EUR', font),
                       _buildRedZbroja('Izlazni PDV (25%):', '${izlazniPdv.toStringAsFixed(2)} EUR', font),
                     ] else ...[
+                      _buildRedZbroja('Ukupni iznos (bez razrade PDV-a):', '${totalZaSve.toStringAsFixed(2)} EUR', font),
                       _buildRedZbroja('PDV:', '0.00 EUR (Nije u sustavu PDV-a)', font),
                     ],
                     pw.Divider(thickness: 1, color: PdfColors.red900),
