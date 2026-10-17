@@ -4,8 +4,8 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 class PdfGenerator {
-  // 1. Interna kalkulacija troškova (sa tablicom i svim izračunima)
-  static Future<void> printajInternuKalkulaciju(dynamic kalkulacija, dynamic prijevoznik) async {
+  // 1. Interna kalkulacija troškova
+  static Future<void> printajInternuKalkulaciju(dynamic kalkulacija, dynamic prijevoznik, {bool klijentUsetPdv = true}) async {
     final font = await PdfGoogleFonts.robotoRegular();
     final fontBold = await PdfGoogleFonts.robotoBold();
 
@@ -41,7 +41,6 @@ class PdfGenerator {
     double gorivoPdv = ((km / 100) * potrosnja * gorivoBruto) - gorivoNeto;
     double gorivoBrutoUkupno = (km / 100) * potrosnja * gorivoBruto;
 
-    // Osiguravamo da se cestarina računa ako je uključeno i ako je iznos veći od 0 (ili forsira bruto unos)
     bool koristiCestarinu = kalkulacija.koristiAutocestu && cestarinaBruto > 0;
     double cestarinaNeto = (koristiCestarinu ? cestarinaBruto : 0) / 1.25;
     double cestarinaPdv = (koristiCestarinu ? cestarinaBruto : 0) - cestarinaNeto;
@@ -56,7 +55,7 @@ class PdfGenerator {
     double ukupnoNeto = gorivoNeto + cestarinaNeto + trosakVozaca + nocenjeNeto;
     double iznosMarze = ukupnoNeto * (marzaPosto / 100);
     double osnovicaZaPonudu = ukupnoNeto + iznosMarze;
-    double izlazniPdv = osnovicaZaPonudu * 0.25;
+    double izlazniPdv = klijentUsetPdv ? (osnovicaZaPonudu * 0.25) : 0.0;
     double totalZaSve = osnovicaZaPonudu + izlazniPdv;
 
     Printing.layoutPdf(onLayout: (format) async {
@@ -77,7 +76,7 @@ class PdfGenerator {
               pw.Divider(thickness: 1, color: PdfColors.grey400),
               pw.SizedBox(height: 5),
               pw.Text('Prijevoznik: ${prijevoznik.naziv} (OIB: ${prijevoznik.oib})', style: pw.TextStyle(font: font, fontSize: 10)),
-              pw.Text('Klijent: ${kalkulacija.klijentNaziv} (PDV sustav: DA)', style: pw.TextStyle(font: font, fontSize: 10)),
+              pw.Text('Klijent: ${kalkulacija.klijentNaziv} (PDV sustav: ${klijentUsetPdv ? "DA" : "NE"})', style: pw.TextStyle(font: font, fontSize: 10)),
               pw.Text('Ruta: ${kalkulacija.ruta} (${kalkulacija.km} km) | Termin: ${kalkulacija.datumPolaska} - ${kalkulacija.datumPovratka}', style: pw.TextStyle(font: font, fontSize: 10)),
               pw.SizedBox(height: 15),
 
@@ -99,7 +98,7 @@ class PdfGenerator {
                   _buildRedTablice('Noćenje vozača', nocenjeNeto, nocenjePdv, nocenjeBrutoUkupno, font),
                 ],
               ),
-              pw.SizedBox(height: 15),
+              const pw.SizedBox(height: 15),
 
               pw.Container(
                 padding: const pw.EdgeInsets.all(10),
@@ -109,8 +108,12 @@ class PdfGenerator {
                     _buildRedZbroja('Ukupni troškovi (Neto):', '${ukupnoNeto.toStringAsFixed(2)} EUR', font),
                     _buildRedZbroja('Marža (${marzaInfo(kalkulacija)}%):', '${iznosMarze.toStringAsFixed(2)} EUR', font),
                     pw.Divider(thickness: 0.5),
-                    _buildRedZbroja('Osnovica za ponudu:', '${osnovicaZaPonudu.toStringAsFixed(2)} EUR', font),
-                    _buildRedZbroja('Izlazni PDV (25%):', '${izlazniPdv.toStringAsFixed(2)} EUR', font),
+                    if (klijentUsetPdv) ...[
+                      _buildRedZbroja('Osnovica za ponudu:', '${osnovicaZaPonudu.toStringAsFixed(2)} EUR', font),
+                      _buildRedZbroja('Izlazni PDV (25%):', '${izlazniPdv.toStringAsFixed(2)} EUR', font),
+                    ] else ...[
+                      _buildRedZbroja('PDV:', '0.00 EUR (Nije u sustavu PDV-a)', font),
+                    ],
                     pw.Divider(thickness: 1, color: PdfColors.red900),
                     _buildRedZbroja('TOTAL ZA SVE:', '${totalZaSve.toStringAsFixed(2)} EUR', font, isBold: true, color: PdfColors.red900, fontSize: 14),
                   ],
@@ -125,12 +128,13 @@ class PdfGenerator {
   }
 
   // 2. Ponuda za prijevoz
-  static Future<void> printajPonuduPdf(dynamic kalkulacija, dynamic prijevoznik) async {
+  static Future<void> printajPonuduPdf(dynamic kalkulacija, dynamic prijevoznik, {bool klijentUsetPdv = true}) async {
     final font = await PdfGoogleFonts.robotoRegular();
     final fontBold = await PdfGoogleFonts.robotoBold();
 
-    double osnovica = kalkulacija.ukupnaCijena / 1.25;
-    double pdvIznos = kalkulacija.ukupnaCijena - osnovica;
+    double osnovica = klijentUsetPdv ? (kalkulacija.ukupnaCijena / 1.25) : kalkulacija.ukupnaCijena;
+    double pdvIznos = klijentUsetPdv ? (kalkulacija.ukupnaCijena - osnovica) : 0.0;
+    double ukupniIznosPonude = kalkulacija.ukupnaCijena;
 
     Printing.layoutPdf(onLayout: (format) async {
       final pdf = pw.Document();
@@ -190,6 +194,7 @@ class PdfGenerator {
               ),
               pw.SizedBox(height: 25),
 
+              // Cijene i PDV blok (ovisno o statusu PDV-a klijenta)
               pw.Container(
                 padding: const pw.EdgeInsets.all(14),
                 decoration: const pw.BoxDecoration(
@@ -198,11 +203,17 @@ class PdfGenerator {
                 ),
                 child: pw.Column(
                   children: [
-                    _buildRedPonude('Osnovica (Bez PDV-a):', '${osnovica.toStringAsFixed(2)} EUR', font, fontBold),
-                    pw.SizedBox(height: 6),
-                    _buildRedPonude('PDV (25%):', '${pdvIznos.toStringAsFixed(2)} EUR', font, fontBold),
-                    pw.Divider(color: PdfColors.white, thickness: 1),
-                    _buildRedPonude('UKUPNA CIJENA S PDV-om:', '${kalkulacija.ukupnaCijena.toStringAsFixed(2)} EUR', font, fontBold, isTotal: true),
+                    if (klijentUsetPdv) ...[
+                      _buildRedPonude('Osnovica (Bez PDV-a):', '${osnovica.toStringAsFixed(2)} EUR', font, fontBold),
+                      pw.SizedBox(height: 6),
+                      _buildRedPonude('PDV (25%):', '${pdvIznos.toStringAsFixed(2)} EUR', font, fontBold),
+                      pw.Divider(color: PdfColors.white, thickness: 1),
+                      _buildRedPonude('UKUPNA CIJENA S PDV-om:', '${ukupniIznosPonude.toStringAsFixed(2)} EUR', font, fontBold, isTotal: true),
+                    ] else ...[
+                      _buildRedPonude('PDV:', '0.00 EUR (Nije u sustavu PDV-a)', font, fontBold),
+                      pw.Divider(color: PdfColors.white, thickness: 1),
+                      _buildRedPonude('UKUPNI IZNOS PONUDE:', '${ukupniIznosPonude.toStringAsFixed(2)} EUR', font, fontBold, isTotal: true),
+                    ],
                   ],
                 ),
               ),
