@@ -1,46 +1,38 @@
-name: Build APK
+name: Build Web Release
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "feature/web-support" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "feature/web-support" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Preuzmi kod repozitorija
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: ⚙️ Postavi Java okruženje
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.19.6'
+        channel: 'stable'
 
-      - name: 🐦 Postavi Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.19.6'
-          cache: true
+    - name: Disable analytics
+      run: flutter config --no-analytics
 
-      - name: 📦 Provjeri ovisnosti
-        run: flutter pub get
+    - name: Generate Web files
+      run: flutter create . --org com.primjer --project-name prijevoz_kalkulator --platforms=web
 
-      - name: 🛠️ Generiraj Android strukturu (v2 embedding)
-        run: flutter create . --platforms=android --org com.example --project-name=prijevoz_kalkulator
+    - name: Install dependencies
+      run: flutter pub get
 
-      - name: 🌐 Dodaj dozvolu za internet u AndroidManifest
-        run: |
-          sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"/>' android/app/src/main/AndroidManifest.xml
+    - name: Build Web
+      run: flutter build web --release
 
-      - name: 🔨 Izgradi APK
-        run: flutter build apk --release
-
-      - name: 💾 Spremi APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: kalkulator-prijevoza-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+    - name: Upload Web Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: web-release
+        path: build/web
