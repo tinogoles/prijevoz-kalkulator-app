@@ -41,9 +41,11 @@ class PdfGenerator {
     double gorivoPdv = ((km / 100) * potrosnja * gorivoBruto) - gorivoNeto;
     double gorivoBrutoUkupno = (km / 100) * potrosnja * gorivoBruto;
 
-    double cestarinaNeto = (kalkulacija.koristiAutocestu ? cestarinaBruto : 0) / 1.25;
-    double cestarinaPdv = (kalkulacija.koristiAutocestu ? cestarinaBruto : 0) - cestarinaNeto;
-    double cestarinaBrutoUkupno = kalkulacija.koristiAutocestu ? cestarinaBruto : 0;
+    // Osiguravamo da se cestarina računa ako je uključeno i ako je iznos veći od 0 (ili forsira bruto unos)
+    bool koristiCestarinu = kalkulacija.koristiAutocestu && cestarinaBruto > 0;
+    double cestarinaNeto = (koristiCestarinu ? cestarinaBruto : 0) / 1.25;
+    double cestarinaPdv = (koristiCestarinu ? cestarinaBruto : 0) - cestarinaNeto;
+    double cestarinaBrutoUkupno = koristiCestarinu ? cestarinaBruto : 0;
 
     double trosakVozaca = dnevnica * brojDana;
 
@@ -52,9 +54,6 @@ class PdfGenerator {
     double nocenjeBrutoUkupno = kalkulacija.tkoPlacaNocenje == 'Prijevoznik plaća' ? (nocenjeBruto * brojNocenja) : 0;
 
     double ukupnoNeto = gorivoNeto + cestarinaNeto + trosakVozaca + nocenjeNeto;
-    double ukupnoPdv = gorivoPdv + cestarinaPdv + nocenjePdv;
-    double ukupnoBruto = gorivoBrutoUkupno + cestarinaBrutoUkupno + trosakVozaca + nocenjeBrutoUkupno;
-
     double iznosMarze = ukupnoNeto * (marzaPosto / 100);
     double osnovicaZaPonudu = ukupnoNeto + iznosMarze;
     double izlazniPdv = osnovicaZaPonudu * 0.25;
@@ -95,7 +94,7 @@ class PdfGenerator {
                     ],
                   ),
                   _buildRedTablice('Gorivo (${kalkulacija.vozilo})', gorivoNeto, gorivoPdv, gorivoBrutoUkupno, font),
-                  _buildRedTablice('Cestarina', cestarinaNeto, cestarinaPdv, cestarinaBrutoUkupno, font),
+                  _buildRedTablice('Cestarina (${kalkulacija.odabranaAutocesta})', cestarinaNeto, cestarinaPdv, cestarinaBrutoUkupno, font),
                   _buildRedTablice('Dnevnica vozača', trosakVozaca, 0.0, trosakVozaca, font),
                   _buildRedTablice('Noćenje vozača', nocenjeNeto, nocenjePdv, nocenjeBrutoUkupno, font),
                 ],
@@ -107,13 +106,13 @@ class PdfGenerator {
                 decoration: const pw.BoxDecoration(color: PdfColors.grey200, borderRadius: pw.BorderRadius.all(pw.Radius.circular(4))),
                 child: pw.Column(
                   children: [
-                    _buildRedZbroja('Ukupni troškovi (Neto):', '${ukupnoNeto.toStringAsFixed(2)} €', font),
-                    _buildRedZbroja('Marža (${marzaInfo(kalkulacija)}%):', '${iznosMarze.toStringAsFixed(2)} €', font),
+                    _buildRedZbroja('Ukupni troškovi (Neto):', '${ukupnoNeto.toStringAsFixed(2)} EUR', font),
+                    _buildRedZbroja('Marža (${marzaInfo(kalkulacija)}%):', '${iznosMarze.toStringAsFixed(2)} EUR', font),
                     pw.Divider(thickness: 0.5),
-                    _buildRedZbroja('Osnovica za ponudu:', '${osnovicaZaPonudu.toStringAsFixed(2)} €', font),
-                    _buildRedZbroja('Izlazni PDV (25%):', '${izlazniPdv.toStringAsFixed(2)} €', font),
+                    _buildRedZbroja('Osnovica za ponudu:', '${osnovicaZaPonudu.toStringAsFixed(2)} EUR', font),
+                    _buildRedZbroja('Izlazni PDV (25%):', '${izlazniPdv.toStringAsFixed(2)} EUR', font),
                     pw.Divider(thickness: 1, color: PdfColors.red900),
-                    _buildRedZbroja('TOTAL ZA SVE:', '${totalZaSve.toStringAsFixed(2)} €', font, isBold: true, color: PdfColors.red900, fontSize: 14),
+                    _buildRedZbroja('TOTAL ZA SVE:', '${totalZaSve.toStringAsFixed(2)} EUR', font, isBold: true, color: PdfColors.red900, fontSize: 14),
                   ],
                 ),
               ),
@@ -125,7 +124,7 @@ class PdfGenerator {
     });
   }
 
-  // 2. Ponuda za prijevoz (s podacima za plaćanje: IBAN i banka)
+  // 2. Ponuda za prijevoz
   static Future<void> printajPonuduPdf(dynamic kalkulacija, dynamic prijevoznik) async {
     final font = await PdfGoogleFonts.robotoRegular();
     final fontBold = await PdfGoogleFonts.robotoBold();
@@ -172,7 +171,6 @@ class PdfGenerator {
               pw.Text('Predmet: ${kalkulacija.nazivKalkulacije}', style: pw.TextStyle(font: fontBold, fontSize: 12)),
               pw.SizedBox(height: 10),
 
-              // Kartica specifikacije
               pw.Container(
                 padding: const pw.EdgeInsets.all(12),
                 decoration: const pw.BoxDecoration(
@@ -192,7 +190,6 @@ class PdfGenerator {
               ),
               pw.SizedBox(height: 25),
 
-              // Cijene i PDV blok
               pw.Container(
                 padding: const pw.EdgeInsets.all(14),
                 decoration: const pw.BoxDecoration(
@@ -201,17 +198,16 @@ class PdfGenerator {
                 ),
                 child: pw.Column(
                   children: [
-                    _buildRedPonude('Osnovica (Bez PDV-a):', '${osnovica.toStringAsFixed(2)} €', font, fontBold),
+                    _buildRedPonude('Osnovica (Bez PDV-a):', '${osnovica.toStringAsFixed(2)} EUR', font, fontBold),
                     pw.SizedBox(height: 6),
-                    _buildRedPonude('PDV (25%):', '${pdvIznos.toStringAsFixed(2)} €', font, fontBold),
+                    _buildRedPonude('PDV (25%):', '${pdvIznos.toStringAsFixed(2)} EUR', font, fontBold),
                     pw.Divider(color: PdfColors.white, thickness: 1),
-                    _buildRedPonude('UKUPNA CIJENA S PDV-om:', '${kalkulacija.ukupnaCijena.toStringAsFixed(2)} €', font, fontBold, isTotal: true),
+                    _buildRedPonude('UKUPNA CIJENA S PDV-om:', '${kalkulacija.ukupnaCijena.toStringAsFixed(2)} EUR', font, fontBold, isTotal: true),
                   ],
                 ),
               ),
               pw.SizedBox(height: 15),
 
-              // Podaci za plaćanje (IBAN i Banka)
               pw.Container(
                 padding: const pw.EdgeInsets.all(10),
                 decoration: pw.BoxDecoration(
@@ -243,9 +239,9 @@ class PdfGenerator {
     return pw.TableRow(
       children: [
         pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(naziv, style: pw.TextStyle(font: font, fontSize: 9))),
-        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${neto.toStringAsFixed(2)} €', style: pw.TextStyle(font: font, fontSize: 9))),
-        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${pdv.toStringAsFixed(2)} €', style: pw.TextStyle(font: font, fontSize: 9))),
-        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${bruto.toStringAsFixed(2)} €', style: pw.TextStyle(font: font, fontSize: 9))),
+        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${neto.toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
+        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${pdv.toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
+        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${bruto.toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
       ],
     );
   }
@@ -256,15 +252,11 @@ class PdfGenerator {
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text(labela, style: pw.TextStyle(font: isBold ? fontBoldReference() : font, fontSize: fontSize, color: color ?? PdfColors.black)),
-          pw.Text(iznos, style: pw.TextStyle(font: isBold ? fontBoldReference() : font, fontSize: fontSize, color: color ?? PdfColors.black)),
+          pw.Text(labela, style: pw.TextStyle(font: isBold ? pw.Font.helveticaBold() : font, fontSize: fontSize, color: color ?? PdfColors.black)),
+          pw.Text(iznos, style: pw.TextStyle(font: isBold ? pw.Font.helveticaBold() : font, fontSize: fontSize, color: color ?? PdfColors.black)),
         ],
       ),
     );
-  }
-
-  static pw.Font fontBoldReference() {
-    return pw.Font.helveticaBold();
   }
 
   static pw.Widget _buildRedPonude(String labela, String iznos, dynamic font, dynamic fontBold, {bool isTotal = false}) {
