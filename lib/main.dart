@@ -393,7 +393,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     super.initState();
     _odabranoVozilo = _potrosnjaVozila.keys.first;
 
-    // Postavljanje današnjeg datuma (Today) po defaultu
     String danas = _formatirajDatum(DateTime.now());
     _datumPolaskaController = TextEditingController(text: danas);
     _datumPovratkaController = TextEditingController(text: danas);
@@ -802,7 +801,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ),
             const SizedBox(height: 16),
 
-            // PREMJEŠTENI MENI CESTARINE (ISPOD VOZILA)
+            // PREMJEŠTENI MENI CESTARINE
             Card(
               elevation: 2,
               color: Colors.amber.shade50,
@@ -901,11 +900,15 @@ class KalkulacijeTab extends StatelessWidget {
     required this.onUredi,
   });
 
-  void _printajKalkulaciju(BuildContext context, KalkulacijaModel k) {
+  void _printajKalkulaciju(BuildContext context, KalkulacijaModel k) async {
     var klijentObj = klijenti.firstWhere(
       (kl) => kl.naziv == k.klijentNaziv,
       orElse: () => KlijentModel(id: '0', naziv: k.klijentNaziv, uSustavuPdv: true),
     );
+
+    // Učitavanje Google Fontova za podršku hrvatskih dijakritika i znaka € (EUR)
+    final fontRegular = await PdfGoogleFonts.robotoRegular();
+    final fontBold = await PdfGoogleFonts.robotoBold();
 
     double km = double.tryParse(k.km) ?? 0;
     double cestarinaBruto = double.tryParse(k.cestarina) ?? 0;
@@ -952,14 +955,14 @@ class KalkulacijeTab extends StatelessWidget {
                   pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
-                      pw.Text('INTERNA KALKULACIJA TROŠKOVA', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.red800)),
-                      pw.Text('ID: ${k.id.substring(k.id.length - 6)}', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                      pw.Text('INTERNA KALKULACIJA TROŠKOVA', style: pw.TextStyle(font: fontBold, fontSize: 16, color: PdfColors.red800)),
+                      pw.Text('ID: ${k.id.length > 6 ? k.id.substring(k.id.length - 6) : k.id}', style: pw.TextStyle(font: fontBold, fontSize: 10)),
                     ],
                   ),
                   pw.Divider(),
-                  pw.Text('Prijevoznik: ${prijevoznik.naziv} (OIB: ${prijevoznik.oib})', style: const pw.TextStyle(fontSize: 9)),
-                  pw.Text('Klijent: ${k.klijentNaziv} (PDV sustav: ${klijentObj.uSustavuPdv ? "DA" : "NE"})', style: const pw.TextStyle(fontSize: 9)),
-                  pw.Text('Ruta: ${k.ruta} (${k.km} km) | Termin: ${k.datumPolaska} - ${k.datumPovratka}', style: const pw.TextStyle(fontSize: 9)),
+                  pw.Text('Prijevoznik: ${prijevoznik.naziv} (OIB: ${prijevoznik.oib})', style: pw.TextStyle(font: fontRegular, fontSize: 9)),
+                  pw.Text('Klijent: ${k.klijentNaziv} (PDV sustav: ${klijentObj.uSustavuPdv ? "DA" : "NE"})', style: pw.TextStyle(font: fontRegular, fontSize: 9)),
+                  pw.Text('Ruta: ${k.ruta} (${k.km} km) | Termin: ${k.datumPolaska} - ${k.datumPovratka}', style: pw.TextStyle(font: fontRegular, fontSize: 9)),
                   pw.SizedBox(height: 15),
                   pw.Table.fromTextArray(
                     headers: ['Stavka troška', 'Bez PDV-a (Neto)', 'PDV (25%)', 'Ukupno (Bruto)'],
@@ -969,9 +972,9 @@ class KalkulacijeTab extends StatelessWidget {
                       ['Dnevnica vozača', '${trosakVozaca.toStringAsFixed(2)} €', '0.00 €', '${trosakVozaca.toStringAsFixed(2)} €'],
                       ['Noćenje vozača', '${nocenjeNeto.toStringAsFixed(2)} €', '${nocenjePdv.toStringAsFixed(2)} €', '${trosakNocenjaBruto.toStringAsFixed(2)} €'],
                     ],
-                    headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white, fontSize: 9),
+                    headerStyle: pw.TextStyle(font: fontBold, color: PdfColors.white, fontSize: 9),
                     headerDecoration: const pw.BoxDecoration(color: PdfColors.blue900),
-                    cellStyle: const pw.TextStyle(fontSize: 8),
+                    cellStyle: pw.TextStyle(font: fontRegular, fontSize: 8),
                   ),
                   pw.SizedBox(height: 15),
                   pw.Container(
@@ -979,17 +982,17 @@ class KalkulacijeTab extends StatelessWidget {
                     decoration: const pw.BoxDecoration(color: PdfColors.grey200),
                     child: pw.Column(
                       children: [
-                        pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text('Ukupni troškovi (Neto):'), pw.Text('${ukupnoNeto.toStringAsFixed(2)} €')]),
-                        pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text('Marža (${k.marza}%):'), pw.Text('${marza.toStringAsFixed(2)} €')]),
+                        pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text('Ukupni troškovi (Neto):', style: pw.TextStyle(font: fontRegular)), pw.Text('${ukupnoNeto.toStringAsFixed(2)} €', style: pw.TextStyle(font: fontRegular))]),
+                        pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text('Marža (${k.marza}%):', style: pw.TextStyle(font: fontRegular)), pw.Text('${marza.toStringAsFixed(2)} €', style: pw.TextStyle(font: fontRegular))]),
                         pw.Divider(),
-                        pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text('Osnovica za ponudu:'), pw.Text('${osnovica.toStringAsFixed(2)} €')]),
-                        pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text('Izlazni PDV (25%):'), pw.Text('${izlazniPdv.toStringAsFixed(2)} €')]),
+                        pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text('Osnovica za ponudu:', style: pw.TextStyle(font: fontRegular)), pw.Text('${osnovica.toStringAsFixed(2)} €', style: pw.TextStyle(font: fontRegular))]),
+                        pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text('Izlazni PDV (25%):', style: pw.TextStyle(font: fontRegular)), pw.Text('${izlazniPdv.toStringAsFixed(2)} €', style: pw.TextStyle(font: fontRegular))]),
                         pw.Divider(),
                         pw.Row(
                           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                           children: [
-                            pw.Text('TOTAL ZA SVE:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
-                            pw.Text('${ukupnoTotal.toStringAsFixed(2)} €', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14, color: PdfColors.red900)),
+                            pw.Text('TOTAL ZA SVE:', style: pw.TextStyle(font: fontBold, fontSize: 12)),
+                            pw.Text('${ukupnoTotal.toStringAsFixed(2)} €', style: pw.TextStyle(font: fontBold, fontSize: 14, color: PdfColors.red900)),
                           ],
                         ),
                       ],
@@ -1006,11 +1009,39 @@ class KalkulacijeTab extends StatelessWidget {
     );
   }
 
-  void _izradiPonudu(BuildContext context, KalkulacijaModel k) {
+  void _izradiPonudu(BuildContext context, KalkulacijaModel k) async {
     var klijentObj = klijenti.firstWhere(
       (kl) => kl.naziv == k.klijentNaziv,
       orElse: () => KlijentModel(id: '0', naziv: k.klijentNaziv, uSustavuPdv: true),
     );
+
+    // Učitavanje Google Fontova za podršku hrvatskih dijakritika i znaka € (EUR)
+    final fontRegular = await PdfGoogleFonts.robotoRegular();
+    final fontBold = await PdfGoogleFonts.robotoBold();
+
+    // Preračunavanje osnovice i PDV-a za ponudu
+    double km = double.tryParse(k.km) ?? 0;
+    double cestarinaBruto = double.tryParse(k.cestarina) ?? 0;
+    double cijenaGorivaBruto = double.tryParse(k.cijenaGoriva) ?? 0;
+    double dnevnicaPoDanu = double.tryParse(k.dnevnica) ?? 0;
+    double cijenaNocenjaBruto = double.tryParse(k.cijenaNocenja) ?? 0;
+    double marzaPostotak = double.tryParse(k.marza) ?? 0;
+
+    double potrosnja = 9.0;
+    if (k.vozilo.contains('Mini')) potrosnja = 15.0;
+    else if (k.vozilo.contains('Midi')) potrosnja = 30.0;
+    else if (k.vozilo.contains('Veliki')) potrosnja = 35.0;
+
+    double gorivoNeto = ((km / 100) * potrosnja * cijenaGorivaBruto) / 1.25;
+    double cestarinaNeto = (k.koristiAutocestu ? cestarinaBruto : 0) / 1.25;
+    double trosakVozaca = dnevnicaPoDanu;
+    double nocenjeNeto = (k.tkoPlacaNocenje == 'Prijevoznik plaća' ? cijenaNocenjaBruto : 0) / 1.25;
+
+    double ukupnoNeto = gorivoNeto + cestarinaNeto + trosakVozaca + nocenjeNeto;
+    double marza = ukupnoNeto * (marzaPostotak / 100);
+    double osnovica = ukupnoNeto + marza;
+    double izlasniPdv = klijentObj.uSustavuPdv ? (osnovica * 0.25) : 0;
+    double ukupnaCijenaSPdv = osnovica + izlasniPdv;
 
     Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async {
@@ -1028,54 +1059,82 @@ class KalkulacijeTab extends StatelessWidget {
                       pw.Column(
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
-                          pw.Text(prijevoznik.naziv, style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
-                          pw.Text('Adresa: ${prijevoznik.adresa}, ${prijevoznik.grad}', style: const pw.TextStyle(fontSize: 9)),
-                          pw.Text('OIB: ${prijevoznik.oib} | Tel: ${prijevoznik.telefon}', style: const pw.TextStyle(fontSize: 9)),
+                          pw.Text(prijevoznik.naziv, style: pw.TextStyle(font: fontBold, fontSize: 16)),
+                          pw.Text('Adresa: ${prijevoznik.adresa}, ${prijevoznik.grad}', style: pw.TextStyle(font: fontRegular, fontSize: 9)),
+                          pw.Text('OIB: ${prijevoznik.oib} | Tel: ${prijevoznik.telefon}', style: pw.TextStyle(font: fontRegular, fontSize: 9)),
                         ],
                       ),
                       pw.Column(
                         crossAxisAlignment: pw.CrossAxisAlignment.end,
                         children: [
-                          pw.Text('PONUDA ZA PRIJEVOZ', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
-                          pw.Text('Predmet: ${k.nazivKalkulacije}', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
-                          pw.Text('Datum: ${DateTime.now().toLocal().toString().split(' ')[0]}', style: const pw.TextStyle(fontSize: 9)),
+                          pw.Text('Za klijenta:', style: pw.TextStyle(font: fontBold, fontSize: 10)),
+                          pw.Text(k.klijentNaziv, style: pw.TextStyle(font: fontRegular, fontSize: 10)),
+                          pw.SizedBox(height: 6),
+                          pw.Text('Datum: ${k.datumPolaska}', style: pw.TextStyle(font: fontRegular, fontSize: 9)),
                         ],
                       ),
                     ],
                   ),
                   pw.Divider(height: 20),
-                  pw.Text('Za klijenta:', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
-                  pw.Text(k.klijentNaziv, style: const pw.TextStyle(fontSize: 10)),
-                  pw.SizedBox(height: 20),
+                  pw.SizedBox(height: 10),
+                  pw.Center(
+                    child: pw.Text('PONUDA ZA PRIJEVOZ', style: pw.TextStyle(font: fontBold, fontSize: 16, color: PdfColors.blue800)),
+                  ),
+                  pw.SizedBox(height: 10),
+                  pw.Text('Predmet: ${k.nazivKalkulacije}', style: pw.TextStyle(font: fontBold, fontSize: 11)),
+                  pw.SizedBox(height: 15),
                   pw.Container(
                     padding: const pw.EdgeInsets.all(12),
                     decoration: const pw.BoxDecoration(color: PdfColors.grey200, borderRadius: pw.BorderRadius.all(pw.Radius.circular(6))),
                     child: pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
-                        pw.Text('SPECIFIKACIJA USLUGE', style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
+                        pw.Text('SPECIFIKACIJA USLUGE', style: pw.TextStyle(font: fontBold, fontSize: 13, color: PdfColors.blue900)),
                         pw.SizedBox(height: 8),
-                        pw.Text('Ruta: ${k.ruta}', style: const pw.TextStyle(fontSize: 11)),
-                        pw.Text('Termin: ${k.datumPolaska} - ${k.datumPovratka}', style: const pw.TextStyle(fontSize: 11)),
-                        pw.Text('Kategorija vozila: ${k.vozilo}', style: const pw.TextStyle(fontSize: 11)),
+                        pw.Text('Ruta: ${k.ruta}', style: pw.TextStyle(font: fontRegular, fontSize: 11)),
+                        pw.Text('Termin: ${k.datumPolaska} - ${k.datumPovratka}', style: pw.TextStyle(font: fontRegular, fontSize: 11)),
+                        pw.Text('Kategorija vozila: ${k.vozilo}', style: pw.TextStyle(font: fontRegular, fontSize: 11)),
                       ],
                     ),
                   ),
                   pw.SizedBox(height: 25),
+                  
+                  // Razrada cijene u ponudi za klijente u sustavu PDV-a
                   pw.Container(
-                    alignment: pw.Alignment.centerRight,
                     padding: const pw.EdgeInsets.all(12),
                     decoration: const pw.BoxDecoration(color: PdfColors.orange800, borderRadius: pw.BorderRadius.all(pw.Radius.circular(6))),
-                    child: pw.Row(
-                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    child: pw.Column(
                       children: [
-                        pw.Text(klijentObj.uSustavuPdv ? 'UKUPNA CIJENA S PDV-om:' : 'UKUPNA CIJENA USLUGE:', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
-                        pw.Text('${k.ukupnaCijena.toStringAsFixed(2)} €', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+                        if (klijentObj.uSustavuPdv) ...[
+                          pw.Row(
+                            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                            children: [
+                              pw.Text('Osnovica (Bez PDV-a):', style: pw.TextStyle(font: fontRegular, fontSize: 12, color: PdfColors.white)),
+                              pw.Text('${osnovica.toStringAsFixed(2)} €', style: pw.TextStyle(font: fontRegular, fontSize: 12, color: PdfColors.white)),
+                            ],
+                          ),
+                          pw.SizedBox(height: 4),
+                          pw.Row(
+                            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                            children: [
+                              pw.Text('PDV (25%):', style: pw.TextStyle(font: fontRegular, fontSize: 12, color: PdfColors.white)),
+                              pw.Text('${izlasniPdv.toStringAsFixed(2)} €', style: pw.TextStyle(font: fontRegular, fontSize: 12, color: PdfColors.white)),
+                            ],
+                          ),
+                          pw.Divider(color: PdfColors.white),
+                        ],
+                        pw.Row(
+                          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                          children: [
+                            pw.Text(klijentObj.uSustavuPdv ? 'UKUPNA CIJENA S PDV-om:' : 'UKUPNA CIJENA USLUGE:', style: pw.TextStyle(font: fontBold, fontSize: 14, color: PdfColors.white)),
+                            pw.Text('${ukupnaCijenaSPdv.toStringAsFixed(2)} €', style: pw.TextStyle(font: fontBold, fontSize: 18, color: PdfColors.white)),
+                          ],
+                        ),
                       ],
                     ),
                   ),
                   pw.Spacer(),
-                  pw.Center(child: pw.Text('Zahvaljujemo na povjerenju! Ponuda vrijedi 15 dana.', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700))),
+                  pw.Center(child: pw.Text('Zahvaljujemo na povjerenju! Ponuda vrijedi 15 dana.', style: pw.TextStyle(font: fontRegular, fontSize: 9, color: PdfColors.grey700))),
                 ],
               );
             },
@@ -1114,8 +1173,6 @@ class KalkulacijeTab extends StatelessWidget {
                         Text('Termin: ${k.datumPolaska} - ${k.datumPovratka}'),
                         Text('Ukupno: ${k.ukupnaCijena.toStringAsFixed(2)} €', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFEA580C), fontSize: 15)),
                         const Divider(height: 16),
-                        
-                        // Traženi raspored gumba: Uredi, Obriši, Printaj kalkulaciju, Izradi ponudu
                         Wrap(
                           spacing: 4,
                           alignment: WrapAlignment.spaceBetween,
