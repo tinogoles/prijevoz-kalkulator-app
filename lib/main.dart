@@ -296,3 +296,6 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
 }
 
 // Ostatak klasa za sučelje (IzracunTroskovaTab, KalkulacijeTab, PostavkeTab itd.) ostaje nepromijenjen ispod...
+import 'tabs/izracun_troskova_tab.dart';
+import 'tabs/kalkulacije_tab.dart';
+import 'tabs/postavke_tab.dart';
