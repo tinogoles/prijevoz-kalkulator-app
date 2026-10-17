@@ -1,3 +1,4 @@
+import 'package:prijevoz_kalkulator/services/cestarine_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -9,10 +10,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 void main() async {
-  // Obavezno osigurava inicijalizaciju Flutter vezanja
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicijalizacija Firebase-a s eksplicitnim opcijama za stabilan rad na mobitelu i webu
   await Firebase.initializeApp(
     options: const FirebaseOptions(
       apiKey: "AIzaSyCYB1XlQMLH5DQc_hkrs15pRB-YvovMpmg",
@@ -188,7 +187,6 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
   List<KlijentModel> _klijenti = [];
   List<KalkulacijaModel> _spremljeneKalkulacije = [];
   KlijentModel? _aktivniKlijent;
-
   KalkulacijaModel? _kalkulacijaZaUredivanje;
 
   @override
@@ -317,6 +315,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
     );
   }
 }
+
 class IzracunTroskovaTab extends StatefulWidget {
   final PrijevoznikModel prijevoznik;
   final List<KlijentModel> klijenti;
@@ -901,6 +900,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     );
   }
 }
+
 class KalkulacijeTab extends StatelessWidget {
   final List<KalkulacijaModel> kalkulacije;
   final PrijevoznikModel prijevoznik;
@@ -1232,6 +1232,8 @@ class PostavkeTab extends StatefulWidget {
 }
 
 class _PostavkeTabState extends State<PostavkeTab> {
+  final CestarineService _cestarineService = CestarineService();
+
   late TextEditingController _nazivController;
   late TextEditingController _vlasnikController;
   late TextEditingController _adresaController;
@@ -1384,6 +1386,45 @@ class _PostavkeTabState extends State<PostavkeTab> {
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0284C7), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14)),
             ),
             const Divider(height: 40, thickness: 2),
+
+            const Text('Upravljanje Bazom Cestarina', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0284C7))),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.cloud_upload),
+                label: const Text('Inicijaliziraj bazu cestarina (HR, SI, BA, ME)'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigo,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
+                onPressed: () async {
+                  try {
+                    await _cestarineService.inicijalizirajBazuUFirebaseu();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Baza cestarina uspješno inicijalizirana na Cloud Firestore-u!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Greška pri inicijalizaciji baze: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+            ),
+            const Divider(height: 40, thickness: 2),
+
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
