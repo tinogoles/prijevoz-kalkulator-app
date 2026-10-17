@@ -1,14 +1,14 @@
-name: Build Web Release
+name: Build and Deploy Web
 
 on:
   push:
     branches: [ "feature/web-support" ]
-  pull_request:
-    branches: [ "feature/web-support" ]
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
     - uses: actions/checkout@v4
@@ -22,17 +22,14 @@ jobs:
     - name: Disable analytics
       run: flutter config --no-analytics
 
-    - name: Generate Web files
-      run: flutter create . --org com.primjer --project-name prijevoz_kalkulator --platforms=web
-
     - name: Install dependencies
       run: flutter pub get
 
     - name: Build Web
-      run: flutter build web --release
+      run: flutter build web --release --base-href "/prijevoz-kalkulator-app/"
 
-    - name: Upload Web Artifact
-      uses: actions/upload-artifact@v4
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
       with:
-        name: web-release
-        path: build/web
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: build/web
