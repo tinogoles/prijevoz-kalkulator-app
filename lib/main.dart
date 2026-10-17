@@ -312,11 +312,14 @@ class IzracunTroskovaTab extends StatefulWidget {
 }
 
 class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
+  bool _isLoadingRoute = false; // <--- OVA LINIJA JE NEDOSTAJALA
+
   final TextEditingController _nazivKalkulacijeController = TextEditingController(text: 'Izlet - Ruta po točkama');
   final TextEditingController _polazisteController = TextEditingController(text: 'Zagreb');
   final TextEditingController _odrediste1Controller = TextEditingController();
   final TextEditingController _odrediste2Controller = TextEditingController();
   final TextEditingController _konacnoOdredisteController = TextEditingController(text: 'Split');
+  // ... nastavak ostalih kontrolera ...
 
   final TextEditingController _datumPolaskaController = TextEditingController(text: '01.06.2026.');
   final TextEditingController _datumPovratkaController = TextEditingController(text: '03.06.2026.');
