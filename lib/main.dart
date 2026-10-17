@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -12,8 +13,21 @@ void main() async {
   // Osigurava inicijalizaciju Flutter vezanja
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Inicijalizacija Firebase-a za rad u oblaku
-  await Firebase.initializeApp();
+  // Inicijalizacija Firebase-a prilagođena za web i mobilne uređaje
+  if (kIsWeb) {
+    await Firebase.initializeApp(
+      options: const FirebaseOptions(
+        apiKey: "AIzaSyCYB1XlQMLH5DQc_hkrs15pRB-YvovMpmg",
+        authDomain: "prijevozkalkulator.firebaseapp.com",
+        projectId: "prijevozkalkulator",
+        storageBucket: "prijevozkalkulator.firebasestorage.app",
+        messagingSenderId: "922321976582",
+        appId: "1:922321976582:web:dc5e206991297b10b7287",
+      ),
+    );
+  } else {
+    await Firebase.initializeApp();
+  }
 
   runApp(const PrijevozKalkulatorApp());
 }
@@ -294,6 +308,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
     );
   }
 }
+
 class IzracunTroskovaTab extends StatelessWidget {
   final PrijevoznikModel prijevoznik;
   final List<KlijentModel> klijenti;
@@ -375,4 +390,3 @@ class PostavkeTab extends StatelessWidget {
     );
   }
 }
-// Ostatak klasa za sučelje (IzracunTroskovaTab, KalkulacijeTab, PostavkeTab itd.) ostaje nepromijenjen ispod...
