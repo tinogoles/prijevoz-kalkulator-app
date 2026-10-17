@@ -6,6 +6,7 @@ import 'package:prijevoz_kalkulator/widgets/unos_rute_widget.dart';
 import 'package:prijevoz_kalkulator/utils/pdf_generator.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
@@ -152,6 +153,18 @@ class KalkulacijaModel {
     tkoPlacaNocenje: json['tkoPlacaNocenje'] ?? 'Prijevoznik plaća', cijenaNocenja: json['cijenaNocenja'] ?? '60',
     marza: json['marza'] ?? '20', cijenaGoriva: json['cijenaGoriva'] ?? '1.45', dnevnica: json['dnevnica'] ?? '80',
   );
+}
+
+class IbanInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    String text = newValue.text.toUpperCase();
+    if (text.length > 21) text = text.substring(0, 21);
+    return TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
 }
 
 class GlavniNavigatorScreen extends StatefulWidget {
@@ -363,12 +376,48 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
         _dnevnicaController.text = k.dnevnica;
         if (_potrosnjaVozila.containsKey(k.vozilo)) _odabranoVozilo = k.vozilo;
       });
+      _preracunajBrojDana();
     }
   }
 
-  Future<void> _odaberiDatum(BuildContext context, TextEditingController controller) async {
-    final DateTime? odabir = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime(2020), lastDate: DateTime(2035));
-    if (odabir != null) { setState(() { controller.text = _formatirajDatum(odabir); _preracunajBrojDana(); }); }
+  Future<void> _odaberiDatumPolaska(BuildContext context) async {
+    final DateTime? odabir = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2035),
+    );
+    if (odabir != null) {
+      setState(() {
+        String noviDatum = _formatirajDatum(odabir);
+        _datumPolaskaController.text = noviDatum;
+        _datumPovratkaController.text = noviDatum;
+        _preracunajBrojDana();
+      });
+    }
+  }
+
+  Future<void> _odaberiDatumPovratka(BuildContext context) async {
+    DateTime pocetniDatum = DateTime.now();
+    try {
+      String d1Str = _datumPolaskaController.text.replaceAll('.', '').trim();
+      if (d1Str.length >= 8) {
+        pocetniDatum = DateTime(int.parse(d1Str.substring(4, 8)), int.parse(d1Str.substring(2, 4)), int.parse(d1Str.substring(0, 2)));
+      }
+    } catch (_) {}
+
+    final DateTime? odabir = await showDatePicker(
+      context: context,
+      initialDate: pocetniDatum,
+      firstDate: pocetniDatum,
+      lastDate: DateTime(2035),
+    );
+    if (odabir != null) {
+      setState(() {
+        _datumPovratkaController.text = _formatirajDatum(odabir);
+        _preracunajBrojDana();
+      });
+    }
   }
 
   void _preracunajBrojDana() {
@@ -522,11 +571,10 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
                 });
               },
               izracunatiBrojDana: _izracunatiBrojDana,
-              onOdaberiDatumPolaska: () => _odaberiDatum(context, _datumPolaskaController),
-              onOdaberiDatumPovratka: () => _odaberiDatum(context, _datumPovratkaController),
+              onOdaberiDatumPolaska: () => _odaberiDatumPolaska(context),
+              onOdaberiDatumPovratka: () => _odaberiDatumPovratka(context),
               onIzracunajRutu: _izracunajRutuMultiPoint,
               isLoadingRoute: _isLoadingRoute,
-              sakrijGumbZaRutu: true, // Uklonjen OSRM gumb iz ove komponente
             ),
             const SizedBox(height: 12),
             TextField(controller: _nazivKalkulacijeController, decoration: const InputDecoration(labelText: 'Naziv kalkulacije', border: OutlineInputBorder())),
@@ -567,7 +615,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               opcijeAutocesta: _opcijeAutocesta,
             ),
             const SizedBox(height: 16),
-            // Jedini preostali OSRM gumb točno iznad gumba za spremanje
             ElevatedButton.icon(
               onPressed: _isLoadingRoute ? null : _izracunajRutuMultiPoint,
               icon: const Icon(Icons.route),
@@ -704,6 +751,15 @@ class _PostavkeTabState extends State<PostavkeTab> {
   }
 
   void _spremiPostavke() {
+    if (_oibC.text.trim().length != 11) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('OIB mora imati točno 11 znamenki!'), backgroundColor: Colors.red));
+      return;
+    }
+    if (_ibanC.text.trim().length != 21 || !_ibanC.text.toUpperCase().startsWith('HR')) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('IBAN mora početi s HR i imati točno 21 znak!'), backgroundColor: Colors.red));
+      return;
+    }
+
     widget.prijevoznik.naziv = _nazivC.text;
     widget.prijevoznik.vlasnik = _vlasnikC.text;
     widget.prijevoznik.adresa = _adresaC.text;
@@ -741,7 +797,15 @@ class _PostavkeTabState extends State<PostavkeTab> {
               TextField(controller: vlaC, decoration: const InputDecoration(labelText: 'Vlasnik / Kontakt osoba')),
               TextField(controller: adrC, decoration: const InputDecoration(labelText: 'Adresa')),
               TextField(controller: grdC, decoration: const InputDecoration(labelText: 'Grad')),
-              TextField(controller: oibC, decoration: const InputDecoration(labelText: 'OIB')),
+              TextField(
+                controller: oibC,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(11),
+                ],
+                decoration: const InputDecoration(labelText: 'OIB (točno 11 znamenki)'),
+              ),
               TextField(controller: telC, decoration: const InputDecoration(labelText: 'Telefon')),
               TextField(controller: emlC, decoration: const InputDecoration(labelText: 'Email')),
               StatefulBuilder(
@@ -761,6 +825,10 @@ class _PostavkeTabState extends State<PostavkeTab> {
           ElevatedButton(
             onPressed: () {
               if (nazC.text.trim().isEmpty) return;
+              if (oibC.text.trim().isNotEmpty && oibC.text.trim().length != 11) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('OIB klijenta mora imati točno 11 znamenki!'), backgroundColor: Colors.red));
+                return;
+              }
               String id = klijent?.id ?? DateTime.now().millisecondsSinceEpoch.toString();
               var noviK = KlijentModel(
                 id: id,
@@ -811,7 +879,15 @@ class _PostavkeTabState extends State<PostavkeTab> {
           const SizedBox(height: 8),
           TextField(controller: _gradC, decoration: const InputDecoration(labelText: 'Grad', border: OutlineInputBorder())),
           const SizedBox(height: 8),
-          TextField(controller: _oibC, decoration: const InputDecoration(labelText: 'OIB', border: OutlineInputBorder())),
+          TextField(
+            controller: _oibC,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(11),
+            ],
+            decoration: const InputDecoration(labelText: 'OIB (točno 11 znamenki)', border: OutlineInputBorder()),
+          ),
           const SizedBox(height: 8),
           TextField(controller: _telC, decoration: const InputDecoration(labelText: 'Telefon', border: OutlineInputBorder())),
           const SizedBox(height: 8),
@@ -819,7 +895,14 @@ class _PostavkeTabState extends State<PostavkeTab> {
           const SizedBox(height: 8),
           TextField(controller: _bankaC, decoration: const InputDecoration(labelText: 'Banka', border: OutlineInputBorder())),
           const SizedBox(height: 8),
-          TextField(controller: _ibanC, decoration: const InputDecoration(labelText: 'IBAN', border: OutlineInputBorder())),
+          TextField(
+            controller: _ibanC,
+            inputFormatters: [
+              IbanInputFormatter(),
+              LengthLimitingTextInputFormatter(21),
+            ],
+            decoration: const InputDecoration(labelText: 'IBAN (npr. HR... - 21 znak)', border: OutlineInputBorder()),
+          ),
           const SizedBox(height: 8),
           CheckboxListTile(
             title: const Text('Prijevoznik je u sustavu PDV-a'),
