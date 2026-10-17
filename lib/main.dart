@@ -432,7 +432,51 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       }
     } catch (_) {}
   }
+class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
+  // ... (vaši postojeći kontroleri i varijable)
 
+  // Ovdje ubacite mapu i funkciju za automatsko mapiranje gradova na naplatne kućice:
+  final Map<String, String> _mapiranjeGradovaNaCestarinu = {
+    'split': 'dugopolje',
+    'zagreb': 'lučko',
+    'zadar': 'zadar',
+    'šibenik': 'šibenik',
+    'karlovac': 'karlovac',
+    'rijeka': 'rijeka',
+    'slavonski brod': 'slavonski brod',
+    'osijek': 'osijek',
+    'varaždin': 'varaždin',
+  };
+
+  void _automatskiDetektirajCestarinuPoGradovima(String polaziste, String odrediste) {
+    String p = polaziste.trim().toLowerCase();
+    String o = odrediste.trim().toLowerCase();
+
+    String? cestarinaUlaz = _mapiranjeGradovaNaCestarinu[p];
+    String? cestarinaIzlaz = _mapiranjeGradovaNaCestarinu[o];
+
+    if (cestarinaUlaz != null && cestarinaIzlaz != null) {
+      for (var relacija in _bazaRelacijaCestarina) {
+        String ulazBaza = (relacija['ulaz'] ?? '').toString().toLowerCase();
+        String izlazBaza = (relacija['izlaz'] ?? '').toString().toLowerCase();
+
+        bool poklapanje = (ulazBaza.contains(cestarinaUlaz) && izlazBaza.contains(cestarinaIzlaz)) ||
+                          (ulazBaza.contains(cestarinaIzlaz) && izlazBaza.contains(cestarinaUlaz));
+
+        if (poklapanje) {
+          setState(() {
+            _koristiAutocestu = true;
+            Map<String, dynamic> cestarineMap = relacija['cijene'] ?? {};
+            if (cestarineMap.containsKey(_odabranoVozilo)) {
+              double jednosmjerna = cestarineMap[_odabranoVozilo];
+              _cestarinaController.text = (jednosmjerna * (_povratnoPutovanje ? 2.0 : 1.0)).toStringAsFixed(2);
+            }
+          });
+          break;
+        }
+      }
+    }
+  }
   void _automatskiDetektirajCestarinu(List<String> tocke) {
     String spojeneTocke = tocke.join(' ').toLowerCase();
     for (var relacija in _bazaRelacijaCestarina) {
@@ -452,6 +496,50 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     }
   }
 
+ // Mapa koja povezuje nazive gradova s najbližim ulazima/izlazima s autoceste
+  final Map<String, String> _mapiranjeGradovaNaCestarinu = {
+    'split': 'dugopolje',
+    'zagreb': 'lučko',
+    'zadar': 'zadar',
+    'šibenik': 'šibenik',
+    'karlovac': 'karlovac',
+    'rijeka': 'rijeka',
+    'slavonski brod': 'slavonski brod',
+    'osijek': 'osijek',
+    'varaždin': 'varaždin',
+  };
+
+  void _automatskiDetektirajCestarinuPoGradovima(String polaziste, String odrediste) {
+    String p = polaziste.trim().toLowerCase();
+    String o = odrediste.trim().toLowerCase();
+
+    String? cestarinaUlaz = _mapiranjeGradovaNaCestarinu[p];
+    String? cestarinaIzlaz = _mapiranjeGradovaNaCestarinu[o];
+
+    if (cestarinaUlaz != null && cestarinaIzlaz != null) {
+      for (var relacija in _bazaRelacijaCestarina) {
+        String ulazBaza = (relacija['ulaz'] ?? '').toString().toLowerCase();
+        String izlazBaza = (relacija['izlaz'] ?? '').toString().toLowerCase();
+
+        bool poklapanje = (ulazBaza.contains(cestarinaUlaz) && izlazBaza.contains(cestarinaIzlaz)) ||
+                          (ulazBaza.contains(cestarinaIzlaz) && izlazBaza.contains(cestarinaUlaz));
+
+        if (poklapanje) {
+          setState(() {
+            _koristiAutocestu = true;
+            Map<String, dynamic> cestarineMap = relacija['cijene'] ?? {};
+            if (cestarineMap.containsKey(_odabranoVozilo)) {
+              double jednosmjerna = cestarineMap[_odabranoVozilo];
+              _cestarinaController.text = (jednosmjerna * (_povratnoPutovanje ? 2.0 : 1.0)).toStringAsFixed(2);
+            }
+          });
+          break;
+        }
+      }
+    }
+  }
+
+  // OVDJE ZAMJENJUJETE SVOJU STARU METODU OVOM NOVOM:
   Future<void> _izracunajRutuMultiPoint() async {
     List<String> tocke = [];
     if (_polazisteController.text.trim().isNotEmpty) tocke.add(_polazisteController.text.trim());
@@ -491,7 +579,10 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
         _bazaKmJednosmjerno = kmJedan;
         _kmController.text = (_bazaKmJednosmjerno * (_povratnoPutovanje ? 2.0 : 1.0)).toStringAsFixed(0);
       });
-      _automatskiDetektirajCestarinu(tocke);
+      
+      // Pozivamo našu novu funkciju koja automatski prepoznaje cestarinu na temelju gradova
+      _automatskiDetektirajCestarinuPoGradovima(_polazisteController.text, _konacnoOdredisteController.text);
+
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Izračunato: ${kmJedan.toStringAsFixed(1)} km'), backgroundColor: Colors.green));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red));
