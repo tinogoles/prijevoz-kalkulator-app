@@ -78,6 +78,18 @@ class BazaCestarinaData {
       }
     },
     {
+      'id': 'dugopolje_zadar_istok',
+      'ulaz': 'Dugopolje',
+      'izlaz': 'Zadar istok',
+      'koncesionar': 'HAC (A1)',
+      'cijene': {
+        'Kombi 8+1': 8.50,
+        'Mini bus <20': 13.50,
+        'Midi bus 35': 19.80,
+        'Veliki autobus 50': 30.00,
+      }
+    },
+    {
       'id': 'lucko_sibenik',
       'ulaz': 'Lučko',
       'izlaz': 'Šibenik',
