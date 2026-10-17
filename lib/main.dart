@@ -342,25 +342,27 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   void _provjeriUredjivanje() {
     if (widget.kalkulacijaZaUredivanje != null) {
       var k = widget.kalkulacijaZaUredivanje!;
-      _trenutniIdUredjivanja = k.id;
-      _nazivKalkulacijeController.text = k.nazivKalkulacije;
-      _polazisteController.text = k.polaziste;
-      _odrediste1Controller.text = k.odrediste1;
-      _odrediste2Controller.text = k.odrediste2;
-      _konacnoOdredisteController.text = k.konacnoOdrediste;
-      _datumPolaskaController.text = k.datumPolaska;
-      _datumPovratkaController.text = k.datumPovratka;
-      _kmController.text = k.km;
-      _cestarinaController.text = k.cestarina;
-      _povratnoPutovanje = k.povratno;
-      _koristiAutocestu = k.koristiAutocestu;
-      _odabranaAutocesta = k.odabranaAutocesta;
-      _tkoPlacaNocenje = k.tkoPlacaNocenje;
-      _cijenaNocenjaController.text = k.cijenaNocenja;
-      _marzaController.text = k.marza;
-      _cijenaGorivaController.text = k.cijenaGoriva;
-      _dnevnicaController.text = k.dnevnica;
-      if (_potrosnjaVozila.containsKey(k.vozilo)) _odabranoVozilo = k.vozilo;
+      setState(() {
+        _trenutniIdUredjivanja = k.id;
+        _nazivKalkulacijeController.text = k.nazivKalkulacije;
+        _polazisteController.text = k.polaziste;
+        _odrediste1Controller.text = k.odrediste1;
+        _odrediste2Controller.text = k.odrediste2;
+        _konacnoOdredisteController.text = k.konacnoOdrediste;
+        _datumPolaskaController.text = k.datumPolaska;
+        _datumPovratkaController.text = k.datumPovratka;
+        _kmController.text = k.km;
+        _cestarinaController.text = k.cestarina;
+        _povratnoPutovanje = k.povratno;
+        _koristiAutocestu = k.koristiAutocestu;
+        _odabranaAutocesta = k.odabranaAutocesta;
+        _tkoPlacaNocenje = k.tkoPlacaNocenje;
+        _cijenaNocenjaController.text = k.cijenaNocenja;
+        _marzaController.text = k.marza;
+        _cijenaGorivaController.text = k.cijenaGoriva;
+        _dnevnicaController.text = k.dnevnica;
+        if (_potrosnjaVozila.containsKey(k.vozilo)) _odabranoVozilo = k.vozilo;
+      });
     }
   }
 
@@ -616,7 +618,7 @@ class KalkulacijeTab extends StatelessWidget {
                   Text('Ruta: ${k.ruta}'),
                   Text('Termin: ${k.datumPolaska} - ${k.datumPovratka}'),
                   const SizedBox(height: 6),
-                  Text('Ukupno: ${k.ukupnaCijena.toStringAsFixed(2)} €', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFFEA580C))),
+                  Text('Ukupno: ${k.ukupnaCijena.toStringAsFixed(2)} EUR', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFFEA580C))),
                   const Divider(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
