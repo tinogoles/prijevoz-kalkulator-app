@@ -22,6 +22,9 @@ jobs:
     - name: Disable analytics
       run: flutter config --no-analytics
 
+    - name: Generate Web files
+      run: flutter create . --org com.primjer --project-name prijevoz_kalkulator --platforms=web
+
     - name: Install dependencies
       run: flutter pub get
 
