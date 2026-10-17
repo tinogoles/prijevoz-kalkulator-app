@@ -12,21 +12,17 @@ void main() async {
   // Obavezno osigurava inicijalizaciju Flutter vezanja
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicijalizacija Firebase-a prilagođena za Web i mobilne platforme
-  if (kIsWeb) {
-    await Firebase.initializeApp(
-      options: const FirebaseOptions(
-        apiKey: "AIzaSyCYB1XlQMLH5DQc_hkrs15pRB-YvovMpmg",
-        authDomain: "prijevozkalkulator.firebaseapp.com",
-        projectId: "prijevozkalkulator",
-        storageBucket: "prijevozkalkulator.firebasestorage.app",
-        messagingSenderId: "922321976582",
-        appId: "1:922321976582:web:dc5e206991297b10b7287",
-      ),
-    );
-  } else {
-    await Firebase.initializeApp();
-  }
+  // Inicijalizacija Firebase-a s eksplicitnim opcijama za stabilan rad na mobitelu i webu
+  await Firebase.initializeApp(
+    options: const FirebaseOptions(
+      apiKey: "AIzaSyCYB1XlQMLH5DQc_hkrs15pRB-YvovMpmg",
+      authDomain: "prijevozkalkulator.firebaseapp.com",
+      projectId: "prijevozkalkulator",
+      storageBucket: "prijevozkalkulator.firebasestorage.app",
+      messagingSenderId: "922321976582",
+      appId: "1:922321976582:web:dc5e206991297b10b7287",
+    ),
+  );
 
   runApp(const PrijevozKalkulatorApp());
 }
@@ -201,7 +197,6 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
     _ucitajPodatkeIzFirestore();
   }
 
-  // Čitanje podataka u stvarnom vremenu iz Cloud Firestore-a
   void _ucitajPodatkeIzFirestore() {
     final firestore = FirebaseFirestore.instance;
 
@@ -243,9 +238,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
 
   Future<void> _spremiPodatkeUFirestore() async {
     final firestore = FirebaseFirestore.instance;
-
     await firestore.collection('postavke').doc('prijevoznik').set(_prijevoznik.toJson());
-
     for (var kalk in _spremljeneKalkulacije) {
       await firestore.collection('kalkulacije').doc(kalk.id).set(kalk.toJson());
     }
@@ -324,7 +317,6 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
     );
   }
 }
-
 class IzracunTroskovaTab extends StatefulWidget {
   final PrijevoznikModel prijevoznik;
   final List<KlijentModel> klijenti;
@@ -663,7 +655,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Odabir Klijenta
             Card(
               elevation: 2,
               color: Colors.blue.shade50,
@@ -691,8 +682,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Rute
             Card(
               elevation: 3,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -731,8 +720,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Datumi s DatePickerom
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -781,11 +768,8 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               ),
             ),
             const SizedBox(height: 16),
-
             TextField(controller: _nazivKalkulacijeController, decoration: const InputDecoration(labelText: 'Naziv kalkulacije / ponude', border: OutlineInputBorder(), prefixIcon: Icon(Icons.bookmark), filled: true, fillColor: Colors.white)),
             const SizedBox(height: 16),
-
-            // Vozilo i parametri
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -839,8 +823,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // PREMJEŠTENI MENI CESTARINE
             Card(
               elevation: 2,
               color: Colors.amber.shade50,
@@ -888,8 +870,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // PLAVI GUMB: OSRM
             ElevatedButton.icon(
               onPressed: _isLoadingRoute ? null : _izracunajRutuMultiPoint,
               icon: _isLoadingRoute
@@ -904,8 +884,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               ),
             ),
             const SizedBox(height: 12),
-
-            // ZELENI GUMB: SPREMI
             ElevatedButton.icon(
               onPressed: _spremi,
               icon: const Icon(Icons.calculate, color: Colors.white),
@@ -923,7 +901,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     );
   }
 }
-
 class KalkulacijeTab extends StatelessWidget {
   final List<KalkulacijaModel> kalkulacije;
   final PrijevoznikModel prijevoznik;
@@ -1219,18 +1196,17 @@ class KalkulacijeTab extends StatelessWidget {
                             ),
                             TextButton.icon(
                               onPressed: () => _printajKalkulaciju(context, k),
-                              icon: const Icon(Icons.picture_as_pdf, color: Colors.red, size: 18),
-                              label: const Text('Interno PDF', style: TextStyle(color: Colors.red)),
+                              icon: const Icon(Icons.print, size: 18, color: Colors.indigo),
+                              label: const Text('Interna kalkulacija', style: TextStyle(color: Colors.indigo)),
                             ),
-                            ElevatedButton.icon(
+                            TextButton.icon(
                               onPressed: () => _izradiPonudu(context, k),
-                              icon: const Icon(Icons.send, size: 18),
-                              label: const Text('Ponuda'),
-                              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16A34A), foregroundColor: Colors.white),
+                              icon: const Icon(Icons.picture_as_pdf, size: 18, color: Colors.green),
+                              label: const Text('Ponuda PDF', style: TextStyle(color: Colors.green)),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.grey, size: 20),
                               onPressed: () => onObrisi(k.id),
+                              icon: const Icon(Icons.delete, color: Colors.red, size: 20),
                             ),
                           ],
                         ),
@@ -1249,12 +1225,7 @@ class PostavkeTab extends StatefulWidget {
   final List<KlijentModel> klijenti;
   final VoidCallback onUpdate;
 
-  const PostavkeTab({
-    super.key,
-    required this.prijevoznik,
-    required this.klijenti,
-    required this.onUpdate,
-  });
+  const PostavkeTab({super.key, required this.prijevoznik, required this.klijenti, required this.onUpdate});
 
   @override
   State<PostavkeTab> createState() => _PostavkeTabState();
@@ -1266,107 +1237,117 @@ class _PostavkeTabState extends State<PostavkeTab> {
   late TextEditingController _adresaController;
   late TextEditingController _gradController;
   late TextEditingController _oibController;
-  late TextEditingController _telefonController;
+  late TextEditingController _telController;
   late TextEditingController _emailController;
-  late bool _uSustavuPdv;
 
   @override
   void initState() {
     super.initState();
+    _inicijalizirajControllere();
+  }
+
+  void _inicijalizirajControllere() {
     _nazivController = TextEditingController(text: widget.prijevoznik.naziv);
     _vlasnikController = TextEditingController(text: widget.prijevoznik.vlasnik);
     _adresaController = TextEditingController(text: widget.prijevoznik.adresa);
     _gradController = TextEditingController(text: widget.prijevoznik.grad);
     _oibController = TextEditingController(text: widget.prijevoznik.oib);
-    _telefonController = TextEditingController(text: widget.prijevoznik.telefon);
+    _telController = TextEditingController(text: widget.prijevoznik.telefon);
     _emailController = TextEditingController(text: widget.prijevoznik.email);
-    _uSustavuPdv = widget.prijevoznik.uSustavuPdv;
   }
 
-  void _spremiPrijevoznika() {
+  @override
+  void didUpdateWidget(covariant PostavkeTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.prijevoznik != oldWidget.prijevoznik) {
+      _inicijalizirajControllere();
+    }
+  }
+
+  void _spremiPostavke() {
     widget.prijevoznik.naziv = _nazivController.text;
     widget.prijevoznik.vlasnik = _vlasnikController.text;
     widget.prijevoznik.adresa = _adresaController.text;
     widget.prijevoznik.grad = _gradController.text;
     widget.prijevoznik.oib = _oibController.text;
-    widget.prijevoznik.telefon = _telefonController.text;
+    widget.prijevoznik.telefon = _telController.text;
     widget.prijevoznik.email = _emailController.text;
-    widget.prijevoznik.uSustavuPdv = _uSustavuPdv;
 
     widget.onUpdate();
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Podaci o prijevozniku ažurirani!'), backgroundColor: Colors.green));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Postavke prijevoznika uspješno spremljene!'), backgroundColor: Colors.green));
   }
 
   void _prikaziDijalogZaKlijenta({KlijentModel? klijent}) {
-    final nazivCtrl = TextEditingController(text: klijent?.naziv ?? '');
-    final vlasnikCtrl = TextEditingController(text: klijent?.vlasnik ?? '');
-    final adresaCtrl = TextEditingController(text: klijent?.adresa ?? '');
-    final gradCtrl = TextEditingController(text: klijent?.grad ?? '');
-    final oibCtrl = TextEditingController(text: klijent?.oib ?? '');
-    final telefonCtrl = TextEditingController(text: klijent?.telefon ?? '');
-    final emailCtrl = TextEditingController(text: klijent?.email ?? '');
-    bool pdvVal = klijent?.uSustavuPdv ?? true;
+    final nazC = TextEditingController(text: klijent?.naziv ?? '');
+    final vlaC = TextEditingController(text: klijent?.vlasnik ?? '');
+    final adrC = TextEditingController(text: klijent?.adresa ?? '');
+    final grdC = TextEditingController(text: klijent?.grad ?? '');
+    final oibC = TextEditingController(text: klijent?.oib ?? '');
+    final telC = TextEditingController(text: klijent?.telefon ?? '');
+    final emlC = TextEditingController(text: klijent?.email ?? '');
+    bool pdv = klijent?.uSustavuPdv ?? true;
 
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(klijent == null ? 'Dodaj Novog Klijenta' : 'Uredi Klijenta'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(controller: nazivCtrl, decoration: const InputDecoration(labelText: 'Naziv Tvrtke / Agencije')),
-                TextField(controller: vlasnikCtrl, decoration: const InputDecoration(labelText: 'Kontakt Osoba / Vlasnik')),
-                TextField(controller: adresaCtrl, decoration: const InputDecoration(labelText: 'Adresa')),
-                TextField(controller: gradCtrl, decoration: const InputDecoration(labelText: 'Grad')),
-                TextField(controller: oibCtrl, decoration: const InputDecoration(labelText: 'OIB')),
-                TextField(controller: telefonCtrl, decoration: const InputDecoration(labelText: 'Telefon')),
-                TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email')),
-                SwitchListTile(
-                  title: const Text('U sustavu PDV-a'),
-                  value: pdvVal,
-                  onChanged: (v) => setDialogState(() => pdvVal = v),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Odustani')),
-            ElevatedButton(
-              onPressed: () {
-                if (klijent == null) {
-                  var novi = KlijentModel(
-                    id: DateTime.now().millisecondsSinceEpoch.toString(),
-                    naziv: nazivCtrl.text,
-                    vlasnik: vlasnikCtrl.text,
-                    adresa: adresaCtrl.text,
-                    grad: gradCtrl.text,
-                    oib: oibCtrl.text,
-                    telefon: telefonCtrl.text,
-                    email: emailCtrl.text,
-                    uSustavuPdv: pdvVal,
+      builder: (ctx) => AlertDialog(
+        title: Text(klijent == null ? 'Novi Klijent' : 'Uredi Klijenta'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: nazC, decoration: const InputDecoration(labelText: 'Naziv klijenta / agencije')),
+              TextField(controller: vlaC, decoration: const InputDecoration(labelText: 'Kontakt osoba')),
+              TextField(controller: adrC, decoration: const InputDecoration(labelText: 'Adresa')),
+              TextField(controller: grdC, decoration: const InputDecoration(labelText: 'Grad')),
+              TextField(controller: oibC, decoration: const InputDecoration(labelText: 'OIB')),
+              TextField(controller: telC, decoration: const InputDecoration(labelText: 'Telefon')),
+              TextField(controller: emlC, decoration: const InputDecoration(labelText: 'Email')),
+              StatefulBuilder(
+                builder: (BuildContext context, StateSetter setStateModal) {
+                  return CheckboxListTile(
+                    title: const Text('Klijent je u sustavu PDV-a?'),
+                    value: pdv,
+                    onChanged: (val) => setStateModal(() => pdv = val ?? true),
                   );
-                  widget.klijenti.add(novi);
-                  FirebaseFirestore.instance.collection('klijenti').doc(novi.id).set(novi.toJson());
-                } else {
-                  klijent.naziv = nazivCtrl.text;
-                  klijent.vlasnik = vlasnikCtrl.text;
-                  klijent.adresa = adresaCtrl.text;
-                  klijent.grad = gradCtrl.text;
-                  klijent.oib = oibCtrl.text;
-                  klijent.telefon = telefonCtrl.text;
-                  klijent.email = emailCtrl.text;
-                  klijent.uSustavuPdv = pdvVal;
-                  FirebaseFirestore.instance.collection('klijenti').doc(klijent.id).set(klijent.toJson());
-                }
-                widget.onUpdate();
-                Navigator.pop(ctx);
-              },
-              child: const Text('Spremi'),
-            ),
-          ],
+                },
+              ),
+            ],
+          ),
         ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Odustani')),
+          ElevatedButton(
+            onPressed: () {
+              if (nazC.text.trim().isEmpty) return;
+              String id = klijent?.id ?? DateTime.now().millisecondsSinceEpoch.toString();
+              var noviK = KlijentModel(
+                id: id,
+                naziv: nazC.text,
+                vlasnik: vlaC.text,
+                adresa: adrC.text,
+                grad: grdC.text,
+                oib: oibC.text,
+                telefon: telC.text,
+                email: emlC.text,
+                uSustavuPdv: pdv,
+              );
+
+              setState(() {
+                if (klijent == null) {
+                  widget.klijenti.add(noviK);
+                } else {
+                  int idx = widget.klijenti.indexWhere((element) => element.id == klijent.id);
+                  if (idx >= 0) widget.klijenti[idx] = noviK;
+                }
+              });
+
+              FirebaseFirestore.instance.collection('klijenti').doc(id).set(noviK.toJson());
+              widget.onUpdate();
+              Navigator.pop(ctx);
+            },
+            child: const Text('Spremi'),
+          ),
+        ],
       ),
     );
   }
@@ -1374,64 +1355,39 @@ class _PostavkeTabState extends State<PostavkeTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Postavke i Baza Klijenata', style: TextStyle(color: Colors.white)), backgroundColor: Theme.of(context).colorScheme.primary, centerTitle: true),
+      appBar: AppBar(title: const Text('Postavke i Klijenti', style: TextStyle(color: Colors.white)), backgroundColor: Theme.of(context).colorScheme.primary, centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Moji Podaci (Prijevoznik)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0284C7))),
-                    const SizedBox(height: 12),
-                    TextField(controller: _nazivController, decoration: const InputDecoration(labelText: 'Naziv Obrta / Tvrtke', border: OutlineInputBorder())),
-                    const SizedBox(height: 8),
-                    TextField(controller: _vlasnikController, decoration: const InputDecoration(labelText: 'Vlasnik / Odgovorna osoba', border: OutlineInputBorder())),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(child: TextField(controller: _adresaController, decoration: const InputDecoration(labelText: 'Adresa', border: OutlineInputBorder()))),
-                        const SizedBox(width: 8),
-                        Expanded(child: TextField(controller: _gradController, decoration: const InputDecoration(labelText: 'Grad', border: OutlineInputBorder()))),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(child: TextField(controller: _oibController, decoration: const InputDecoration(labelText: 'OIB', border: OutlineInputBorder()))),
-                        const SizedBox(width: 8),
-                        Expanded(child: TextField(controller: _telefonController, decoration: const InputDecoration(labelText: 'Telefon', border: OutlineInputBorder()))),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(controller: _emailController, decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder())),
-                    SwitchListTile(
-                      title: const Text('Prijevoznik je u sustavu PDV-a'),
-                      value: _uSustavuPdv,
-                      onChanged: (v) => setState(() => _uSustavuPdv = v),
-                    ),
-                    const SizedBox(height: 8),
-                    ElevatedButton.icon(
-                      onPressed: _spremiPrijevoznika,
-                      icon: const Icon(Icons.save),
-                      label: const Text('Spremi Podatke Prijevoznika'),
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0284C7), foregroundColor: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
+            const Text('Podaci o Vašoj Tvrtki (Prijevoznik)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0284C7))),
+            const SizedBox(height: 12),
+            TextField(controller: _nazivController, decoration: const InputDecoration(labelText: 'Naziv prijevoznika', border: OutlineInputBorder())),
+            const SizedBox(height: 8),
+            TextField(controller: _vlasnikController, decoration: const InputDecoration(labelText: 'Vlasnik / Direktor', border: OutlineInputBorder())),
+            const SizedBox(height: 8),
+            TextField(controller: _adresaController, decoration: const InputDecoration(labelText: 'Adresa', border: OutlineInputBorder())),
+            const SizedBox(height: 8),
+            TextField(controller: _gradController, decoration: const InputDecoration(labelText: 'Grad', border: OutlineInputBorder())),
+            const SizedBox(height: 8),
+            TextField(controller: _oibController, decoration: const InputDecoration(labelText: 'OIB', border: OutlineInputBorder())),
+            const SizedBox(height: 8),
+            TextField(controller: _telController, decoration: const InputDecoration(labelText: 'Telefon', border: OutlineInputBorder())),
+            const SizedBox(height: 8),
+            TextField(controller: _emailController, decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: _spremiPostavke,
+              icon: const Icon(Icons.save, color: Colors.white),
+              label: const Text('Spremi Postavke Prijevoznika', style: TextStyle(fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0284C7), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14)),
             ),
-            const SizedBox(height: 20),
+            const Divider(height: 40, thickness: 2),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Baza Klijenata', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text('Popis Klijenta / Agencija', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0284C7))),
                 ElevatedButton.icon(
                   onPressed: () => _prikaziDijalogZaKlijenta(),
                   icon: const Icon(Icons.add),
