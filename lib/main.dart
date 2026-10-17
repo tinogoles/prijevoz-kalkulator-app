@@ -91,7 +91,6 @@ class KalkulacijaModel {
   String id, nazivKalkulacije, klijentNaziv, datumPolaska, datumPovratka, vozilo, ruta;
   double ukupnaCijena;
 
-  // Detaljni parametri za ponovno učitavanje kod Uređivanja
   String polaziste, odrediste1, odrediste2, konacnoOdrediste, cestarina, km;
   bool povratno, koristiAutocestu;
   String odabranaAutocesta, tkoPlacaNocenje, cijenaNocenja, marza, cijenaGoriva, dnevnica;
@@ -173,7 +172,6 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
   List<KalkulacijaModel> _spremljeneKalkulacije = [];
   KlijentModel? _aktivniKlijent;
 
-  // Podaci za prijenos u Izračun kod uređivanja
   KalkulacijaModel? _kalkulacijaZaUredivanje;
 
   @override
@@ -237,7 +235,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
             } else {
               _spremljeneKalkulacije.add(kalk);
             }
-            _kalkulacijaZaUredivanje = null; // Resetiramo nakon spremanja
+            _kalkulacijaZaUredivanje = null;
           });
           _spremiPodatkeUMemoriju();
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Kalkulacija uspješno spremljena u arhivu!'), backgroundColor: Colors.green));
@@ -252,7 +250,6 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
           _spremiPodatkeUMemoriju();
         },
         onUredi: (kalk) {
-          // Pronađi klijenta po nazivu
           var pronadjeniKlijent = _klijenti.firstWhere(
             (k) => k.naziv == kalk.klijentNaziv,
             orElse: () => _klijenti.isNotEmpty ? _klijenti.first : KlijentModel(id: '0'),
@@ -260,7 +257,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
           setState(() {
             _aktivniKlijent = pronadjeniKlijent;
             _kalkulacijaZaUredivanje = kalk;
-            _currentIndex = 0; // Prebaci na tab 1
+            _currentIndex = 0;
           });
         },
       ),
@@ -312,14 +309,13 @@ class IzracunTroskovaTab extends StatefulWidget {
 }
 
 class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
-  bool _isLoadingRoute = false; // <--- OVA LINIJA JE NEDOSTAJALA
+  bool _isLoadingRoute = false; // Riješeno: varijabla za stanje učitavanja rute
 
   final TextEditingController _nazivKalkulacijeController = TextEditingController(text: 'Izlet - Ruta po točkama');
   final TextEditingController _polazisteController = TextEditingController(text: 'Zagreb');
   final TextEditingController _odrediste1Controller = TextEditingController();
   final TextEditingController _odrediste2Controller = TextEditingController();
   final TextEditingController _konacnoOdredisteController = TextEditingController(text: 'Split');
-  // ... nastavak ostalih kontrolera ...
 
   final TextEditingController _datumPolaskaController = TextEditingController(text: '01.06.2026.');
   final TextEditingController _datumPovratkaController = TextEditingController(text: '03.06.2026.');
@@ -352,11 +348,12 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   final TextEditingController _cijenaNocenjaController = TextEditingController(text: '60');
   final TextEditingController _marzaController = TextEditingController(text: '20');
 
+  // Čisti nazivi vozila bez prikaza potrošnje u zagradama
   final Map<String, double> _potrosnjaVozila = {
-    'Kombi 8+1 (9L / 100km)': 9.0,
-    'Mini bus <20 (15L / 100km)': 15.0,
-    'Midi bus 35 (30L / 100km)': 30.0,
-    'Veliki autobus 50 (35L / 100km)': 35.0,
+    'Kombi 8+1': 9.0,
+    'Mini bus <20': 15.0,
+    'Midi bus 35': 30.0,
+    'Veliki autobus 50': 35.0,
   };
   late String _odabranoVozilo;
   String? _trenutniIdUredjivanja;
@@ -399,8 +396,17 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       _marzaController.text = k.marza;
       _cijenaGorivaController.text = k.cijenaGoriva;
       _dnevnicaController.text = k.dnevnica;
+      
+      // Podudaranje naziva ako je bio u starom formatu
       if (_potrosnjaVozila.containsKey(k.vozilo)) {
         _odabranoVozilo = k.vozilo;
+      } else {
+        for (var key in _potrosnjaVozila.keys) {
+          if (k.vozilo.contains(key)) {
+            _odabranoVozilo = key;
+            break;
+          }
+        }
       }
     }
   }
@@ -572,7 +578,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ),
             const SizedBox(height: 16),
 
-            // Rute s točnim ikonama (Slika 1)
+            // Rute s točnim ikonama
             Card(
               elevation: 3,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -591,13 +597,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
                     const SizedBox(height: 8),
                     TextField(controller: _konacnoOdredisteController, decoration: const InputDecoration(labelText: '4) Konačno odredište (obavezno)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.location_on))),
                     const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      onPressed: _isLoadingRoute ? null : _izracunajRutuMultiPoint,
-                      icon: const Icon(Icons.route, color: Colors.white),
-                      label: Text(_isLoadingRoute ? 'Izračunavam dionice...' : 'Izračunaj kilometre po točkama (OSRM)'),
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0284C7), foregroundColor: Colors.white),
-                    ),
-                    const SizedBox(height: 8),
                     CheckboxListTile(
                       title: const Text('Povratno putovanje (U oba smjera)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                       subtitle: const Text('Automatski množi kilometre s 2', style: TextStyle(fontSize: 12)),
@@ -619,7 +618,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ),
             const SizedBox(height: 16),
 
-            // Datumi u formatu DD.MM.YYYY.
+            // Datumi
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -655,7 +654,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ),
             const SizedBox(height: 16),
 
-            // Vraćen meni za cestarinu (Slika 2)
+            // Meni Cestarine
             Card(
               elevation: 2,
               color: Colors.amber.shade50,
@@ -707,7 +706,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             TextField(controller: _nazivKalkulacijeController, decoration: const InputDecoration(labelText: 'Naziv kalkulacije / ponude', border: OutlineInputBorder(), prefixIcon: Icon(Icons.bookmark), filled: true, fillColor: Colors.white)),
             const SizedBox(height: 16),
 
-            // Vozilo i troškovi
+            // Vozilo (Sakrivena potrošnja u zagradama)
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -757,11 +756,33 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ),
             const SizedBox(height: 20),
 
+            // PLAVI GUMB: Premješten na dno iznad zelenog gumba
+            ElevatedButton.icon(
+              onPressed: _isLoadingRoute ? null : _izracunajRutuMultiPoint,
+              icon: _isLoadingRoute
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.route, color: Colors.white),
+              label: Text(_isLoadingRoute ? 'Izračunavam dionice...' : 'Izračunaj kilometre po točkama (OSRM)', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: const Color(0xFF0284C7), // Plava boja
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // ZELENI GUMB: Na samome dnu ekrana
             ElevatedButton.icon(
               onPressed: _spremi,
               icon: const Icon(Icons.calculate, color: Colors.white),
               label: Text(_trenutniIdUredjivanja == null ? '1. KORAK: IZRADI I SPREMI KALKULACIJU' : 'AŽURIRAJ KALKULACIJU', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-              style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16), backgroundColor: const Color(0xFF0284C7), foregroundColor: Colors.white),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: const Color(0xFF16A34A), // Zelena boja
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
             ),
           ],
         ),
@@ -893,9 +914,8 @@ class KalkulacijeTab extends StatelessWidget {
                         Text('Termin: ${k.datumPolaska} - ${k.datumPovratka}'),
                         Text('Ukupno: ${k.ukupnaCijena.toStringAsFixed(2)} €', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFEA580C), fontSize: 15)),
                         const Divider(height: 16),
-                        // Točan redoslijed gumba s lijeva na desno: Uredi, Obriši, Printaj ponudu (Slika 3)
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween != MainAxisAlignment.spaceBetween ? MainAxisAlignment.spaceBetween : MainAxisAlignment.spaceBetween,
                           children: [
                             TextButton.icon(
                               onPressed: () => onUredi(k),
