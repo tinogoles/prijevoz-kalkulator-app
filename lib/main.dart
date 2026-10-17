@@ -544,9 +544,10 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
 
     double cistiTrosak = gorivoNeto + cestarinaNeto + trosakVozaca + nocenjeNeto;
     double zarada = cistiTrosak * (marza / 100);
-    double osnovica = cistiTrosak + zarada;
-    bool klijentPdv = widget.aktivniKlijent?.uSustavuPdv ?? true;
-    double ukupnaCijena = klijentPdv ? (osnovica * 1.25) : osnovica;
+    double osnovicaSMarzom = cistiTrosak + zarada;
+    
+    // Konačna cijena usluge za oba klijenta iznosi isto (puna cijena s uključenim PDV-om)
+    double ukupnaCijena = osnovicaSMarzom * 1.25;
 
     KalkulacijaModel kalk = KalkulacijaModel(
       id: _trenutniIdUredjivanja ?? DateTime.now().millisecondsSinceEpoch.toString(),
