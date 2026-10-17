@@ -5,7 +5,7 @@ import 'package:printing/printing.dart';
 
 class PdfGenerator {
   // 1. Predložak za Internu Kalkulaciju
-  static Future<void> printajInternuKalkulaciju(dynamic kalk, dynamic prijevoznik) async {
+  static Future<void> printajInternuKalkulaciju(dynamic kalkulacija, dynamic prijevoznik) async {
     Printing.layoutPdf(onLayout: (format) async {
       final pdf = pw.Document();
       pdf.addPage(
@@ -20,17 +20,17 @@ class PdfGenerator {
               pw.Text('OIB: ${prijevoznik.oib} | IBAN: ${prijevoznik.iban}'),
               pw.Divider(),
               pw.SizedBox(height: 5),
-              pw.Text('Naziv kalkulacije: ${k.nazivKalkulacije}', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
-              pw.Text('Klijent: ${k.klijentNaziv}'),
-              pw.Text('Relacija: ${k.ruta} (${k.km} km)'),
-              pw.Text('Termin: ${k.datumPolaska} - ${k.datumPovratka}'),
-              pw.Text('Vozilo: ${k.vozilo}'),
+              pw.Text('Naziv kalkulacije: ${kalkulacija.nazivKalkulacije}', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+              pw.Text('Klijent: ${kalkulacija.klijentNaziv}'),
+              pw.Text('Relacija: ${kalkulacija.ruta} (${kalkulacija.km} km)'),
+              pw.Text('Termin: ${kalkulacija.datumPolaska} - ${kalkulacija.datumPovratka}'),
+              pw.Text('Vozilo: ${kalkulacija.vozilo}'),
               pw.SizedBox(height: 10),
-              pw.Text('Cestarina: ${k.cestarina} € (${k.odabranaAutocesta})'),
-              pw.Text('Noćenje vozača: ${k.tkoPlacaNocenje} (${k.cijenaNocenja} €)'),
+              pw.Text('Cestarina: ${kalkulacija.cestarina} € (${kalkulacija.odabranaAutocesta})'),
+              pw.Text('Noćenje vozača: ${kalkulacija.tkoPlacaNocenje} (${kalkulacija.cijenaNocenja} €)'),
               pw.Divider(),
               pw.SizedBox(height: 5),
-              pw.Text('UKUPNA CIJENA: ${k.ukupnaCijena.toStringAsFixed(2)} €', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.red800)),
+              pw.Text('UKUPNA CIJENA: ${kalkulacija.ukupnaCijena.toStringAsFixed(2)} €', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.red800)),
             ],
           ),
         ),
@@ -40,7 +40,7 @@ class PdfGenerator {
   }
 
   // 2. Predložak za Ponudu PDF
-  static Future<void> printajPonuduPdf(dynamic kalk, dynamic prijevoznik) async {
+  static Future<void> printajPonuduPdf(dynamic kalkulacija, dynamic prijevoznik) async {
     Printing.layoutPdf(onLayout: (format) async {
       final pdf = pw.Document();
       pdf.addPage(
@@ -56,13 +56,13 @@ class PdfGenerator {
               pw.Text('OIB: ${prijevoznik.oib} | Banka: ${prijevoznik.banka} | IBAN: ${prijevoznik.iban}'),
               pw.Divider(),
               pw.SizedBox(height: 10),
-              pw.Text('Za klijenta: ${k.klijentNaziv}', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+              pw.Text('Za klijenta: ${kalkulacija.klijentNaziv}', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 10),
-              pw.Text('Predmet ponude: ${k.nazivKalkulacije}'),
-              pw.Text('Relacija: ${k.ruta}'),
-              pw.Text('Datum izvođenja: ${k.datumPolaska} - ${k.datumPovratka}'),
+              pw.Text('Predmet ponude: ${kalkulacija.nazivKalkulacije}'),
+              pw.Text('Relacija: ${kalkulacija.ruta}'),
+              pw.Text('Datum izvođenja: ${kalkulacija.datumPolaska} - ${kalkulacija.datumPovratka}'),
               pw.SizedBox(height: 20),
-              pw.Text('UKUPNI IZNOS PONUDE: ${k.ukupnaCijena.toStringAsFixed(2)} €', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.red800)),
+              pw.Text('UKUPNI IZNOS PONUDE: ${kalkulacija.ukupnaCijena.toStringAsFixed(2)} €', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.red800)),
               pw.SizedBox(height: 40),
               pw.Text('Zahvaljujemo na ukazanom povjerenju!'),
             ],
