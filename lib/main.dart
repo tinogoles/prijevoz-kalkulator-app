@@ -3,13 +3,11 @@ import 'package:prijevoz_kalkulator/data/baza_cestarina_data.dart';
 import 'package:prijevoz_kalkulator/widgets/autocesta_sekcija_widget.dart';
 import 'package:prijevoz_kalkulator/widgets/nocenje_sekcija_widget.dart';
 import 'package:prijevoz_kalkulator/widgets/unos_rute_widget.dart';
+import 'package:prijevoz_kalkulator/utils/pdf_generator.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -566,7 +564,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               opcijeAutocesta: _opcijeAutocesta,
             ),
             const SizedBox(height: 16),
-            // Premješten OSRM gumb iznad završnog gumba
             ElevatedButton.icon(
               onPressed: _isLoadingRoute ? null : _izracunajRutuMultiPoint,
               icon: const Icon(Icons.route),
@@ -594,60 +591,6 @@ class KalkulacijeTab extends StatelessWidget {
   final ValueChanged<String> onObrisi;
   final ValueChanged<KalkulacijaModel> onUredi;
   const KalkulacijeTab({super.key, required this.kalkulacije, required this.prijevoznik, required this.klijenti, required this.onObrisi, required this.onUredi});
-
-  void _printajInternuKalkulaciju(KalkulacijaModel k) async {
-    Printing.layoutPdf(onLayout: (format) async {
-      final pdf = pw.Document();
-      pdf.addPage(pw.Page(build: (ctx) => pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Text('INTERNA KALKULACIJA PRIJEVOZA', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
-          pw.SizedBox(height: 10),
-          pw.Text('Prijevoznik: ${prijevoznik.naziv}, ${prijevoznik.adresa}, ${prijevoznik.grad}'),
-          pw.Text('OIB: ${prijevoznik.oib} | IBAN: ${prijevoznik.iban}'),
-          pw.Divider(),
-          pw.Text('Naziv kalkulacije: ${k.nazivKalkulacije}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-          pw.Text('Klijent: ${k.klijentNaziv}'),
-          pw.Text('Relacija: ${k.ruta} (${k.km} km)'),
-          pw.Text('Termin: ${k.datumPolaska} - ${k.datumPovratka}'),
-          pw.Text('Vozilo: ${k.vozilo}'),
-          pw.SizedBox(height: 10),
-          pw.Text('Cestarina: ${k.cestarina} € (${k.odabranaAutocesta})'),
-          pw.Text('Noćenje vozača: ${k.tkoPlacaNocenje} (${k.cijenaNocenja} €)'),
-          pw.Divider(),
-          pw.Text('UKUPNA CIJENA: ${k.ukupnaCijena.toStringAsFixed(2)} €', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
-        ],
-      )));
-      return pdf.save();
-    });
-  }
-
-  void _printajPonuduPdf(KalkulacijaModel k) async {
-    Printing.layoutPdf(onLayout: (format) async {
-      final pdf = pw.Document();
-      pdf.addPage(pw.Page(build: (ctx) => pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Text('PONUDA ZA PRIJEVOZ', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
-          pw.SizedBox(height: 10),
-          pw.Text('Izdavatelj: ${prijevoznik.naziv}'),
-          pw.Text('Adresa: ${prijevoznik.adresa}, ${prijevoznik.grad}'),
-          pw.Text('OIB: ${prijevoznik.oib} | Banka: ${prijevoznik.banka} | IBAN: ${prijevoznik.iban}'),
-          pw.Divider(),
-          pw.Text('Za klijenta: ${k.klijentNaziv}', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
-          pw.SizedBox(height: 10),
-          pw.Text('Predmet ponude: ${k.nazivKalkulacije}'),
-          pw.Text('Relacija: ${k.ruta}'),
-          pw.Text('Datum izvođenja: ${k.datumPolaska} - ${k.datumPovratka}'),
-          pw.SizedBox(height: 15),
-          pw.Text('UKUPNI IZNOS PONUDE: ${k.ukupnaCijena.toStringAsFixed(2)} €', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.red800)),
-          pw.SizedBox(height: 30),
-          pw.Text('Zahvaljujemo na ukazanom povjerenju!'),
-        ],
-      )));
-      return pdf.save();
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -684,7 +627,7 @@ class KalkulacijeTab extends StatelessWidget {
                         label: const Text('Uredi', style: TextStyle(color: Colors.blue)),
                       ),
                       TextButton.icon(
-                        onPressed: () => _printajInternuKalkulaciju(k),
+                        onPressed: () => PdfGenerator.printajInternuKalkulaciju(k, prijevoznik),
                         icon: const Icon(Icons.print, size: 18, color: Colors.indigo),
                         label: const Text('Interna kalkulacija', style: TextStyle(color: Colors.indigo)),
                       ),
@@ -694,7 +637,7 @@ class KalkulacijeTab extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       TextButton.icon(
-                        onPressed: () => _printajPonuduPdf(k),
+                        onPressed: () => PdfGenerator.printajPonuduPdf(k, prijevoznik),
                         icon: const Icon(Icons.picture_as_pdf, size: 18, color: Colors.green),
                         label: const Text('Ponuda PDF', style: TextStyle(color: Colors.green)),
                       ),
