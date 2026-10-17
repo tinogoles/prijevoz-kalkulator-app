@@ -6,7 +6,6 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   // Osigurava inicijalizaciju Flutter vezanja
@@ -185,45 +184,69 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
   @override
   void initState() {
     super.initState();
-    _ucitajPodatkeIzMemorije();
+    _ucitajPodatkeIzFirestore();
   }
 
-  Future<void> _ucitajPodatkeIzMemorije() async {
-    final prefs = await SharedPreferences.getInstance();
-    
-    String? pJson = prefs.getString('prijevoznik');
-    if (pJson != null) {
-      setState(() => _prijevoznik = PrijevoznikModel.fromJson(json.decode(pJson)));
-    }
+  // Čitanje podataka u stvarnom vremenu iz Cloud Firestore-a
+  void _ucitajPodatkeIzFirestore() {
+    final firestore = FirebaseFirestore.instance;
 
-    String? kListJson = prefs.getString('klijenti');
-    if (kListJson != null) {
-      List decoded = json.decode(kListJson);
-      setState(() {
-        _klijenti = decoded.map((e) => KlijentModel.fromJson(e)).toList();
-        if (_klijenti.isNotEmpty) _aktivniKlijent = _klijenti.first;
-      });
-    } else {
-      setState(() {
-        _klijenti.add(KlijentModel(id: '1', naziv: 'Turistička Agencija Split', vlasnik: 'Marko Marić', grad: 'Split', oib: '98765432109', uSustavuPdv: true));
-        _aktivniKlijent = _klijenti.first;
-      });
-    }
+    // Slušamo promjene za prijevoznika
+    firestore.collection('postavke').doc('prijevoznik').snapshots().listen((doc) {
+      if (doc.exists && doc.data() != null) {
+        setState(() {
+          _prijevoznik = PrijevoznikModel.fromJson(doc.data()!);
+        });
+      }
+    });
 
-    String? kalkJson = prefs.getString('kalkulacije');
-    if (kalkJson != null) {
-      List decoded = json.decode(kalkJson);
+    // Slušamo promjene za klijente
+    firestore.collection('klijenti').snapshots().listen((snapshot) {
       setState(() {
-        _spremljeneKalkulacije = decoded.map((e) => KalkulacijaModel.fromJson(e)).toList();
+        _klijenti = snapshot.docs.map((doc) {
+          var data = doc.data();
+          data['id'] = doc.id;
+          return KlijentModel.fromJson(data);
+        }).toList();
+
+        if (_klijenti.isNotEmpty && _aktivniKlijent == null) {
+          _aktivniKlijent = _klijenti.first;
+        } else if (_klijenti.isEmpty) {
+          _klijenti.add(KlijentModel(id: '1', naziv: 'Turistička Agencija Split', vlasnik: 'Marko Marić', grad: 'Split', oib: '98765432109', uSustavuPdv: true));
+          _aktivniKlijent = _klijenti.first;
+        }
       });
+    });
+
+    // Slušamo promjene za kalkulacije (arhivu ponuda)
+    firestore.collection('kalkulacije').snapshots().listen((snapshot) {
+      setState(() {
+        _spremljeneKalkulacije = snapshot.docs.map((doc) {
+          var data = doc.data();
+          data['id'] = doc.id;
+          return KalkulacijaModel.fromJson(data);
+        }).toList();
+      });
+    });
+  }
+
+  // Spremanje/ažuriranje podataka u Cloud Firestore
+  Future<void> _spremiPodatkeUFirestore() async {
+    final firestore = FirebaseFirestore.instance;
+
+    // Spremi postavke prijevoznika
+    await firestore.collection('postavke').doc('prijevoznik').set(_prijevoznik.toJson());
+
+    // Spremi kalkulacije u Firestore
+    for (var kalk in _spremljeneKalkulacije) {
+      await firestore.collection('kalkulacije').doc(kalk.id).set(kalk.toJson());
     }
   }
 
-  Future<void> _spremiPodatkeUMemoriju() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('prijevoznik', json.encode(_prijevoznik.toJson()));
-    await prefs.setString('klijenti', json.encode(_klijenti.map((e) => e.toJson()).toList()));
-    await prefs.setString('kalkulacije', json.encode(_spremljeneKalkulacije.map((e) => e.toJson()).toList()));
+  // Brisanje kalkulacije iz Firestore-a
+  Future<void> _obrisiKalkulacijuIzFirestore(String id) async {
+    final firestore = FirebaseFirestore.instance;
+    await firestore.collection('kalkulacije').doc(id).delete();
   }
 
   @override
@@ -245,7 +268,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
             }
             _kalkulacijaZaUredivanje = null;
           });
-          _spremiPodatkeUMemoriju();
+          _spremiPodatkeUFirestore();
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Kalkulacija uspješno spremljena u arhivu!'), backgroundColor: Colors.green));
         },
       ),
@@ -255,7 +278,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
         klijenti: _klijenti,
         onObrisi: (id) {
           setState(() => _spremljeneKalkulacije.removeWhere((element) => element.id == id));
-          _spremiPodatkeUMemoriju();
+          _obrisiKalkulacijuIzFirestore(id);
         },
         onUredi: (kalk) {
           var pronadjeniKlijent = _klijenti.firstWhere(
@@ -274,7 +297,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
         klijenti: _klijenti,
         onUpdate: () {
           setState(() {});
-          _spremiPodatkeUMemoriju();
+          _spremiPodatkeUFirestore();
         },
       ),
     ];
