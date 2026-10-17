@@ -297,10 +297,16 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   final List<String> _opcijeAutocesta = ['HAC (Hrvatske autoceste)', 'AZM (Zagreb - Macelj)', 'DARS (Slovenske autoceste)', 'Autoceste FBiH / RS', 'Bez autoceste'];
   final TextEditingController _cijenaGorivaController = TextEditingController(text: '1.45');
   final TextEditingController _dnevnicaController = TextEditingController(text: '80');
+
   String _tkoPlacaNocenje = 'Prijevoznik plaća';
-  final List<String> _opcijeNocenja = ['Prijevoznik plaća', 'Klijent plaća', 'Bez noćenja'];
+  final List<String> _opcijeNocenja = [
+    'Prijevoznik plaća',
+    'Klijent/Agencija plaća (0€ za nas)',
+    'Bez noćenja'
+  ];
   final TextEditingController _cijenaNocenjaController = TextEditingController(text: '60');
   final TextEditingController _marzaController = TextEditingController(text: '20');
+
   final Map<String, double> _potrosnjaVozila = {'Kombi 8+1': 9.0, 'Mini bus <20': 15.0, 'Midi bus 35': 30.0, 'Veliki autobus 50': 35.0};
   late String _odabranoVozilo;
   String? _trenutniIdUredjivanja;
@@ -444,12 +450,12 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     double marza = double.tryParse(_marzaController.text) ?? 0;
 
     double potrosnja = _potrosnjaVozila[_odabranoVozilo] ?? 9.0;
-    int nocenja = (_izracunatiBrojDana > 1) ? (_izracunatiBrojDana - 1) : 0;
+    int brojNocenja = (_izracunatiBrojDana > 1) ? (_izracunatiBrojDana - 1) : 0;
 
     double gorivoNeto = ((km / 100) * potrosnja * gorivoBruto) / 1.25;
     double cestarinaNeto = (_koristiAutocestu ? cestarinaBruto : 0) / 1.25;
     double trosakVozaca = dnevnica * _izracunatiBrojDana;
-    double nocenjeNeto = (_tkoPlacaNocenje == 'Prijevoznik plaća' ? (nocenjeBruto * nocenja) : 0) / 1.25;
+    double nocenjeNeto = (_tkoPlacaNocenje == 'Prijevoznik plaća' ? (nocenjeBruto * brojNocenja) : 0) / 1.25;
 
     double cistiTrosak = gorivoNeto + cestarinaNeto + trosakVozaca + nocenjeNeto;
     double zarada = cistiTrosak * (marza / 100);
@@ -514,6 +520,18 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               const SizedBox(width: 8),
               Expanded(child: TextField(controller: _datumPovratkaController, readOnly: true, onTap: () => _odaberiDatum(context, _datumPovratkaController), decoration: const InputDecoration(labelText: 'Povratak', border: OutlineInputBorder()))),
             ]),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Izračunato trajanje:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text('$_izracunatiBrojDana dana (${_izracunatiBrojDana > 1 ? _izracunatiBrojDana - 1 : 0} noćenja)', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0284C7))),
+                ],
+              ),
+            ),
             const SizedBox(height: 12),
             TextField(controller: _nazivKalkulacijeController, decoration: const InputDecoration(labelText: 'Naziv kalkulacije', border: OutlineInputBorder())),
             const SizedBox(height: 12),
@@ -527,8 +545,21 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             Row(children: [
               Expanded(child: TextField(controller: _cijenaGorivaController, decoration: const InputDecoration(labelText: 'Gorivo (€/L)', border: OutlineInputBorder()))),
               const SizedBox(width: 8),
-              Expanded(child: TextField(controller: _dnevnicaController, decoration: const InputDecoration(labelText: 'Dnevnica (€)', border: OutlineInputBorder()))),
+              Expanded(child: TextField(controller: _dnevnicaController, decoration: const InputDecoration(labelText: 'Dnevnica/dan (€)', border: OutlineInputBorder()))),
             ]),
+            const SizedBox(height: 16),
+            const Text('Parametri Noćenja Vozača:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: _tkoPlacaNocenje,
+              decoration: const InputDecoration(labelText: 'Plaćanje noćenja', border: OutlineInputBorder()),
+              items: _opcijeNocenja.map((o) => DropdownMenuItem(value: o, child: Text(o))).toList(),
+              onChanged: (val) { if (val != null) setState(() => _tkoPlacaNocenje = val); },
+            ),
+            if (_tkoPlacaNocenje == 'Prijevoznik plaća') ...[
+              const SizedBox(height: 8),
+              TextField(controller: _cijenaNocenjaController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Cijena noćenja po noći (€, bruto)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.hotel))),
+            ],
             const SizedBox(height: 12),
             TextField(controller: _marzaController, decoration: const InputDecoration(labelText: 'Marža (%)', border: OutlineInputBorder())),
             const SizedBox(height: 12),
