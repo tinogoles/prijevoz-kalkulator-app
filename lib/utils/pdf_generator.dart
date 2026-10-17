@@ -9,7 +9,6 @@ class PdfGenerator {
     final font = await PdfGoogleFonts.robotoRegular();
     final fontBold = await PdfGoogleFonts.robotoBold();
 
-    // Izračun stavki
     double km = double.tryParse(kalkulacija.km.toString()) ?? 0;
     double cestarinaBruto = double.tryParse(kalkulacija.cestarina.toString()) ?? 0;
     double gorivoBruto = double.tryParse(kalkulacija.cijenaGoriva.toString()) ?? 1.45;
@@ -17,7 +16,6 @@ class PdfGenerator {
     double nocenjeBruto = double.tryParse(kalkulacija.cijenaNocenja.toString()) ?? 60;
     double marzaPosto = double.tryParse(kalkulacija.marza.toString()) ?? 20;
 
-    // Pretpostavke potrošnje prema vozilu
     Map<String, double> potrosnjaVozila = {
       'Kombi 8+1': 9.0,
       'Mini bus <20': 15.0,
@@ -26,7 +24,6 @@ class PdfGenerator {
     };
     double potrosnja = potrosnjaVozila[kalkulacija.vozilo] ?? 9.0;
     
-    // Izračun dana i noćenja
     int brojDana = 1;
     try {
       String d1Str = kalkulacija.datumPolaska.replaceAll('.', '').trim();
@@ -85,17 +82,16 @@ class PdfGenerator {
               pw.Text('Ruta: ${kalkulacija.ruta} (${kalkulacija.km} km) | Termin: ${kalkulacija.datumPolaska} - ${kalkulacija.datumPovratka}', style: pw.TextStyle(font: font, fontSize: 10)),
               pw.SizedBox(height: 15),
 
-              // Tablica troškova
               pw.Table(
                 border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
                 children: [
                   pw.TableRow(
                     decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFF0F2C59)),
                     children: [
-                      pw.Padding(padding: const EdgeInsets.all(6), child: pw.Text('Stavka troška', style: pw.TextStyle(font: fontBold, color: PdfColors.white, fontSize: 10))),
-                      pw.Padding(padding: const EdgeInsets.all(6), child: pw.Text('Bez PDV-a (Neto)', style: pw.TextStyle(font: fontBold, color: PdfColors.white, fontSize: 10))),
-                      pw.Padding(padding: const EdgeInsets.all(6), child: pw.Text('PDV (25%)', style: pw.TextStyle(font: fontBold, color: PdfColors.white, fontSize: 10))),
-                      pw.Padding(padding: const EdgeInsets.all(6), child: pw.Text('Ukupno (Bruto)', style: pw.TextStyle(font: fontBold, color: PdfColors.white, fontSize: 10))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Stavka troška', style: pw.TextStyle(font: fontBold, color: PdfColors.white, fontSize: 10))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Bez PDV-a (Neto)', style: pw.TextStyle(font: fontBold, color: PdfColors.white, fontSize: 10))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('PDV (25%)', style: pw.TextStyle(font: fontBold, color: PdfColors.white, fontSize: 10))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Ukupno (Bruto)', style: pw.TextStyle(font: fontBold, color: PdfColors.white, fontSize: 10))),
                     ],
                   ),
                   _buildRedTablice('Gorivo (${kalkulacija.vozilo})', gorivoNeto, gorivoPdv, gorivoBrutoUkupno, font),
@@ -104,12 +100,11 @@ class PdfGenerator {
                   _buildRedTablice('Noćenje vozača', nocenjeNeto, nocenjePdv, nocenjeBrutoUkupno, font),
                 ],
               ),
-              const pw.SizedBox(height: 15),
+              pw.SizedBox(height: 15),
 
-              // Zbrojevi
               pw.Container(
-                padding: const EdgeInsets.all(10),
-                decoration: pw.BoxDecoration(color: PdfColors.grey200, borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4))),
+                padding: const pw.EdgeInsets.all(10),
+                decoration: const pw.BoxDecoration(color: PdfColors.grey200, borderRadius: pw.BorderRadius.all(pw.Radius.circular(4))),
                 child: pw.Column(
                   children: [
                     _buildRedZbroja('Ukupni troškovi (Neto):', '${ukupnoNeto.toStringAsFixed(2)} €', font),
@@ -130,7 +125,7 @@ class PdfGenerator {
     });
   }
 
-  // 2. Ponuda za prijevoz (usklađena s originalnim dizajnom sa slike 4)
+  // 2. Ponuda za prijevoz (s podacima za plaćanje: IBAN i banka)
   static Future<void> printajPonuduPdf(dynamic kalkulacija, dynamic prijevoznik) async {
     final font = await PdfGoogleFonts.robotoRegular();
     final fontBold = await PdfGoogleFonts.robotoBold();
@@ -179,10 +174,10 @@ class PdfGenerator {
 
               // Kartica specifikacije
               pw.Container(
-                padding: const EdgeInsets.all(12),
-                decoration: pw.BoxDecoration(
+                padding: const pw.EdgeInsets.all(12),
+                decoration: const pw.BoxDecoration(
                   color: PdfColors.grey200,
-                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+                  borderRadius: pw.BorderRadius.all(pw.Radius.circular(8)),
                 ),
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -199,10 +194,10 @@ class PdfGenerator {
 
               // Cijene i PDV blok
               pw.Container(
-                padding: const EdgeInsets.all(14),
-                decoration: pw.BoxDecoration(
+                padding: const pw.EdgeInsets.all(14),
+                decoration: const pw.BoxDecoration(
                   color: PdfColor.fromInt(0xFFEA580C),
-                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+                  borderRadius: pw.BorderRadius.all(pw.Radius.circular(6)),
                 ),
                 child: pw.Column(
                   children: [
@@ -214,7 +209,25 @@ class PdfGenerator {
                   ],
                 ),
               ),
-              pw.SizedBox(height: 40),
+              pw.SizedBox(height: 15),
+
+              // Podaci za plaćanje (IBAN i Banka)
+              pw.Container(
+                padding: const pw.EdgeInsets.all(10),
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(color: PdfColors.grey400, width: 0.5),
+                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('Plaćanje izvršiti na IBAN: ${prijevoznik.iban}', style: pw.TextStyle(font: fontBold, fontSize: 10)),
+                    pw.SizedBox(height: 4),
+                    pw.Text('otvoren u banci: ${prijevoznik.banka}', style: pw.TextStyle(font: font, fontSize: 10)),
+                  ],
+                ),
+              ),
+              pw.SizedBox(height: 30),
               pw.Text('Zahvaljujemo na ukazanom povjerenju!', style: pw.TextStyle(font: font, fontSize: 11)),
             ],
           ),
@@ -229,33 +242,37 @@ class PdfGenerator {
   static pw.TableRow _buildRedTablice(String naziv, double neto, double pdv, double bruto, dynamic font) {
     return pw.TableRow(
       children: [
-        pw.Padding(padding: const EdgeInsets.all(6), child: pw.Text(naziv, style: pw.TextStyle(font: font, fontSize: 9))),
-        pw.Padding(padding: const EdgeInsets.all(6), child: pw.Text('${neto.toStringAsFixed(2)} €', style: pw.TextStyle(font: font, fontSize: 9))),
-        pw.Padding(padding: const EdgeInsets.all(6), child: pw.Text('${pdv.toStringAsFixed(2)} €', style: pw.TextStyle(font: font, fontSize: 9))),
-        pw.Padding(padding: const EdgeInsets.all(6), child: pw.Text('${bruto.toStringAsFixed(2)} €', style: pw.TextStyle(font: font, fontSize: 9))),
+        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(naziv, style: pw.TextStyle(font: font, fontSize: 9))),
+        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${neto.toStringAsFixed(2)} €', style: pw.TextStyle(font: font, fontSize: 9))),
+        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${pdv.toStringAsFixed(2)} €', style: pw.TextStyle(font: font, fontSize: 9))),
+        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${bruto.toStringAsFixed(2)} €', style: pw.TextStyle(font: font, fontSize: 9))),
       ],
     );
   }
 
   static pw.Widget _buildRedZbroja(String labela, String iznos, dynamic font, {bool isBold = false, PdfColor? color, double fontSize = 10}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 3),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text(labela, style: pw.TextStyle(font: isBold ? PdfGoogleFonts.robotoBold() : font, fontSize: fontSize, color: color ?? PdfColors.black)),
-          pw.Text(iznos, style: pw.TextStyle(font: isBold ? PdfGoogleFonts.robotoBold() : font, fontSize: fontSize, color: color ?? PdfColors.black)),
+          pw.Text(labela, style: pw.TextStyle(font: isBold ? fontBoldReference() : font, fontSize: fontSize, color: color ?? PdfColors.black)),
+          pw.Text(iznos, style: pw.TextStyle(font: isBold ? fontBoldReference() : font, fontSize: fontSize, color: color ?? PdfColors.black)),
         ],
       ),
     );
+  }
+
+  static pw.Font fontBoldReference() {
+    return pw.Font.helveticaBold();
   }
 
   static pw.Widget _buildRedPonude(String labela, String iznos, dynamic font, dynamic fontBold, {bool isTotal = false}) {
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
-        pw.Text(labela, style: pw.TextStyle(font: isTotal ? fontBold : font, fontSize: isTotal ? 13 : 11, color: PdfColors.white)),
-        pw.Text(iznos, style: pw.TextStyle(font: fontBold, fontSize: isTotal ? 14 : 11, color: PdfColors.white)),
+        pw.Text(labela, style: pw.TextStyle(font: isTotal ? fontBold : font, fontSize: isTotal ? 12 : 11, color: PdfColors.white)),
+        pw.Text(iznos, style: pw.TextStyle(font: fontBold, fontSize: isTotal ? 13 : 11, color: PdfColors.white)),
       ],
     );
   }
