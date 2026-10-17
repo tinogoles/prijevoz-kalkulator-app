@@ -72,13 +72,6 @@ class UnosRuteWidget extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        ElevatedButton.icon(
-          onPressed: isLoadingRoute ? null : onIzracunajRutu,
-          icon: const Icon(Icons.route),
-          label: Text(isLoadingRoute ? 'Računam...' : 'Izračunaj kilometre preko OSRM'),
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0284C7), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14)),
-        ),
       ],
     );
   }
