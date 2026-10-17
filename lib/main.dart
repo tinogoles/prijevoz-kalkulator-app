@@ -47,36 +47,72 @@ class PrijevozKalkulatorApp extends StatelessWidget {
 }
 
 class PrijevoznikModel {
-  String naziv, vlasnik, adresa, grad, oib, telefon, email;
+  String naziv, vlasnik, adresa, grad, oib, telefon, email, banka, iban;
   bool uSustavuPdv;
+
   PrijevoznikModel({
-    this.naziv = 'Moj Prijevoz d.o.o.',
-    this.vlasnik = 'Ivan Horvat',
-    this.adresa = 'Zagrebačka cesta 10',
-    this.grad = 'Zagreb',
-    this.oib = '12345678901',
-    this.telefon = '+385 91 123 4567',
-    this.email = 'info@mojprijevoz.hr',
+    this.naziv = '"Klanac" obrt za prijevoz',
+    this.vlasnik = '',
+    this.adresa = '',
+    this.grad = '',
+    this.oib = '52556102683',
+    this.telefon = '',
+    this.email = '',
+    this.banka = '',
+    this.iban = '',
     this.uSustavuPdv = true,
   });
-  Map<String, dynamic> toJson() => {'naziv': naziv, 'vlasnik': vlasnik, 'adresa': adresa, 'grad': grad, 'oib': oib, 'telefon': telefon, 'email': email, 'uSustavuPdv': uSustavuPdv};
+
+  Map<String, dynamic> toJson() => {
+    'naziv': naziv, 'vlasnik': vlasnik, 'adresa': adresa, 'grad': grad,
+    'oib': oib, 'telefon': telefon, 'email': email, 'banka': banka, 'iban': iban, 'uSustavuPdv': uSustavuPdv,
+  };
+
   factory PrijevoznikModel.fromJson(Map<String, dynamic> json) => PrijevoznikModel(
-    naziv: json['naziv'] ?? '', vlasnik: json['vlasnik'] ?? '', adresa: json['adresa'] ?? '',
-    grad: json['grad'] ?? '', oib: json['oib'] ?? '', telefon: json['telefon'] ?? '',
-    email: json['email'] ?? '', uSustavuPdv: json['uSustavuPdv'] ?? true,
+    naziv: json['naziv'] ?? '"Klanac" obrt za prijevoz',
+    vlasnik: json['vlasnik'] ?? '',
+    adresa: json['adresa'] ?? '',
+    grad: json['grad'] ?? '',
+    oib: json['oib'] ?? '52556102683',
+    telefon: json['telefon'] ?? '',
+    email: json['email'] ?? '',
+    banka: json['banka'] ?? '',
+    iban: json['iban'] ?? '',
+    uSustavuPdv: json['uSustavuPdv'] ?? true,
   );
 }
 
 class KlijentModel {
   String id, naziv, vlasnik, adresa, grad, oib, telefon, email;
   bool uSustavuPdv;
-  KlijentModel({required this.id, this.naziv = '', this.vlasnik = '', this.adresa = '', this.grad = '', this.oib = '', this.telefon = '', this.email = '', this.uSustavuPdv = true});
-  Map<String, dynamic> toJson() => {'id': id, 'naziv': naziv, 'vlasnik': vlasnik, 'adresa': adresa, 'grad': grad, 'oib': oib, 'telefon': telefon, 'email': email, 'uSustavuPdv': uSustavuPdv};
+
+  KlijentModel({
+    required this.id,
+    this.naziv = '',
+    this.vlasnik = '',
+    this.adresa = '',
+    this.grad = '',
+    this.oib = '',
+    this.telefon = '',
+    this.email = '',
+    this.uSustavuPdv = true,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id, 'naziv': naziv, 'vlasnik': vlasnik, 'adresa': adresa, 'grad': grad,
+    'oib': oib, 'telefon': telefon, 'email': email, 'uSustavuPdv': uSustavuPdv,
+  };
+
   factory KlijentModel.fromJson(Map<String, dynamic> json) => KlijentModel(
     id: json['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-    naziv: json['naziv'] ?? '', vlasnik: json['vlasnik'] ?? '', adresa: json['adresa'] ?? '',
-    grad: json['grad'] ?? '', oib: json['oib'] ?? '', telefon: json['telefon'] ?? '',
-    email: json['email'] ?? '', uSustavuPdv: json['uSustavuPdv'] ?? true,
+    naziv: json['naziv'] ?? '',
+    vlasnik: json['vlasnik'] ?? '',
+    adresa: json['adresa'] ?? '',
+    grad: json['grad'] ?? '',
+    oib: json['oib'] ?? '',
+    telefon: json['telefon'] ?? '',
+    email: json['email'] ?? '',
+    uSustavuPdv: json['uSustavuPdv'] ?? true,
   );
 }
 
@@ -86,6 +122,7 @@ class KalkulacijaModel {
   String polaziste, odrediste1, odrediste2, konacnoOdrediste, cestarina, km;
   bool povratno, koristiAutocestu;
   String odabranaAutocesta, tkoPlacaNocenje, cijenaNocenja, marza, cijenaGoriva, dnevnica;
+
   KalkulacijaModel({
     required this.id, required this.nazivKalkulacije, required this.klijentNaziv, required this.datumPolaska,
     required this.datumPovratka, required this.vozilo, required this.ruta, required this.ukupnaCijena,
@@ -94,6 +131,7 @@ class KalkulacijaModel {
     this.odabranaAutocesta = 'HAC (Hrvatske autoceste)', this.tkoPlacaNocenje = 'Prijevoznik plaća',
     this.cijenaNocenja = '60', this.marza = '20', this.cijenaGoriva = '1.45', this.dnevnica = '80',
   });
+
   Map<String, dynamic> toJson() => {
     'id': id, 'nazivKalkulacije': nazivKalkulacije, 'klijentNaziv': klijentNaziv, 'datumPolaska': datumPolaska,
     'datumPovratka': datumPovratka, 'vozilo': vozilo, 'ruta': ruta, 'ukupnaCijena': ukupnaCijena,
@@ -102,6 +140,7 @@ class KalkulacijaModel {
     'odabranaAutocesta': odabranaAutocesta, 'tkoPlacaNocenje': tkoPlacaNocenje, 'cijenaNocenja': cijenaNocenja,
     'marza': marza, 'cijenaGoriva': cijenaGoriva, 'dnevnica': dnevnica,
   };
+
   factory KalkulacijaModel.fromJson(Map<String, dynamic> json) => KalkulacijaModel(
     id: json['id'] ?? '', nazivKalkulacije: json['nazivKalkulacije'] ?? '', klijentNaziv: json['klijentNaziv'] ?? '',
     datumPolaska: json['datumPolaska'] ?? '', datumPovratka: json['datumPovratka'] ?? '', vozilo: json['vozilo'] ?? '',
@@ -331,12 +370,12 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   void _automatskiDetektirajCestarinu(List<String> tocke) {
     String spojeneTocke = tocke.join(' ').toLowerCase();
     for (var relacija in _bazaRelacijaCestarina) {
-      List<String> kljucneRijeci = relacija['kljucneRijeci'];
-      if (kljucneRijeci.every((rijec) => spojeneTocke.contains(rijec))) {
+      String ulaz = (relacija['ulaz'] ?? '').toString().toLowerCase();
+      String izlaz = (relacija['izlaz'] ?? '').toString().toLowerCase();
+      if (spojeneTocke.contains(ulaz) && spojeneTocke.contains(izlaz)) {
         setState(() {
           _koristiAutocestu = true;
-          _odabranaAutocesta = relacija['nazivAutoceste'];
-          Map<String, dynamic> cestarineMap = relacija['cestarine'];
+          Map<String, dynamic> cestarineMap = relacija['cijene'] ?? {};
           if (cestarineMap.containsKey(_odabranoVozilo)) {
             double jednosmjerna = cestarineMap[_odabranoVozilo];
             _cestarinaController.text = (jednosmjerna * (_povratnoPutovanje ? 2.0 : 1.0)).toStringAsFixed(2);
@@ -574,36 +613,220 @@ class PostavkeTab extends StatefulWidget {
 
 class _PostavkeTabState extends State<PostavkeTab> {
   final CestarineService _cestarineService = CestarineService();
-  late TextEditingController _nazivC = TextEditingController(text: widget.prijevoznik.naziv);
-  late TextEditingController _oibC = TextEditingController(text: widget.prijevoznik.oib);
+
+  late TextEditingController _nazivC;
+  late TextEditingController _vlasnikC;
+  late TextEditingController _adresaC;
+  late TextEditingController _gradC;
+  late TextEditingController _oibC;
+  late TextEditingController _telC;
+  late TextEditingController _emailC;
+  late TextEditingController _bankaC;
+  late TextEditingController _ibanC;
+  late bool _uSustavuPdv;
+
+  @override
+  void initState() {
+    super.initState();
+    _inicijalizirajControllere();
+  }
+
+  void _inicijalizirajControllere() {
+    _nazivC = TextEditingController(text: widget.prijevoznik.naziv);
+    _vlasnikC = TextEditingController(text: widget.prijevoznik.vlasnik);
+    _adresaC = TextEditingController(text: widget.prijevoznik.adresa);
+    _gradC = TextEditingController(text: widget.prijevoznik.grad);
+    _oibC = TextEditingController(text: widget.prijevoznik.oib);
+    _telC = TextEditingController(text: widget.prijevoznik.telefon);
+    _emailC = TextEditingController(text: widget.prijevoznik.email);
+    _bankaC = TextEditingController(text: widget.prijevoznik.banka);
+    _ibanC = TextEditingController(text: widget.prijevoznik.iban);
+    _uSustavuPdv = widget.prijevoznik.uSustavuPdv;
+  }
+
+  void _spremiPostavke() {
+    widget.prijevoznik.naziv = _nazivC.text;
+    widget.prijevoznik.vlasnik = _vlasnikC.text;
+    widget.prijevoznik.adresa = _adresaC.text;
+    widget.prijevoznik.grad = _gradC.text;
+    widget.prijevoznik.oib = _oibC.text;
+    widget.prijevoznik.telefon = _telC.text;
+    widget.prijevoznik.email = _emailC.text;
+    widget.prijevoznik.banka = _bankaC.text;
+    widget.prijevoznik.iban = _ibanC.text;
+    widget.prijevoznik.uSustavuPdv = _uSustavuPdv;
+
+    widget.onUpdate();
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Postavke prijevoznika spremljene!'), backgroundColor: Colors.green));
+  }
+
+  void _prikaziDijalogZaKlijenta({KlijentModel? klijent}) {
+    final nazC = TextEditingController(text: klijent?.naziv ?? '');
+    final vlaC = TextEditingController(text: klijent?.vlasnik ?? '');
+    final adrC = TextEditingController(text: klijent?.adresa ?? '');
+    final grdC = TextEditingController(text: klijent?.grad ?? '');
+    final oibC = TextEditingController(text: klijent?.oib ?? '');
+    final telC = TextEditingController(text: klijent?.telefon ?? '');
+    final emlC = TextEditingController(text: klijent?.email ?? '');
+    bool pdv = klijent?.uSustavuPdv ?? true;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(klijent == null ? 'Novi Klijent' : 'Uredi Klijenta'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: nazC, decoration: const InputDecoration(labelText: 'Naziv klijenta / agencije')),
+              TextField(controller: vlaC, decoration: const InputDecoration(labelText: 'Vlasnik / Kontakt osoba')),
+              TextField(controller: adrC, decoration: const InputDecoration(labelText: 'Adresa')),
+              TextField(controller: grdC, decoration: const InputDecoration(labelText: 'Grad')),
+              TextField(controller: oibC, decoration: const InputDecoration(labelText: 'OIB')),
+              TextField(controller: telC, decoration: const InputDecoration(labelText: 'Telefon')),
+              TextField(controller: emlC, decoration: const InputDecoration(labelText: 'Email')),
+              StatefulBuilder(
+                builder: (BuildContext context, StateSetter setStateModal) {
+                  return CheckboxListTile(
+                    title: const Text('Klijent je u sustavu PDV-a?'),
+                    value: pdv,
+                    onChanged: (val) => setStateModal(() => pdv = val ?? true),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Odustani')),
+          ElevatedButton(
+            onPressed: () {
+              if (nazC.text.trim().isEmpty) return;
+              String id = klijent?.id ?? DateTime.now().millisecondsSinceEpoch.toString();
+              var noviK = KlijentModel(
+                id: id,
+                naziv: nazC.text,
+                vlasnik: vlaC.text,
+                adresa: adrC.text,
+                grad: grdC.text,
+                oib: oibC.text,
+                telefon: telC.text,
+                email: emlC.text,
+                uSustavuPdv: pdv,
+              );
+
+              setState(() {
+                if (klijent == null) {
+                  widget.klijenti.add(noviK);
+                } else {
+                  int idx = widget.klijenti.indexWhere((element) => element.id == klijent.id);
+                  if (idx >= 0) widget.klijenti[idx] = noviK;
+                }
+              });
+
+              FirebaseFirestore.instance.collection('klijenti').doc(id).set(noviK.toJson());
+              widget.onUpdate();
+              Navigator.pop(ctx);
+            },
+            child: const Text('Spremi'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Postavke', style: TextStyle(color: Colors.white)), backgroundColor: Theme.of(context).colorScheme.primary, centerTitle: true),
+      appBar: AppBar(title: const Text('Postavke i Klijenti', style: TextStyle(color: Colors.white)), backgroundColor: Theme.of(context).colorScheme.primary, centerTitle: true),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          TextField(controller: _nazivC, decoration: const InputDecoration(labelText: 'Naziv prijevoznika')),
-          const SizedBox(height: 8),
-          TextField(controller: _oibC, decoration: const InputDecoration(labelText: 'OIB')),
+          const Text('Podaci o Vašoj Tvrtki (Prijevoznik)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0284C7))),
           const SizedBox(height: 12),
-          ElevatedButton(
-            onPressed: () {
-              widget.prijevoznik.naziv = _nazivC.text;
-              widget.prijevoznik.oib = _oibC.text;
-              widget.onUpdate();
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Spremljeno!')));
-            },
-            child: const Text('Spremi postavke'),
+          TextField(controller: _nazivC, decoration: const InputDecoration(labelText: 'Naziv prijevoznika', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          TextField(controller: _vlasnikC, decoration: const InputDecoration(labelText: 'Vlasnik / Direktor', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          TextField(controller: _adresaC, decoration: const InputDecoration(labelText: 'Adresa', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          TextField(controller: _gradC, decoration: const InputDecoration(labelText: 'Grad', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          TextField(controller: _oibC, decoration: const InputDecoration(labelText: 'OIB', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          TextField(controller: _telC, decoration: const InputDecoration(labelText: 'Telefon', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          TextField(controller: _emailC, decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          TextField(controller: _bankaC, decoration: const InputDecoration(labelText: 'Banka', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          TextField(controller: _ibanC, decoration: const InputDecoration(labelText: 'IBAN', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          CheckboxListTile(
+            title: const Text('Prijevoznik je u sustavu PDV-a'),
+            value: _uSustavuPdv,
+            onChanged: (val) => setState(() => _uSustavuPdv = val ?? true),
           ),
-          const Divider(height: 30),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: _spremiPostavke,
+            icon: const Icon(Icons.save, color: Colors.white),
+            label: const Text('Spremi Postavke Prijevoznika', style: TextStyle(fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0284C7), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14)),
+          ),
+          const Divider(height: 40, thickness: 2),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Popis Klijenta / Agencija', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0284C7))),
+              ElevatedButton.icon(
+                onPressed: () => _prikaziDijalogZaKlijenta(),
+                icon: const Icon(Icons.add),
+                label: const Text('Novi Klijent'),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16A34A), foregroundColor: Colors.white),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: widget.klijenti.length,
+            itemBuilder: (ctx, idx) {
+              var k = widget.klijenti[idx];
+              return Card(
+                child: ListTile(
+                  title: Text(k.naziv, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text('${k.grad} | OIB: ${k.oib} | PDV: ${k.uSustavuPdv ? "DA" : "NE"}'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => _prikaziDijalogZaKlijenta(klijent: k)),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () {
+                          setState(() => widget.klijenti.removeAt(idx));
+                          FirebaseFirestore.instance.collection('klijenti').doc(k.id).delete();
+                          widget.onUpdate();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          const Divider(height: 40, thickness: 2),
           ElevatedButton.icon(
             icon: const Icon(Icons.cloud_upload),
             label: const Text('Inicijaliziraj bazu cestarina u Firebase'),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12)),
             onPressed: () async {
               await _cestarineService.inicijalizirajBazuUFirebaseu();
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Baza cestarina inicijalizirana!')));
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Baza cestarina inicijalizirana!'), backgroundColor: Colors.green));
+              }
             },
           ),
         ],
