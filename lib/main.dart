@@ -260,10 +260,10 @@ class IzracunTroskovaTab extends StatefulWidget {
   });
 
   @override
-  State<IzracunTroskovaTab> createState() => _IzracunajTroškovaTabState();
+  State<IzracunTroskovaTab> createState() => _IzracunajTroskovaTabState();
 }
 
-class _IzracunajTroškovaTabState extends State<IzracunTroskovaTab> {
+class _IzracunajTroskovaTabState extends State<IzracunTroskovaTab> {
   final TextEditingController _nazivKalkulacijeController = TextEditingController(text: 'Izlet - Ruta po točkama');
   final TextEditingController _polazisteController = TextEditingController(text: 'Zagreb');
   final TextEditingController _odrediste1Controller = TextEditingController();
