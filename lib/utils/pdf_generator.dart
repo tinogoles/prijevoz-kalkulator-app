@@ -98,7 +98,7 @@ class PdfGenerator {
                   _buildRedTablice('Noćenje vozača', nocenjeNeto, nocenjePdv, nocenjeBrutoUkupno, font),
                 ],
               ),
-              const pw.SizedBox(height: 15),
+              pw.SizedBox(height: 15), // Uklonjen neispravan const
 
               pw.Container(
                 padding: const pw.EdgeInsets.all(10),
@@ -194,7 +194,7 @@ class PdfGenerator {
               ),
               pw.SizedBox(height: 25),
 
-              // Cijene i PDV blok (ovisno o statusu PDV-a klijenta)
+              // Cijene i PDV blok
               pw.Container(
                 padding: const pw.EdgeInsets.all(14),
                 decoration: const pw.BoxDecoration(
