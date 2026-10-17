@@ -493,7 +493,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Izračun Troškova', style: TextStyle(color: Colors.white)), backgroundColor: Theme.of(context).colorScheme.primary, centerTitle: true),
+      appBar: AppBar(title: const Text('Izračun Troškova Prijevoza', style: TextStyle(color: Colors.white)), backgroundColor: Theme.of(context).colorScheme.primary, centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -566,10 +566,18 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               opcijeAutocesta: _opcijeAutocesta,
             ),
             const SizedBox(height: 16),
+            // Premješten OSRM gumb iznad završnog gumba
+            ElevatedButton.icon(
+              onPressed: _isLoadingRoute ? null : _izracunajRutuMultiPoint,
+              icon: const Icon(Icons.route),
+              label: Text(_isLoadingRoute ? 'Računam...' : 'Izračunaj kilometre po točkama (OSRM)'),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0284C7), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14)),
+            ),
+            const SizedBox(height: 12),
             ElevatedButton.icon(
               onPressed: _spremi,
-              icon: const Icon(Icons.save),
-              label: Text(_trenutniIdUredjivanja == null ? 'Spremi kalkulaciju' : 'Ažuriraj kalkulaciju'),
+              icon: const Icon(Icons.calculate),
+              label: Text(_trenutniIdUredjivanja == null ? '1. Korak: Izradi i spremi Kalkulaciju' : 'Ažuriraj kalkulaciju'),
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16A34A), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14)),
             ),
           ],
@@ -587,15 +595,56 @@ class KalkulacijeTab extends StatelessWidget {
   final ValueChanged<KalkulacijaModel> onUredi;
   const KalkulacijeTab({super.key, required this.kalkulacije, required this.prijevoznik, required this.klijenti, required this.onObrisi, required this.onUredi});
 
-  void _printaj(KalkulacijaModel k) async {
+  void _printajInternuKalkulaciju(KalkulacijaModel k) async {
     Printing.layoutPdf(onLayout: (format) async {
       final pdf = pw.Document();
-      pdf.addPage(pw.Page(build: (ctx) => pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-        pw.Text('Kalkulacija: ${k.nazivKalkulacije}', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
-        pw.Text('Klijent: ${k.klijentNaziv}'),
-        pw.Text('Ruta: ${k.ruta} (${k.km} km)'),
-        pw.Text('Cijena: ${k.ukupnaCijena.toStringAsFixed(2)} €', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
-      ])));
+      pdf.addPage(pw.Page(build: (ctx) => pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text('INTERNA KALKULACIJA PRIJEVOZA', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 10),
+          pw.Text('Prijevoznik: ${prijevoznik.naziv}, ${prijevoznik.adresa}, ${prijevoznik.grad}'),
+          pw.Text('OIB: ${prijevoznik.oib} | IBAN: ${prijevoznik.iban}'),
+          pw.Divider(),
+          pw.Text('Naziv kalkulacije: ${k.nazivKalkulacije}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+          pw.Text('Klijent: ${k.klijentNaziv}'),
+          pw.Text('Relacija: ${k.ruta} (${k.km} km)'),
+          pw.Text('Termin: ${k.datumPolaska} - ${k.datumPovratka}'),
+          pw.Text('Vozilo: ${k.vozilo}'),
+          pw.SizedBox(height: 10),
+          pw.Text('Cestarina: ${k.cestarina} € (${k.odabranaAutocesta})'),
+          pw.Text('Noćenje vozača: ${k.tkoPlacaNocenje} (${k.cijenaNocenja} €)'),
+          pw.Divider(),
+          pw.Text('UKUPNA CIJENA: ${k.ukupnaCijena.toStringAsFixed(2)} €', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+        ],
+      )));
+      return pdf.save();
+    });
+  }
+
+  void _printajPonuduPdf(KalkulacijaModel k) async {
+    Printing.layoutPdf(onLayout: (format) async {
+      final pdf = pw.Document();
+      pdf.addPage(pw.Page(build: (ctx) => pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text('PONUDA ZA PRIJEVOZ', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
+          pw.SizedBox(height: 10),
+          pw.Text('Izdavatelj: ${prijevoznik.naziv}'),
+          pw.Text('Adresa: ${prijevoznik.adresa}, ${prijevoznik.grad}'),
+          pw.Text('OIB: ${prijevoznik.oib} | Banka: ${prijevoznik.banka} | IBAN: ${prijevoznik.iban}'),
+          pw.Divider(),
+          pw.Text('Za klijenta: ${k.klijentNaziv}', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 10),
+          pw.Text('Predmet ponude: ${k.nazivKalkulacije}'),
+          pw.Text('Relacija: ${k.ruta}'),
+          pw.Text('Datum izvođenja: ${k.datumPolaska} - ${k.datumPovratka}'),
+          pw.SizedBox(height: 15),
+          pw.Text('UKUPNI IZNOS PONUDE: ${k.ukupnaCijena.toStringAsFixed(2)} €', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.red800)),
+          pw.SizedBox(height: 30),
+          pw.Text('Zahvaljujemo na ukazanom povjerenju!'),
+        ],
+      )));
       return pdf.save();
     });
   }
@@ -603,22 +652,58 @@ class KalkulacijeTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Spremljene kalkulacije', style: TextStyle(color: Colors.white)), backgroundColor: Theme.of(context).colorScheme.primary, centerTitle: true),
+      appBar: AppBar(title: const Text('Spremljene Kalkulacije i Ponude', style: TextStyle(color: Colors.white)), backgroundColor: Theme.of(context).colorScheme.primary, centerTitle: true),
       body: kalkulacije.isEmpty ? const Center(child: Text('Nema spremljenih kalkulacija.')) : ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: kalkulacije.length,
         itemBuilder: (ctx, idx) {
           var k = kalkulacije[idx];
           return Card(
-            child: ListTile(
-              title: Text(k.nazivKalkulacije, style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('${k.klijentNaziv} | ${k.ukupnaCijena.toStringAsFixed(2)} €'),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
+            margin: const EdgeInsets.only(bottom: 12),
+            elevation: 2,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(14.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => onUredi(k)),
-                  IconButton(icon: const Icon(Icons.print, color: Colors.indigo), onPressed: () => _printaj(k)),
-                  IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => onObrisi(k.id)),
+                  Text(k.nazivKalkulacije, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0284C7))),
+                  const SizedBox(height: 4),
+                  Text('Klijent: ${k.klijentNaziv}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text('Ruta: ${k.ruta}'),
+                  Text('Termin: ${k.datumPolaska} - ${k.datumPovratka}'),
+                  const SizedBox(height: 6),
+                  Text('Ukupno: ${k.ukupnaCijena.toStringAsFixed(2)} €', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFFEA580C))),
+                  const Divider(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => onUredi(k),
+                        icon: const Icon(Icons.edit, size: 18, color: Colors.blue),
+                        label: const Text('Uredi', style: TextStyle(color: Colors.blue)),
+                      ),
+                      TextButton.icon(
+                        onPressed: () => _printajInternuKalkulaciju(k),
+                        icon: const Icon(Icons.print, size: 18, color: Colors.indigo),
+                        label: const Text('Interna kalkulacija', style: TextStyle(color: Colors.indigo)),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => _printajPonuduPdf(k),
+                        icon: const Icon(Icons.picture_as_pdf, size: 18, color: Colors.green),
+                        label: const Text('Ponuda PDF', style: TextStyle(color: Colors.green)),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => onObrisi(k.id),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
