@@ -240,7 +240,7 @@ class IzracunTroskovaTab extends StatefulWidget {
 
 class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   bool _isLoadingRoute = false;
-  final List<Map<String, dynamic>> _bazaRelacijaCestarina = bazaRelacijaCestarinaGlobal;
+  final List<Map<String, dynamic>> _bazaRelacijaCestarina = BazaCestarinaData.dioniceCestarina;
   final TextEditingController _nazivKalkulacijeController = TextEditingController(text: 'Izlet - Ruta');
   final TextEditingController _polazisteController = TextEditingController(text: 'Zagreb');
   final TextEditingController _odrediste1Controller = TextEditingController();
