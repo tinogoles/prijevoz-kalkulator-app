@@ -526,6 +526,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               onOdaberiDatumPovratka: () => _odaberiDatum(context, _datumPovratkaController),
               onIzracunajRutu: _izracunajRutuMultiPoint,
               isLoadingRoute: _isLoadingRoute,
+              sakrijGumbZaRutu: true, // Uklonjen OSRM gumb iz ove komponente
             ),
             const SizedBox(height: 12),
             TextField(controller: _nazivKalkulacijeController, decoration: const InputDecoration(labelText: 'Naziv kalkulacije', border: OutlineInputBorder())),
@@ -566,6 +567,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               opcijeAutocesta: _opcijeAutocesta,
             ),
             const SizedBox(height: 16),
+            // Jedini preostali OSRM gumb točno iznad gumba za spremanje
             ElevatedButton.icon(
               onPressed: _isLoadingRoute ? null : _izracunajRutuMultiPoint,
               icon: const Icon(Icons.route),
@@ -576,7 +578,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ElevatedButton.icon(
               onPressed: _spremi,
               icon: const Icon(Icons.calculate),
-              label: Text(_trenutniIdUredjivanja == null ? '1. Korak: Izradi i spremi Kalkulaciju' : 'Ažuriraj kalkulaciju'),
+              label: Text(_trenutniIdUredjivanja == null ? 'Izradi i spremi kalkulaciju' : 'Ažuriraj kalkulaciju'),
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16A34A), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14)),
             ),
           ],
