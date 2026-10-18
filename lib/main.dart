@@ -8,7 +8,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: const FirebaseOptions(
-      apiKey: "AIzaSyCYB1XlQMLH5DQc_hkrs15pRB-YvovMpmg",
+      apiKey: "AIzaSyCYB1XlQMLH5DQc_hkrsS15pRB-YvovMpg",
       authDomain: "prijevozkalkulator.firebaseapp.com",
       projectId: "prijevozkalkulator",
       storageBucket: "prijevozkalkulator.firebasestorage.app",
