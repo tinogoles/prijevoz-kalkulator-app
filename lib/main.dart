@@ -747,7 +747,22 @@ class KalkulacijeTab extends StatelessWidget {
                             icon: const Icon(Icons.delete, color: Colors.grey),
                             tooltip: 'Obriši',
                             onPressed: () => onObrisi(k.id),
-                            class PostavkeTab extends StatelessWidget {
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class PostavkeTab extends StatelessWidget {
   final PrijevoznikModel prijevoznik;
   final List<KlijentModel> klijenti;
   final VoidCallback onUpdate;
@@ -792,7 +807,16 @@ class KalkulacijeTab extends StatelessWidget {
               onUpdate();
             },
           ),
-const SizedBox(height: 24),
+          const SizedBox(height: 12),
+          TextField(
+            controller: TextEditingController(text: prijevoznik.grad),
+            decoration: const InputDecoration(labelText: 'Grad', border: OutlineInputBorder()),
+            onChanged: (val) {
+              prijevoznik.grad = val;
+              onUpdate();
+            },
+          ),
+          const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () {
               onUpdate();
