@@ -213,29 +213,16 @@ class _PostavkeTabState extends State<PostavkeTab> {
                     };
 
                     try {
-                      final batch = FirebaseFirestore.instance.batch();
+                      final klijentiRef = FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(_currentUser!.uid)
+                          .collection('klijenti');
 
-                      final userKlijentRef = docId == null
-                          ? FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(_currentUser!.uid)
-                              .collection('klijenti')
-                              .doc()
-                          : FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(_currentUser!.uid)
-                              .collection('klijenti')
-                              .doc(docId);
-
-                      batch.set(userKlijentRef, klijentData, SetOptions(merge: true));
-
-                      final rootKlijentRef = FirebaseFirestore.instance
-                          .collection('klijenti')
-                          .doc(userKlijentRef.id);
-
-                      batch.set(rootKlijentRef, klijentData, SetOptions(merge: true));
-
-                      await batch.commit();
+                      if (docId == null) {
+                        await klijentiRef.add(klijentData);
+                      } else {
+                        await klijentiRef.doc(docId).update(klijentData);
+                      }
 
                       if (mounted) {
                         Navigator.pop(context);
@@ -283,27 +270,25 @@ class _PostavkeTabState extends State<PostavkeTab> {
             onPressed: () async {
               Navigator.pop(ctx);
               if (_currentUser != null) {
-                final batch = FirebaseFirestore.instance.batch();
-                
-                final userKlijentRef = FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(_currentUser!.uid)
-                    .collection('klijenti')
-                    .doc(docId);
-                
-                final rootKlijentRef = FirebaseFirestore.instance
-                    .collection('klijenti')
-                    .doc(docId);
+                try {
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(_currentUser!.uid)
+                      .collection('klijenti')
+                      .doc(docId)
+                      .delete();
 
-                batch.delete(userKlijentRef);
-                batch.delete(rootKlijentRef);
-
-                await batch.commit();
-                
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Klijent uspješno obrisan.'), backgroundColor: Colors.red),
-                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Klijent uspješno obrisan.'), backgroundColor: Colors.red),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Greška pri brisanju: $e'), backgroundColor: Colors.red),
+                    );
+                  }
                 }
               }
             },
