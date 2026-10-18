@@ -18,7 +18,7 @@ class GlavniNavigatorScreen extends StatefulWidget {
 
 class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
   int _currentIndex = 0;
-  PrijevoznikModel _prijevoznik = PrijevoznikModel(id: '1', naziv: 'Moj Obrt', oib: '', grad: '');
+  PrijevoznikModel _prijevoznik = PrijevoznikModel(naziv: '', oib: '', grad: '');
   List<KlijentModel> _klijenti = [];
   KlijentModel? _aktivniKlijent;
   List<KalkulacijaModel> _kalkulacije = [];
@@ -35,7 +35,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
   void _ucitajPodatkeIzFirestore() {
     if (_userId.isEmpty) return;
 
-    // Slušanje postavki prijevoznika specifičnih za korisnika
+    // Slušanje postavki prijevoznika po korisniku
     FirebaseFirestore.instance
         .collection('users')
         .doc(_userId)
@@ -43,14 +43,14 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
         .doc('prijevoznik')
         .snapshots()
         .listen((doc) {
-      if (doc.exists && mounted) {
+      if (doc.exists && mounted && doc.data() !=- null) {
         setState(() {
-          _prijevoznik = PrijevoznikModel.fromMap(doc.data()!, doc.id);
+          _prijevoznik = PrijevoznikModel.fromMap(doc.data()!);
         });
       }
     });
 
-    // Slušanje klijenata specifičnih za korisnika
+    // Slušanje klijenata po korisniku
     FirebaseFirestore.instance
         .collection('users')
         .doc(_userId)
@@ -59,7 +59,14 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
         .listen((snapshot) {
       if (mounted) {
         setState(() {
-          _klijenti = snapshot.docs.map((d) => KlijentModel.fromMap(d.data(), d.id)).toList();
+          _klijenti = snapshot.docs.map((d) {
+            var m = d.data();
+            return KlijentModel(
+              id: d.id,
+              naziv: m['naziv'] ?? '',
+              uSustavuPdv: m['uSustavuPdv'] ?? true,
+            );
+          }).toList();
           if (_klijenti.isNotEmpty && _aktivniKlijent == null) {
             _aktivniKlijent = _klijenti.first;
           }
@@ -67,7 +74,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
       }
     });
 
-    // Slušanje kalkulacija specifičnih za korisnika
+    // Slušanje kalkulacija po korisniku
     FirebaseFirestore.instance
         .collection('users')
         .doc(_userId)
@@ -76,7 +83,18 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
         .listen((snapshot) {
       if (mounted) {
         setState(() {
-          _kalkulacije = snapshot.docs.map((d) => KalkulacijaModel.fromMap(d.data(), d.id)).toList();
+          _kalkulacije = snapshot.docs.map((d) {
+            var m = d.data();
+            return KalkulacijaModel(
+              id: d.id,
+              nazivKalkulacije: m['nazivKalkulacije'] ?? '',
+              klijentNaziv: m['klijentNaziv'] ?? '',
+              ruta: m['ruta'] ?? '',
+              datumPolaska: m['datumPolaska'] ?? '',
+              datumPovratka: m['datumPovratka'] ?? '',
+              ukupnaCijena: (m['ukupnaCijena'] ?? 0).toDouble(),
+            );
+          }).toList();
         });
       }
     });
@@ -89,14 +107,23 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
         .doc(_userId)
         .collection('kalkulacije')
         .doc(kalk.id)
-        .set(kalk.toMap());
+        .set({
+      'nazivKalkulacije': kalk.nazivKalkulacije,
+      'klijentNaziv': kalk.klijentNaziv,
+      'ruta': kalk.ruta,
+      'datumPolaska': kalk.datumPolaska,
+      'datumPovratka': kalk.datumPovratka,
+      'ukupnaCijena': kalk.ukupnaCijena,
+    });
 
     setState(() {
       _kalkulacijaZaUredivanje = null;
-      _currentIndex = 1; // Prebaci na tab kalkulacija
+      _currentIndex = 1;
     });
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Kalkulacija uspješno spremljena!'), backgroundColor: Colors.green));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kalkulacija uspješno spremljena!'), backgroundColor: Colors.green),
+      );
     }
   }
 
@@ -139,13 +166,13 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
         onUredi: (k) {
           setState(() {
             _kalkulacijaZaUredivanje = k;
-            _currentIndex = 0; // Vrati na tab za izračun
+            _currentIndex = 0;
           });
         },
       ),
       KlijentiTab(
         klijenti: _klijenti,
-        userId: _userId, // Proslijeđujemo userId za Firestore akcije u KlijentiTab-u ako je potrebno
+        userId: _userId,
       ),
       PostavkeTab(
         prijevoznik: _prijevoznik,
@@ -167,7 +194,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Kalkulacije'),
           BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Klijenti'),
           BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Postavke'),
-      ],
+        ],
       ),
     );
   }
