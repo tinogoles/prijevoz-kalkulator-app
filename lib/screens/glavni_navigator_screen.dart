@@ -92,7 +92,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
         .listen((snapshot) {
       if (mounted) {
         setState(() {
-          _kalkulacije = snapshot.docs.map((d) {
+          _kalkulacije = snapshot.docs.map<KalkulacijaModel>((d) {
             var m = d.data();
             return KalkulacijaModel(
               id: d.id,
@@ -102,6 +102,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
               datumPolaska: m['datumPolaska'] ?? '',
               datumPovratka: m['datumPovratka'] ?? '',
               ukupnaCijena: (m['ukupnaCijena'] ?? 0).toDouble(),
+              vozilo: m['vozilo'] ?? '',
             );
           }).toList();
         });
@@ -123,11 +124,12 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
       'datumPolaska': kalk.datumPolaska,
       'datumPovratka': kalk.datumPovratka,
       'ukupnaCijena': kalk.ukupnaCijena,
+      'vozilo': kalk.vozilo,
     });
 
     setState(() {
       _kalkulacijaZaUredivanje = null;
-      _currentIndex = 1; // Prebaci na tab kalkulacija
+      _currentIndex = 1;
     });
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
