@@ -4,26 +4,28 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 class PdfGenerator {
-  // 1. Interna kalkulacija troškova
+  // 1. Interna kalkulacija troškova (Usklađena s formom izračuna)
   static Future<void> printajInternuKalkulaciju(dynamic kalkulacija, dynamic prijevoznik, {bool klijentUsetPdv = true}) async {
     final font = await PdfGoogleFonts.robotoRegular();
     final fontBold = await PdfGoogleFonts.robotoBold();
 
-    double km = double.tryParse(kalkulacija.km.toString()) ?? 0;
-    double cestarinaUnesena = double.tryParse(kalkulacija.cestarina.toString()) ?? 0;
-    double gorivoBruto = double.tryParse(kalkulacija.cijenaGoriva.toString()) ?? 1.45;
-    double dnevnica = double.tryParse(kalkulacija.dnevnica.toString()) ?? 80;
-    double nocenjeBruto = double.tryParse(kalkulacija.cijenaNocenja.toString()) ?? 60;
-    double marzaPosto = double.tryParse(kalkulacija.marza.toString()) ?? 20;
+    // 1. Sigurno parsiranje unesenih vrijednosti iz modela
+    double km = double.tryParse(kalkulacija.km?.toString() ?? '0') ?? 0;
+    double cestarinaBruto = double.tryParse(kalkulacija.cestarina?.toString() ?? '0') ?? 0;
+    double gorivoBruto = double.tryParse(kalkulacija.cijenaGoriva?.toString() ?? '1.96') ?? 1.96;
+    double dnevnica = double.tryParse(kalkulacija.dnevnica?.toString() ?? '100') ?? 100;
+    double nocenjeBruto = double.tryParse(kalkulacija.cijenaNocenja?.toString() ?? '60') ?? 60;
+    double marzaPosto = double.tryParse(kalkulacija.marza?.toString() ?? '20') ?? 20;
 
     Map<String, double> potrosnjaVozila = {
       'Kombi 8+1': 9.0,
       'Mini bus <20': 15.0,
       'Midi bus 35': 30.0,
-      'Veliki autobus 50': 35.0
+      'Veliki autobus 50': 35.0,
     };
-    double potrosnja = potrosnjaVozila[kalkulacija.vozilo] ?? 9.0;
-    
+    double potrosnja = potrosnjaVozila[kalkulacija.vozilo] ?? 35.0;
+
+    // Izračun broja dana i noćenja
     int brojDana = 1;
     try {
       String d1Str = kalkulacija.datumPolaska.replaceAll('.', '').trim();
@@ -37,26 +39,32 @@ class PdfGenerator {
     } catch (_) {}
     int brojNocenja = brojDana > 1 ? brojDana - 1 : 0;
 
+    // 2. Primjena identične formule izračuna kao u IzracunTroskovaTab
     double gorivoNeto = ((km / 100) * potrosnja * gorivoBruto) / 1.25;
     double gorivoPdv = ((km / 100) * potrosnja * gorivoBruto) - gorivoNeto;
-    double gorivoBrutoUkupno = (km / 100) * potrosnja * gorivoBruto;
+    double gorivoUkupnoBruto = (km / 100) * potrosnja * gorivoBruto;
 
-    bool koristiCestarinu = kalkulacija.koristiAutocestu && cestarinaUnesena > 0;
-    double cestarinaBrutoUkupno = koristiCestarinu ? cestarinaUnesena : 0;
-    double cestarinaNeto = cestarinaBrutoUkupno / 1.25;
-    double cestarinaPdv = cestarinaBrutoUkupno - cestarinaNeto;
+    bool koristiCestarinu = kalkulacija.koristiAutocestu && cestarinaBruto > 0;
+    double cestarinaUkupnoBruto = koristiCestarinu ? cestarinaBruto : 0;
+    double cestarinaNeto = cestarinaUkupnoBruto / 1.25;
+    double cestarinaPdv = cestarinaUkupnoBruto - cestarinaNeto;
 
-    double trosakVozaca = dnevnica * brojDana;
+    double trosakVozaca = dnevnica * brojDana; // Dnevnice su obično neoporezive / neto
 
-    double nocenjeNeto = (kalkulacija.tkoPlacaNocenje == 'Prijevoznik plaća' ? (nocenjeBruto * brojNocenja) : 0) / 1.25;
-    double nocenjePdv = (kalkulacija.tkoPlacaNocenje == 'Prijevoznik plaća' ? (nocenjeBruto * brojNocenja) : 0) - nocenjeNeto;
-    double nocenjeBrutoUkupno = kalkulacija.tkoPlacaNocenje == 'Prijevoznik plaća' ? (nocenjeBruto * brojNocenja) : 0;
+    double nocenjeUkupnoBruto = (kalkulacija.tkoPlacaNocenje == 'Prijevoznik plaća' ? (nocenjeBruto * brojNocenja) : 0);
+    double nocenjeNeto = nocenjeUkupnoBruto / 1.25;
+    double nocenjePdv = nocenjeUkupnoBruto - nocenjeNeto;
 
-    double ukupnoNeto = gorivoNeto + cestarinaNeto + trosakVozaca + nocenjeNeto;
-    double iznosMarze = ukupnoNeto * (marzaPosto / 100);
-    double osnovicaZaPonudu = ukupnoNeto + iznosMarze;
-    double izlazniPdv = klijentUsetPdv ? (osnovicaZaPonudu * 0.25) : 0.0;
-    double totalZaSve = klijentUsetPdv ? (osnovicaZaPonudu + izlazniPdv) : kalkulacija.ukupnaCijena;
+    // Zbroj čistoća (Neto troškovi)
+    double cistiTrosak = gorivoNeto + cestarinaNeto + trosakVozaca + nocenjeNeto;
+    
+    // Izračun zarade/marže
+    double zarada = cistiTrosak * (marzaPosto / 100);
+    double osnovicaSMarzom = cistiTrosak + zarada;
+    
+    // Konačna cijena s PDV-om
+    double ukupnaCijenaIzracunata = osnovicaSMarzom * 1.25;
+    double pdvIznos = ukupnaCijenaIzracunata - osnovicaSMarzom;
 
     Printing.layoutPdf(onLayout: (format) async {
       final pdf = pw.Document();
@@ -92,10 +100,10 @@ class PdfGenerator {
                       pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Ukupno (Bruto)', style: pw.TextStyle(font: fontBold, color: PdfColors.white, fontSize: 10))),
                     ],
                   ),
-                  _buildRedTablice('Gorivo (${kalkulacija.vozilo})', gorivoNeto, gorivoPdv, gorivoBrutoUkupno, font),
-                  _buildRedTablice('Cestarina (${kalkulacija.odabranaAutocesta})', cestarinaNeto, cestarinaPdv, cestarinaBrutoUkupno, font),
+                  _buildRedTablice('Gorivo (${kalkulacija.vozilo})', gorivoNeto, gorivoPdv, gorivoUkupnoBruto, font),
+                  _buildRedTablice('Cestarina (${kalkulacija.odabranaAutocesta})', cestarinaNeto, cestarinaPdv, cestarinaUkupnoBruto, font),
                   _buildRedTablice('Dnevnica vozača', trosakVozaca, 0.0, trosakVozaca, font),
-                  _buildRedTablice('Noćenje vozača', nocenjeNeto, nocenjePdv, nocenjeBrutoUkupno, font),
+                  _buildRedTablice('Noćenje vozača', nocenjeNeto, nocenjePdv, nocenjeUkupnoBruto, font),
                 ],
               ),
               pw.SizedBox(height: 15),
@@ -105,18 +113,18 @@ class PdfGenerator {
                 decoration: const pw.BoxDecoration(color: PdfColors.grey200, borderRadius: pw.BorderRadius.all(pw.Radius.circular(4))),
                 child: pw.Column(
                   children: [
-                    _buildRedZbroja('Ukupni troškovi (Neto):', '${ukupnoNeto.toStringAsFixed(2)} EUR', font),
-                    _buildRedZbroja('Marža (${marzaInfo(kalkulacija)}%):', '${iznosMarze.toStringAsFixed(2)} EUR', font),
+                    _buildRedZbroja('Ukupni troškovi (Neto):', '${cistiTrosak.toStringAsFixed(2)} EUR', font),
+                    _buildRedZbroja('Marža (${marzaPosto.toStringAsFixed(0)}%):', '${zarada.toStringAsFixed(2)} EUR', font),
                     pw.Divider(thickness: 0.5),
                     if (klijentUsetPdv) ...[
-                      _buildRedZbroja('Osnovica za ponudu:', '${osnovicaZaPonudu.toStringAsFixed(2)} EUR', font),
-                      _buildRedZbroja('Izlazni PDV (25%):', '${izlazniPdv.toStringAsFixed(2)} EUR', font),
+                      _buildRedZbroja('Osnovica (bez PDV-a):', '${osnovicaSMarzom.toStringAsFixed(2)} EUR', font),
+                      _buildRedZbroja('PDV (25%):', '${pdvIznos.toStringAsFixed(2)} EUR', font),
                     ] else ...[
-                      _buildRedZbroja('Ukupni iznos (bez razrade PDV-a):', '${totalZaSve.toStringAsFixed(2)} EUR', font),
+                      _buildRedZbroja('Ukupni iznos (bez PDV-a):', '${osnovicaSMarzom.toStringAsFixed(2)} EUR', font),
                       _buildRedZbroja('PDV:', '0.00 EUR (Nije u sustavu PDV-a)', font),
                     ],
                     pw.Divider(thickness: 1, color: PdfColors.red900),
-                    _buildRedZbroja('TOTAL ZA SVE:', '${totalZaSve.toStringAsFixed(2)} EUR', font, isBold: true, color: PdfColors.red900, fontSize: 14),
+                    _buildRedZbroja('TOTAL ZA SVE:', '${(klijentUsetPdv ? ukupnaCijenaIzracunata : osnovicaSMarzom).toStringAsFixed(2)} EUR', font, isBold: true, color: PdfColors.red900, fontSize: 14),
                   ],
                 ),
               ),
@@ -137,9 +145,9 @@ class PdfGenerator {
     String idSkel = kalkulacija.id.length >= 2 ? kalkulacija.id.substring(kalkulacija.id.length - 2) : '01';
     String brojPonude = '$idSkel/$godina';
 
-    double osnovica = klijentUsetPdv ? (kalkulacija.ukupnaCijena / 1.25) : kalkulacija.ukupnaCijena;
-    double pdvIznos = klijentUsetPdv ? (kalkulacija.ukupnaCijena - osnovica) : 0.0;
-    double ukupniIznosPonude = kalkulacija.ukupnaCijena;
+    double ukupniIznosPonude = double.tryParse(kalkulacija.ukupnaCijena?.toString() ?? '0') ?? kalkulacija.ukupnaCijena;
+    double osnovica = klijentUsetPdv ? (ukupniIznosPonude / 1.25) : ukupniIznosPonude;
+    double pdvIznos = klijentUsetPdv ? (ukupniIznosPonude - osnovica) : 0.0;
 
     bool povratno = kalkulacija.povratno ?? true;
     String tekstRelacije = '${kalkulacija.ruta} ${povratno ? "( i povratak )" : ""}';
@@ -265,8 +273,6 @@ class PdfGenerator {
       return pdf.save();
     });
   }
-
-  static String marzaInfo(dynamic k) => k.marza.toString();
 
   static pw.TableRow _buildRedTablice(String naziv, double neto, double pdv, double bruto, dynamic font) {
     return pw.TableRow(
