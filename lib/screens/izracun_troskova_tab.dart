@@ -116,36 +116,8 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     if (widget.kalkulacijaZaUredivanje != oldWidget.kalkulacijaZaUredivanje) {
       if (widget.kalkulacijaZaUredivanje != null) {
         _popuniPodatkeZaUredivanje(widget.kalkulacijaZaUredivanje!);
-      } else {
-        _resetirajFormu();
       }
     }
-  }
-
-  void _resetirajFormu() {
-    setState(() {
-      _trenutniIdUredjivanja = null;
-      _nazivKalkulacijeController.text = 'Izlet - Ruta';
-      _polazisteController.text = 'Split';
-      _odrediste1Controller.text = '';
-      _odrediste2Controller.text = '';
-      _konacnoOdredisteController.text = 'Zagreb';
-      String danas = _formatirajDatum(DateTime.now());
-      _datumPolaskaController.text = danas;
-      _datumPovratkaController.text = danas;
-      _kmController.text = '780';
-      _cestarinaController.text = '167.40';
-      _povratnoPutovanje = true;
-      _koristiAutocestu = true;
-      _odabranaAutocesta = _opcijeAutocesta.first;
-      _tkoPlacaNocenje = 'Bez noćenja';
-      _cijenaNocenjaController.text = '60';
-      _marzaController.text = '20';
-      _cijenaGorivaController.text = '1.96';
-      _dnevnicaController.text = '100';
-      _odabranoVozilo = _potrosnjaVozila.keys.last;
-    });
-    _preracunajBrojDana();
   }
 
   void _popuniPodatkeZaUredivanje(KalkulacijaModel k) {
