@@ -40,14 +40,14 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
         .collection('users')
         .doc(_userId)
         .collection('postavke')
-        .doc('prijevoznik')
+        .doc('glavne')
         .snapshots()
         .listen((doc) {
       if (doc.exists && mounted && doc.data() != null) {
         var data = doc.data()!;
         setState(() {
           _prijevoznik = PrijevoznikModel(
-            naziv: data['naziv'] ?? '',
+            naziv: data['nazivPrijevoznika'] ?? data['naziv'] ?? '',
             oib: data['oib'] ?? '',
             adresa: data['adresa'] ?? '',
             grad: data['grad'] ?? '',
@@ -73,7 +73,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
             return KlijentModel(
               id: d.id,
               naziv: m['naziv'] ?? '',
-              uSustavuPdv: m['uSustavuPdv'] ?? true,
+              uSustavuPdv: m['uSustavuPdv'] ?? (m['pdv'] == 'DA'),
             );
           }).toList();
           if (_klijenti.isNotEmpty && _aktivniKlijent == null) {
@@ -148,24 +148,6 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
         .delete();
   }
 
-  Future<void> _azurirajPostavkePrijevoznika() async {
-    if (_userId.isEmpty) return;
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(_userId)
-        .collection('postavke')
-        .doc('prijevoznik')
-        .set({
-      'naziv': _prijevoznik.naziv,
-      'oib': _prijevoznik.oib,
-      'adresa': _prijevoznik.adresa,
-      'grad': _prijevoznik.grad,
-      'iban': _prijevoznik.iban,
-      'banka': _prijevoznik.banka,
-      'email': _prijevoznik.email,
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final List<Widget> stranice = [
@@ -189,15 +171,8 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
           });
         },
       ),
-      KlijentiTab(
-        klijenti: _klijenti,
-        userId: _userId,
-      ),
-      PostavkeTab(
-        prijevoznik: _prijevoznik,
-        klijenti: _klijenti,
-        onUpdate: _azurirajPostavkePrijevoznika,
-      ),
+      const KlijentiTab(),
+      const PostavkeTab(),
     ];
 
     return Scaffold(
