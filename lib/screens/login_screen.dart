@@ -13,6 +13,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _lozinkaController = TextEditingController();
   bool _isLoading = false;
   String _greska = '';
+  
+  // Stanje koje prati je li lozinka skrivena ili vidljiva
+  bool _obscurePassword = true;
 
   Future<void> _prijaviSe() async {
     setState(() {
@@ -21,14 +24,17 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // Isključivo prijava postojećeg korisnika
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _lozinkaController.text.trim(),
       );
     } on FirebaseAuthException catch (e) {
       setState(() {
-        _greska = e.message ?? 'Došlo je do greške prilikom prijave.';
+        _greska = 'Greška (${e.code}): ${e.message}';
+      });
+    } catch (e) {
+      setState(() {
+        _greska = 'Došlo je do neočekivane greške: $e';
       });
     } finally {
       setState(() {
@@ -69,11 +75,24 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 16),
                 TextField(
                   controller: _lozinkaController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
+                  // Koristimo varijablu za kontrolu vidljivosti teksta
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
                     labelText: 'Lozinka',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock),
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.lock),
+                    // Dodajemo gumb s ikonom oka na desnu stranu polja
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        color: Colors.grey,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
                   ),
                 ),
                 if (_greska.isNotEmpty) ...[
