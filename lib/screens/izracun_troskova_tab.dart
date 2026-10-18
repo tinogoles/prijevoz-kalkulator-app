@@ -103,7 +103,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     _datumPolaskaController = TextEditingController(text: danas);
     _datumPovratkaController = TextEditingController(text: danas);
     
-    // Inicijalna provjera za uređivanje ako je proslijeđena kalkulacija
     if (widget.kalkulacijaZaUredivanje != null) {
       _popuniPodatkeZaUredivanje(widget.kalkulacijaZaUredivanje!);
     } else {
@@ -117,8 +116,36 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     if (widget.kalkulacijaZaUredivanje != oldWidget.kalkulacijaZaUredivanje) {
       if (widget.kalkulacijaZaUredivanje != null) {
         _popuniPodatkeZaUredivanje(widget.kalkulacijaZaUredivanje!);
+      } else {
+        _resetirajFormu();
       }
     }
+  }
+
+  void _resetirajFormu() {
+    setState(() {
+      _trenutniIdUredjivanja = null;
+      _nazivKalkulacijeController.text = 'Izlet - Ruta';
+      _polazisteController.text = 'Split';
+      _odrediste1Controller.text = '';
+      _odrediste2Controller.text = '';
+      _konacnoOdredisteController.text = 'Zagreb';
+      String danas = _formatirajDatum(DateTime.now());
+      _datumPolaskaController.text = danas;
+      _datumPovratkaController.text = danas;
+      _kmController.text = '780';
+      _cestarinaController.text = '167.40';
+      _povratnoPutovanje = true;
+      _koristiAutocestu = true;
+      _odabranaAutocesta = _opcijeAutocesta.first;
+      _tkoPlacaNocenje = 'Bez noćenja';
+      _cijenaNocenjaController.text = '60';
+      _marzaController.text = '20';
+      _cijenaGorivaController.text = '1.96';
+      _dnevnicaController.text = '100';
+      _odabranoVozilo = _potrosnjaVozila.keys.last;
+    });
+    _preracunajBrojDana();
   }
 
   void _popuniPodatkeZaUredivanje(KalkulacijaModel k) {
@@ -131,16 +158,16 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       _konacnoOdredisteController.text = k.konacnoOdrediste.isNotEmpty ? k.konacnoOdrediste : 'Zagreb';
       _datumPolaskaController.text = k.datumPolaska;
       _datumPovratkaController.text = k.datumPovratka;
-      _kmController.text = k.km;
-      _cestarinaController.text = k.cestarina;
+      _kmController.text = k.km.toString();
+      _cestarinaController.text = k.cestarina.toString();
       _povratnoPutovanje = k.povratno;
       _koristiAutocestu = k.koristiAutocestu;
       _odabranaAutocesta = k.odabranaAutocesta.isNotEmpty ? k.odabranaAutocesta : _opcijeAutocesta.first;
       _tkoPlacaNocenje = k.tkoPlacaNocenje.isNotEmpty ? k.tkoPlacaNocenje : 'Bez noćenja';
-      _cijenaNocenjaController.text = k.cijenaNocenja;
-      _marzaController.text = k.marza;
-      _cijenaGorivaController.text = k.cijenaGoriva;
-      _dnevnicaController.text = k.dnevnica;
+      _cijenaNocenjaController.text = k.cijenaNocenja.toString();
+      _marzaController.text = k.marza.toString();
+      _cijenaGorivaController.text = k.cijenaGoriva.toString();
+      _dnevnicaController.text = k.dnevnica.toString();
       if (_potrosnjaVozila.containsKey(k.vozilo)) {
         _odabranoVozilo = k.vozilo;
       }
@@ -335,7 +362,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Izračun Troškova Prijevoza', style: TextStyle(color: Colors.white)),
+        title: Text(_trenutniIdUredjivanja == null ? 'Izračun Troškova Prijevoza' : 'Uređivanje Kalkulacije', style: const TextStyle(color: Colors.white)),
         backgroundColor: Theme.of(context).colorScheme.primary,
         centerTitle: true,
       ),
