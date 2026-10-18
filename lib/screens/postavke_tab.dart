@@ -131,7 +131,6 @@ class _PostavkeTabState extends State<PostavkeTab> {
     }
   }
 
-  // Dijalog za dodavanje i uređivanje klijenta sa svim poljima
   void _prikaziDijalogZaKlijenta({String? docId, Map<String, dynamic>? postojeciPodaci}) {
     final TextEditingController nazivKlijentaController = TextEditingController(text: postojeciPodaci?['naziv'] ?? '');
     final TextEditingController vlasnikKlijentaController = TextEditingController(text: postojeciPodaci?['vlasnik'] ?? '');
@@ -197,6 +196,7 @@ class _PostavkeTabState extends State<PostavkeTab> {
                 ElevatedButton(
                   onPressed: () async {
                     if (_currentUser == null) return;
+
                     final klijentData = {
                       'naziv': nazivKlijentaController.text.trim(),
                       'vlasnik': vlasnikKlijentaController.text.trim(),
@@ -212,18 +212,50 @@ class _PostavkeTabState extends State<PostavkeTab> {
                       'userId': _currentUser!.uid,
                     };
 
-                    final klijentiRef = FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(_currentUser!.uid)
-                        .collection('klijenti');
+                    try {
+                      final batch = FirebaseFirestore.instance.batch();
 
-                    if (docId == null) {
-                      await klijentiRef.add(klijentData);
-                    } else {
-                      await klijentiRef.doc(docId).update(klijentData);
+                      final userKlijentRef = docId == null
+                          ? FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(_currentUser!.uid)
+                              .collection('klijenti')
+                              .doc()
+                          : FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(_currentUser!.uid)
+                              .collection('klijenti')
+                              .doc(docId);
+
+                      batch.set(userKlijentRef, klijentData, SetOptions(merge: true));
+
+                      final rootKlijentRef = FirebaseFirestore.instance
+                          .collection('klijenti')
+                          .doc(userKlijentRef.id);
+
+                      batch.set(rootKlijentRef, klijentData, SetOptions(merge: true));
+
+                      await batch.commit();
+
+                      if (mounted) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Klijent uspješno spremljen!'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Greška pri spremanju: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
                     }
-
-                    if (mounted) Navigator.pop(context);
                   },
                   child: const Text('Spremi'),
                 ),
@@ -235,7 +267,6 @@ class _PostavkeTabState extends State<PostavkeTab> {
     );
   }
 
-  // Funkcija za potvrdu brisanja klijenta
   void _potvrdiBrisanjeKlijenta(String docId, String nazivKlijenta) {
     showDialog(
       context: context,
@@ -252,12 +283,22 @@ class _PostavkeTabState extends State<PostavkeTab> {
             onPressed: () async {
               Navigator.pop(ctx);
               if (_currentUser != null) {
-                await FirebaseFirestore.instance
+                final batch = FirebaseFirestore.instance.batch();
+                
+                final userKlijentRef = FirebaseFirestore.instance
                     .collection('users')
                     .doc(_currentUser!.uid)
                     .collection('klijenti')
-                    .doc(docId)
-                    .delete();
+                    .doc(docId);
+                
+                final rootKlijentRef = FirebaseFirestore.instance
+                    .collection('klijenti')
+                    .doc(docId);
+
+                batch.delete(userKlijentRef);
+                batch.delete(rootKlijentRef);
+
+                await batch.commit();
                 
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
