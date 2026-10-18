@@ -18,7 +18,7 @@ class GlavniNavigatorScreen extends StatefulWidget {
 
 class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
   int _currentIndex = 0;
-  PrijevoznikModel _prijevoznik = PrijevoznikModel(naziv: '', oib: '', grad: '');
+  PrijevoznikModel _prijevoznik = PrijevoznikModel(naziv: 'Moj Obrt', oib: '', grad: '');
   List<KlijentModel> _klijenti = [];
   KlijentModel? _aktivniKlijent;
   List<KalkulacijaModel> _kalkulacije = [];
@@ -35,7 +35,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
   void _ucitajPodatkeIzFirestore() {
     if (_userId.isEmpty) return;
 
-    // Slušanje postavki prijevoznika po korisniku
+    // Slušanje postavki prijevoznika za trenutnog korisnika
     FirebaseFirestore.instance
         .collection('users')
         .doc(_userId)
@@ -43,14 +43,23 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
         .doc('prijevoznik')
         .snapshots()
         .listen((doc) {
-      if (doc.exists && mounted && doc.data() !=- null) {
+      if (doc.exists && mounted && doc.data() != null) {
+        var data = doc.data()!;
         setState(() {
-          _prijevoznik = PrijevoznikModel.fromMap(doc.data()!);
+          _prijevoznik = PrijevoznikModel(
+            naziv: data['naziv'] ?? '',
+            oib: data['oib'] ?? '',
+            adresa: data['adresa'] ?? '',
+            grad: data['grad'] ?? '',
+            iban: data['iban'] ?? '',
+            banka: data['banka'] ?? '',
+            email: data['email'] ?? '',
+          );
         });
       }
     });
 
-    // Slušanje klijenata po korisniku
+    // Slušanje klijenata za trenutnog korisnika
     FirebaseFirestore.instance
         .collection('users')
         .doc(_userId)
@@ -74,7 +83,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
       }
     });
 
-    // Slušanje kalkulacija po korisniku
+    // Slušanje kalkulacija za trenutnog korisnika
     FirebaseFirestore.instance
         .collection('users')
         .doc(_userId)
@@ -118,7 +127,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
 
     setState(() {
       _kalkulacijaZaUredivanje = null;
-      _currentIndex = 1;
+      _currentIndex = 1; // Prebaci na tab kalkulacija
     });
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -144,7 +153,15 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
         .doc(_userId)
         .collection('postavke')
         .doc('prijevoznik')
-        .set(_prijevoznik.toMap());
+        .set({
+      'naziv': _prijevoznik.naziv,
+      'oib': _prijevoznik.oib,
+      'adresa': _prijevoznik.adresa,
+      'grad': _prijevoznik.grad,
+      'iban': _prijevoznik.iban,
+      'banka': _prijevoznik.banka,
+      'email': _prijevoznik.email,
+    });
   }
 
   @override
