@@ -8,12 +8,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: const FirebaseOptions(
-      apiKey: "AIzaSyCYB1XlQMLH5DQc_hkrsS15pRB-YvovMpg",
+      apiKey: "AIzaSyCyB1XlQMLH5DQc_hkrS15pRB-YvovpMpg",
       authDomain: "prijevozkalkulator.firebaseapp.com",
       projectId: "prijevozkalkulator",
       storageBucket: "prijevozkalkulator.firebasestorage.app",
       messagingSenderId: "922321976582",
-      appId: "1:922321976582:web:dc5e206991297b10b7287",
+      appId: "1:922321976582:web:dc5e2069991297b10b7287",
     ),
   );
   runApp(const PrijevozKalkulatorApp());
