@@ -20,6 +20,33 @@ class KalkulacijeTab extends StatelessWidget {
     required this.onUredi,
   });
 
+  void _potvrdiBrisanje(BuildContext context, String id, String naziv) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Potvrda brisanja'),
+        content: Text('Jeste li sigurni da želite obrisati kalkulaciju "$naziv"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Odustani'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () {
+              Navigator.pop(ctx);
+              onObrisi(id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Kalkulacija obrisana.'), backgroundColor: Colors.red),
+              );
+            },
+            child: const Text('Obriši'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -39,6 +66,7 @@ class KalkulacijeTab extends StatelessWidget {
                   (kl) => kl.naziv == k.klijentNaziv,
                   orElse: () => KlijentModel(id: '', uSustavuPdv: true),
                 ).uSustavuPdv;
+
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
                   elevation: 2,
@@ -62,19 +90,24 @@ class KalkulacijeTab extends StatelessWidget {
                           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFFEA580C)),
                         ),
                         const Divider(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.spaceBetween,
                           children: [
+                            // Gumbi za PDF (Interna i Ponuda sa natpisima)
                             Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                IconButton(
-                                  icon: const Icon(Icons.picture_as_pdf, color: Colors.red),
-                                  tooltip: 'Interna kalkulacija (PDF)',
+                                TextButton.icon(
+                                  icon: const Icon(Icons.picture_as_pdf, color: Colors.red, size: 20),
+                                  label: const Text('Interna kalkulacija', style: TextStyle(color: Colors.red, fontSize: 13)),
                                   onPressed: () => PdfGenerator.printajInternuKalkulaciju(k, prijevoznik, klijentUsetPdv: klijentPdv),
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.description, color: Colors.blue),
-                                  tooltip: 'Ponuda (PDF)',
+                                const SizedBox(width: 8),
+                                TextButton.icon(
+                                  icon: const Icon(Icons.description, color: Colors.blue, size: 20),
+                                  label: const Text('Print ponude', style: TextStyle(color: Colors.blue, fontSize: 13)),
                                   onPressed: () {
                                     var pronadjeniKlijent = klijenti.firstWhere(
                                       (kl) => kl.naziv == k.klijentNaziv,
@@ -85,17 +118,20 @@ class KalkulacijeTab extends StatelessWidget {
                                 ),
                               ],
                             ),
+                            // Gumbi za Uredi i Obriši sa natpisima (uz zaštitu od direktnog brisanja)
                             Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit, color: Colors.orange),
-                                  tooltip: 'Uredi',
+                                TextButton.icon(
+                                  icon: const Icon(Icons.edit, color: Colors.orange, size: 20),
+                                  label: const Text('Uredi', style: TextStyle(color: Colors.orange, fontSize: 13)),
                                   onPressed: () => onUredi(k),
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.grey),
-                                  tooltip: 'Obriši',
-                                  onPressed: () => onObrisi(k.id),
+                                const SizedBox(width: 8),
+                                TextButton.icon(
+                                  icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
+                                  label: const Text('Obriši', style: TextStyle(color: Colors.redAccent, fontSize: 13)),
+                                  onPressed: () => _potvrdiBrisanje(context, k.id, k.nazivKalkulacije),
                                 ),
                               ],
                             ),
