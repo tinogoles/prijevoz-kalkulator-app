@@ -9,6 +9,7 @@ class PdfGenerator {
     final font = await PdfGoogleFonts.robotoRegular();
     final fontBold = await PdfGoogleFonts.robotoBold();
 
+    // Točno parsiranje unesenih vrijednosti iz modela kalkulacije
     double km = double.tryParse(kalkulacija.km?.toString() ?? '0') ?? 0;
     double cestarinaBruto = double.tryParse(kalkulacija.cestarina?.toString() ?? '0') ?? 0;
     double gorivoBruto = double.tryParse(kalkulacija.cijenaGoriva?.toString() ?? '1.96') ?? 1.96;
@@ -37,6 +38,7 @@ class PdfGenerator {
     } catch (_) {}
     int brojNocenja = brojDana > 1 ? brojDana - 1 : 0;
 
+    // Izračun stavki prema unesenim parametrima
     double gorivoUkupnoBruto = (km / 100) * potrosnja * gorivoBruto;
     double gorivoNeto = gorivoUkupnoBruto / 1.25;
     double gorivoPdv = gorivoUkupnoBruto - gorivoNeto;
