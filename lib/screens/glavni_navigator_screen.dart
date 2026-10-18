@@ -6,7 +6,6 @@ import '../models/klijent_model.dart';
 import '../models/kalkulacija_model.dart';
 import 'izracun_troskova_tab.dart';
 import 'kalkulacije_tab.dart';
-import 'klijenti_tab.dart';
 import 'postavke_tab.dart';
 
 class GlavniNavigatorScreen extends StatefulWidget {
@@ -35,7 +34,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
   void _ucitajPodatkeIzFirestore() {
     if (_userId.isEmpty) return;
 
-    // Slušanje postavki prijevoznika za trenutnog korisnika
+    // Slušanje postavki prijevoznika
     FirebaseFirestore.instance
         .collection('users')
         .doc(_userId)
@@ -59,7 +58,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
       }
     });
 
-    // Slušanje klijenata za trenutnog korisnika
+    // Slušanje klijenata
     FirebaseFirestore.instance
         .collection('users')
         .doc(_userId)
@@ -70,20 +69,18 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
         setState(() {
           _klijenti = snapshot.docs.map((d) {
             var m = d.data();
-            return KlijentModel(
-              id: d.id,
-              naziv: m['naziv'] ?? '',
-              uSustavuPdv: m['uSustavuPdv'] ?? (m['pdv'] == 'DA'),
-            );
+            return KlijentModel.fromJson(m, docId: d.id);
           }).toList();
-          if (_klijenti.isNotEmpty && _aktivniKlijent == null) {
+          if (_klijenti.isNotEmpty && (_aktivniKlijent == null || !_klijenti.any((k) => k.id == _aktivniKlijent?.id))) {
             _aktivniKlijent = _klijenti.first;
+          } else if (_klijenti.isEmpty) {
+            _aktivniKlijent = null;
           }
         });
       }
     });
 
-    // Slušanje kalkulacija za trenutnog korisnika
+    // Slušanje kalkulacija
     FirebaseFirestore.instance
         .collection('users')
         .doc(_userId)
@@ -150,6 +147,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Točno 3 taba: Izračun, Kalkulacije, Postavke
     final List<Widget> stranice = [
       IzracunTroskovaTab(
         prijevoznik: _prijevoznik,
@@ -171,14 +169,13 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
           });
         },
       ),
-      const KlijentiTab(),
       const PostavkeTab(),
     ];
 
     return Scaffold(
-      body: stranice[_currentIndex],
+      body: stranice[_currentIndex >= stranice.length ? 0 : _currentIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
+        currentIndex: _currentIndex >= stranice.length ? 0 : _currentIndex,
         type: BottomNavigationBarType.fixed,
         selectedItemColor: const Color(0xFF0284C7),
         unselectedItemColor: Colors.grey,
@@ -186,7 +183,6 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.calculate), label: 'Izračun'),
           BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Kalkulacije'),
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Klijenti'),
           BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Postavke'),
         ],
       ),
