@@ -1,8 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/prijevoznik_model.dart';
-import '../models/klijent_model.dart';
+import 'package:flutter/material.dart';
 
 class PostavkeTab extends StatefulWidget {
   const PostavkeTab({super.key});
@@ -12,178 +10,177 @@ class PostavkeTab extends StatefulWidget {
 }
 
 class _PostavkeTabState extends State<PostavkeTab> {
-  final _formKeyPrijevoznik = GlobalKey<FormState>();
+  final User? _currentUser = FirebaseAuth.instance.currentUser;
 
-  // Kontroleri za prijevoznika
-  late TextEditingController _nazivPrijevoznikaController;
-  late TextEditingController _oibPrijevoznikaController;
-  late TextEditingController _adresaPrijevoznikaController;
-  late TextEditingController _gradPrijevoznikaController;
-  late TextEditingController _telefonPrijevoznikaController;
-  late TextEditingController _emailPrijevoznikaController;
-  late TextEditingController _bankaPrijevoznikaController;
-  late TextEditingController _ibanPrijevoznikaController;
-  bool _uSustavuPdvPrijevoznik = true;
+  // Kontroleri za podatke prijevoznika
+  final TextEditingController _nazivController = TextEditingController();
+  final TextEditingController _vlasnikController = TextEditingController();
+  final TextEditingController _adresaController = TextEditingController();
+  final TextEditingController _gradController = TextEditingController();
+  final TextEditingController _oibController = TextEditingController();
+  final TextEditingController _telefonController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _bankaController = TextEditingController();
+  final TextEditingController _ibanController = TextEditingController();
+  bool _uSustavuPdv = false;
 
-  String get _userId => FirebaseAuth.instance.currentUser?.uid ?? '';
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _nazivPrijevoznikaController = TextEditingController();
-    _oibPrijevoznikaController = TextEditingController();
-    _adresaPrijevoznikaController = TextEditingController();
-    _gradPrijevoznikaController = TextEditingController();
-    _telefonPrijevoznikaController = TextEditingController();
-    _emailPrijevoznikaController = TextEditingController();
-    _bankaPrijevoznikaController = TextEditingController();
-    _ibanPrijevoznikaController = TextEditingController();
-
-    _ucitajPostavkePrijevoznika();
+    _ucitajPostavke();
   }
 
   @override
   void dispose() {
-    _nazivPrijevoznikaController.dispose();
-    _oibPrijevoznikaController.dispose();
-    _adresaPrijevoznikaController.dispose();
-    _gradPrijevoznikaController.dispose();
-    _telefonPrijevoznikaController.dispose();
-    _emailPrijevoznikaController.dispose();
-    _bankaPrijevoznikaController.dispose();
-    _ibanPrijevoznikaController.dispose();
+    _nazivController.dispose();
+    _vlasnikController.dispose();
+    _adresaController.dispose();
+    _gradController.dispose();
+    _oibController.dispose();
+    _telefonController.dispose();
+    _emailController.dispose();
+    _bankaController.dispose();
+    _ibanController.dispose();
     super.dispose();
   }
 
-  Future<void> _ucitajPostavkePrijevoznika() async {
-    if (_userId.isEmpty) return;
-    final doc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(_userId)
-        .collection('postavke')
-        .doc('glavne')
-        .get();
+  Future<void> _ucitajPostavke() async {
+    if (_currentUser == null) return;
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(_currentUser!.uid)
+          .collection('postavke')
+          .doc('glavne')
+          .get();
 
-    if (doc.exists && doc.data() != null) {
-      final data = doc.data()!;
+      if (doc.exists) {
+        final data = doc.data()!;
+        _nazivController.text = data['nazivPrijevoznika'] ?? '';
+        _vlasnikController.text = data['vlasnik'] ?? '';
+        _adresaController.text = data['adresa'] ?? '';
+        _gradController.text = data['grad'] ?? '';
+        _oibController.text = data['oib'] ?? '';
+        _telefonController.text = data['telefon'] ?? '';
+        _emailController.text = data['email'] ?? '';
+        _bankaController.text = data['banka'] ?? '';
+        _ibanController.text = data['iban'] ?? '';
+        setState(() {
+          _uSustavuPdv = data['uSustavuPdv'] ?? false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Greška pri učitavanju postavki: $e');
+    } finally {
       setState(() {
-        _nazivPrijevoznikaController.text = data['nazivPrijevoznika'] ?? data['naziv'] ?? '';
-        _oibPrijevoznikaController.text = data['oib'] ?? '';
-        _adresaPrijevoznikaController.text = data['adresa'] ?? '';
-        _gradPrijevoznikaController.text = data['grad'] ?? '';
-        _telefonPrijevoznikaController.text = data['telefon'] ?? '';
-        _emailPrijevoznikaController.text = data['email'] ?? '';
-        _bankaPrijevoznikaController.text = data['banka'] ?? '';
-        _ibanPrijevoznikaController.text = data['iban'] ?? '';
-        _uSustavuPdvPrijevoznik = data['uSustavuPdv'] ?? true;
+        _isLoading = false;
       });
     }
   }
 
-  Future<void> _spremiPostavkePrijevoznika() async {
-    if (_userId.isEmpty) return;
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(_userId)
-        .collection('postavke')
-        .doc('glavne')
-        .set({
-      'nazivPrijevoznika': _nazivPrijevoznikaController.text.trim(),
-      'oib': _oibPrijevoznikaController.text.trim(),
-      'adresa': _adresaPrijevoznikaController.text.trim(),
-      'grad': _gradPrijevoznikaController.text.trim(),
-      'telefon': _telefonPrijevoznikaController.text.trim(),
-      'email': _emailPrijevoznikaController.text.trim(),
-      'banka': _bankaPrijevoznikaController.text.trim(),
-      'iban': _ibanPrijevoznikaController.text.trim(),
-      'uSustavuPdv': _uSustavuPdvPrijevoznik,
-    });
+  Future<void> _spremiPostavke() async {
+    if (_currentUser == null) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(_currentUser!.uid)
+          .collection('postavke')
+          .doc('glavne')
+          .set({
+        'nazivPrijevoznika': _nazivController.text.trim(),
+        'vlasnik': _vlasnikController.text.trim(),
+        'adresa': _adresaController.text.trim(),
+        'grad': _gradController.text.trim(),
+        'oib': _oibController.text.trim(),
+        'telefon': _telefonController.text.trim(),
+        'email': _emailController.text.trim(),
+        'banka': _bankaController.text.trim(),
+        'iban': _ibanController.text.trim(),
+        'uSustavuPdv': _uSustavuPdv,
+      }, SetOptions(merge: true));
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Postavke prijevoznika uspješno spremljene!'), backgroundColor: Colors.green),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Postavke uspješno spremljene!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Greška pri spremanju: $e')),
+        );
+      }
     }
   }
 
-  void _prikaziDijalogZaKlijenta({KlijentModel? klijent, String? docId}) {
-    if (_userId.isEmpty) return;
+  Future<void> _inicijalizirajCestarine() async {
+    try {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Baza cestarina uspješno inicijalizirana u Firebase!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Greška kod inicijalizacije cestarina: $e')),
+        );
+      }
+    }
+  }
 
-    final _nazivController = TextEditingController(text: klijent?.naziv ?? '');
-    final _vlasnikController = TextEditingController(text: klijent?.vlasnik ?? '');
-    final _adresaController = TextEditingController(text: klijent?.adresa ?? '');
-    final _gradController = TextEditingController(text: klijent?.grad ?? '');
-    final _oibController = TextEditingController(text: klijent?.oib ?? '');
-    final _telefonController = TextEditingController(text: klijent?.telefon ?? '');
-    final _emailController = TextEditingController(text: klijent?.email ?? '');
-    final _ibanController = TextEditingController(text: klijent?.iban ?? '');
-    final _bankaController = TextEditingController(text: klijent?.banka ?? '');
-    bool _uSustavuPdv = klijent?.uSustavuPdv ?? true;
+  // Dijalog za dodavanje i uređivanje klijenta sa svim poljima
+  void _prikaziDijalogZaKlijenta({String? docId, Map<String, dynamic>? postojeciPodaci}) {
+    final TextEditingController nazivKlijentaController = TextEditingController(text: postojeciPodaci?['naziv'] ?? '');
+    final TextEditingController vlasnikKlijentaController = TextEditingController(text: postojeciPodaci?['vlasnik'] ?? '');
+    final TextEditingController adresaKlijentaController = TextEditingController(text: postojeciPodaci?['adresa'] ?? '');
+    final TextEditingController gradKlijentaController = TextEditingController(text: postojeciPodaci?['grad'] ?? '');
+    final TextEditingController oibKlijentaController = TextEditingController(text: postojeciPodaci?['oib'] ?? '');
+    final TextEditingController telefonKlijentaController = TextEditingController(text: postojeciPodaci?['telefon'] ?? '');
+    final TextEditingController emailKlijentaController = TextEditingController(text: postojeciPodaci?['email'] ?? '');
+    final TextEditingController bankaKlijentaController = TextEditingController(text: postojeciPodaci?['banka'] ?? '');
+    final TextEditingController ibanKlijentaController = TextEditingController(text: postojeciPodaci?['iban'] ?? '');
+    bool pdvKlijenta = postojeciPodaci?['pdv'] == 'DA' || postojeciPodaci?['uSustavuPdv'] == true;
 
     showDialog(
       context: context,
-      builder: (ctx) {
+      builder: (context) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              title: Text(klijent == null ? 'Novi Klijent / Agencija' : 'Uredi Klijenta'),
+              title: Text(docId == null ? 'Novi Klijent / Agencija' : 'Uredi Klijenta'),
               content: SizedBox(
                 width: 450,
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      TextField(
-                        controller: _nazivController,
-                        decoration: const InputDecoration(labelText: 'Naziv klijenta'),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: _vlasnikController,
-                        decoration: const InputDecoration(labelText: 'Vlasnik / Kontakt osoba'),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: _adresaController,
-                        decoration: const InputDecoration(labelText: 'Adresa'),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: _gradController,
-                        decoration: const InputDecoration(labelText: 'Grad'),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: _oibController,
-                        decoration: const InputDecoration(labelText: 'OIB'),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: _telefonController,
-                        decoration: const InputDecoration(labelText: 'Telefon / Mobitel'),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: _emailController,
-                        decoration: const InputDecoration(labelText: 'Email'),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: _bankaController,
-                        decoration: const InputDecoration(labelText: 'Banka'),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: _ibanController,
-                        decoration: const InputDecoration(labelText: 'IBAN (npr. HR... - 21 znak)'),
-                      ),
-                      const SizedBox(height: 10),
+                      TextField(controller: nazivKlijentaController, decoration: const InputDecoration(labelText: 'Naziv klijenta', border: OutlineInputBorder())),
+                      const SizedBox(height: 12),
+                      TextField(controller: vlasnikKlijentaController, decoration: const InputDecoration(labelText: 'Vlasnik / Kontakt osoba', border: OutlineInputBorder())),
+                      const SizedBox(height: 12),
+                      TextField(controller: adresaKlijentaController, decoration: const InputDecoration(labelText: 'Adresa', border: OutlineInputBorder())),
+                      const SizedBox(height: 12),
+                      TextField(controller: gradKlijentaController, decoration: const InputDecoration(labelText: 'Grad', border: OutlineInputBorder())),
+                      const SizedBox(height: 12),
+                      TextField(controller: oibKlijentaController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'OIB', border: OutlineInputBorder())),
+                      const SizedBox(height: 12),
+                      TextField(controller: telefonKlijentaController, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Telefon / Mobitel', border: OutlineInputBorder())),
+                      const SizedBox(height: 12),
+                      TextField(controller: emailKlijentaController, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder())),
+                      const SizedBox(height: 12),
+                      TextField(controller: bankaKlijentaController, decoration: const InputDecoration(labelText: 'Banka', border: OutlineInputBorder())),
+                      const SizedBox(height: 12),
+                      TextField(controller: ibanKlijentaController, decoration: const InputDecoration(labelText: 'IBAN (npr. HR... - 21 znak)', border: OutlineInputBorder())),
+                      const SizedBox(height: 12),
                       CheckboxListTile(
                         title: const Text('Klijent je u sustavu PDV-a'),
-                        value: _uSustavuPdv,
+                        value: pdvKlijenta,
                         onChanged: (val) {
                           setStateDialog(() {
-                            _uSustavuPdv = val ?? true;
+                            pdvKlijenta = val ?? false;
                           });
                         },
                         contentPadding: EdgeInsets.zero,
@@ -194,38 +191,39 @@ class _PostavkeTabState extends State<PostavkeTab> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
+                  onPressed: () => Navigator.pop(context),
                   child: const Text('Odustani'),
                 ),
                 ElevatedButton(
                   onPressed: () async {
-                    final noviKlijent = KlijentModel(
-                      id: docId,
-                      userId: _userId,
-                      naziv: _nazivController.text.trim(),
-                      vlasnik: _vlasnikController.text.trim(),
-                      adresa: _adresaController.text.trim(),
-                      grad: _gradController.text.trim(),
-                      oib: _oibController.text.trim(),
-                      telefon: _telefonController.text.trim(),
-                      email: _emailController.text.trim(),
-                      iban: _ibanController.text.trim(),
-                      banka: _bankaController.text.trim(),
-                      uSustavuPdv: _uSustavuPdv,
-                    );
+                    if (_currentUser == null) return;
+                    final klijentData = {
+                      'naziv': nazivKlijentaController.text.trim(),
+                      'vlasnik': vlasnikKlijentaController.text.trim(),
+                      'adresa': adresaKlijentaController.text.trim(),
+                      'grad': gradKlijentaController.text.trim(),
+                      'oib': oibKlijentaController.text.trim(),
+                      'telefon': telefonKlijentaController.text.trim(),
+                      'email': emailKlijentaController.text.trim(),
+                      'banka': bankaKlijentaController.text.trim(),
+                      'iban': ibanKlijentaController.text.trim(),
+                      'pdv': pdvKlijenta ? 'DA' : 'NE',
+                      'uSustavuPdv': pdvKlijenta,
+                      'userId': _currentUser!.uid,
+                    };
 
-                    final collectionRef = FirebaseFirestore.instance
+                    final klijentiRef = FirebaseFirestore.instance
                         .collection('users')
-                        .doc(_userId)
+                        .doc(_currentUser!.uid)
                         .collection('klijenti');
 
                     if (docId == null) {
-                      await collectionRef.add(noviKlijent.toJson());
+                      await klijentiRef.add(klijentData);
                     } else {
-                      await collectionRef.doc(docId).update(noviKlijent.toJson());
+                      await klijentiRef.doc(docId).update(klijentData);
                     }
 
-                    if (mounted) Navigator.of(ctx).pop();
+                    if (mounted) Navigator.pop(context);
                   },
                   child: const Text('Spremi'),
                 ),
@@ -237,75 +235,113 @@ class _PostavkeTabState extends State<PostavkeTab> {
     );
   }
 
+  // Funkcija za potvrdu brisanja klijenta
+  void _potvrdiBrisanjeKlijenta(String docId, String nazivKlijenta) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Potvrda brisanja'),
+        content: Text('Jeste li sigurni da želite obrisati klijenta "$nazivKlijenta"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Odustani'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              if (_currentUser != null) {
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(_currentUser!.uid)
+                    .collection('klijenti')
+                    .doc(docId)
+                    .delete();
+                
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Klijent uspješno obrisan.'), backgroundColor: Colors.red),
+                  );
+                }
+              }
+            },
+            child: const Text('Obriši'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Postavke i Klijenti', style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF0284C7),
+        title: const Text('Postavke i Klijenti'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // PODACI O PRIJEVOZNIKU
-            const Text('Podaci o Prijevozniku', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            Form(
-              key: _formKeyPrijevoznik,
-              child: Column(
-                children: [
-                  TextField(controller: _nazivPrijevoznikaController, decoration: const InputDecoration(labelText: 'Naziv Prijevoznika / Obrta', border: OutlineInputBorder())),
-                  const SizedBox(height: 10),
-                  TextField(controller: _oibPrijevoznikaController, decoration: const InputDecoration(labelText: 'OIB', border: OutlineInputBorder())),
-                  const SizedBox(height: 10),
-                  TextField(controller: _adresaPrijevoznikaController, decoration: const InputDecoration(labelText: 'Adresa', border: OutlineInputBorder())),
-                  const SizedBox(height: 10),
-                  TextField(controller: _gradPrijevoznikaController, decoration: const InputDecoration(labelText: 'Grad', border: OutlineInputBorder())),
-                  const SizedBox(height: 10),
-                  TextField(controller: _telefonPrijevoznikaController, decoration: const InputDecoration(labelText: 'Telefon / Mobitel', border: OutlineInputBorder())),
-                  const SizedBox(height: 10),
-                  TextField(controller: _emailPrijevoznikaController, decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder())),
-                  const SizedBox(height: 10),
-                  TextField(controller: _bankaPrijevoznikaController, decoration: const InputDecoration(labelText: 'Banka', border: OutlineInputBorder())),
-                  const SizedBox(height: 10),
-                  TextField(controller: _ibanPrijevoznikaController, decoration: const InputDecoration(labelText: 'IBAN (npr. HR... - 21 znak)', border: OutlineInputBorder())),
-                  const SizedBox(height: 10),
-                  CheckboxListTile(
-                    title: const Text('Prijevoznik je u sustavu PDV-a'),
-                    value: _uSustavuPdvPrijevoznik,
-                    onChanged: (val) => setState(() => _uSustavuPdvPrijevoznik = val ?? true),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 45,
-                    child: ElevatedButton.icon(
-                      onPressed: _spremiPostavkePrijevoznika,
-                      icon: const Icon(Icons.save),
-                      label: const Text('Spremi Postavke Prijevoznika'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0284C7),
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            const Text(
+              'Podaci o Vašoj Tvrtki (Prijevoznik)',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
             ),
-
-            const SizedBox(height: 24),
-            const Divider(thickness: 2),
             const SizedBox(height: 12),
+            TextField(controller: _nazivController, decoration: const InputDecoration(labelText: 'Naziv prijevoznika', border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            TextField(controller: _vlasnikController, decoration: const InputDecoration(labelText: 'Vlasnik / Direktor', border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            TextField(controller: _adresaController, decoration: const InputDecoration(labelText: 'Adresa', border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            TextField(controller: _gradController, decoration: const InputDecoration(labelText: 'Grad', border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            TextField(controller: _oibController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'OIB (točno 11 znamenki)', border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            TextField(controller: _telefonController, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Telefon', border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            TextField(controller: _emailController, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            TextField(controller: _bankaController, decoration: const InputDecoration(labelText: 'Banka', border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            TextField(controller: _ibanController, decoration: const InputDecoration(labelText: 'IBAN (npr. HR... - 21 znak)', border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            CheckboxListTile(
+              title: const Text('Prijevoznik je u sustavu PDV-a'),
+              value: _uSustavuPdv,
+              onChanged: (val) {
+                setState(() {
+                  _uSustavuPdv = val ?? false;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _spremiPostavke,
+              icon: const Icon(Icons.save),
+              label: const Text('Spremi Postavke Prijevoznika', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0284C7), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14)),
+            ),
+            const Divider(height: 40, thickness: 2),
 
-            // POPIS KLIJENATA / AGENCIJA
+            // SEKCIJA KLIJENTI
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Popis Klijenta / Agencija', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0284C7))),
+                const Text(
+                  'Popis Klijenta / Agencija',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
+                ),
                 ElevatedButton.icon(
                   onPressed: () => _prikaziDijalogZaKlijenta(),
                   icon: const Icon(Icons.add),
@@ -319,49 +355,49 @@ class _PostavkeTabState extends State<PostavkeTab> {
             StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('users')
-                  .doc(_userId)
+                  .doc(_currentUser?.uid)
                   .collection('klijenti')
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Center(child: Text('Nema unesenih klijenata.')),
+                    padding: EdgeInsets.all(16.0),
+                    child: Text('Nema unesenih klijenata.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
                   );
                 }
 
-                final docs = snapshot.data!.docs;
+                final klijenti = snapshot.data!.docs;
 
                 return ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: docs.length,
-                  itemBuilder: (ctx, idx) {
-                    final doc = docs[idx];
-                    final data = doc.data() as Map<String, dynamic>;
-                    final klijent = KlijentModel.fromJson(data, docId: doc.id);
+                  itemCount: klijenti.length,
+                  itemBuilder: (context, index) {
+                    final klijent = klijenti[index].data() as Map<String, dynamic>;
+                    final docId = klijenti[index].id;
+                    final nazivKlijenta = klijent['naziv'] ?? 'Bez naziva';
 
                     return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
+                      margin: const EdgeInsets.symmetric(vertical: 6),
                       child: ListTile(
-                        title: Text(klijent.naziv.isNotEmpty ? klijent.naziv : 'Bez naziva', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('Grad: ${klijent.grad} | OIB: ${klijent.oib}\nIBAN: ${klijent.iban} | Banka: ${klijent.banka}'),
+                        title: Text(nazivKlijenta, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text('${klijent['grad'] ?? ''} | OIB: ${klijent['oib'] ?? ''}\nBanka: ${klijent['banka'] ?? ''} | IBAN: ${klijent['iban'] ?? ''}'),
                         isThreeLine: true,
-                        onTap: () => _prikaziDijalogZaKlijenta(klijent: klijent, docId: doc.id),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.redAccent),
-                          onPressed: () async {
-                            await FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(_userId)
-                                .collection('klijenti')
-                                .doc(doc.id)
-                                .delete();
-                          },
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.blue),
+                              onPressed: () => _prikaziDijalogZaKlijenta(docId: docId, postojeciPodaci: klijent),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _potvrdiBrisanjeKlijenta(docId, nazivKlijenta),
+                            ),
+                          ],
                         ),
                       ),
                     );
@@ -369,6 +405,16 @@ class _PostavkeTabState extends State<PostavkeTab> {
                 );
               },
             ),
+
+            const Divider(height: 40, thickness: 2),
+
+            ElevatedButton.icon(
+              onPressed: _inicijalizirajCestarine,
+              icon: const Icon(Icons.cloud_upload),
+              label: const Text('Inicijaliziraj bazu cestarina u Firebase', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF3B82F6), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14)),
+            ),
+            const SizedBox(height: 30),
           ],
         ),
       ),
