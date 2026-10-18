@@ -13,7 +13,7 @@ void main() async {
       projectId: "prijevozkalkulator",
       storageBucket: "prijevozkalkulator.firebasestorage.app",
       messagingSenderId: "922321976582",
-      appId: "1:922321976582:web:dc5e2069991297b10b7287"
+      appId: "1:922321976582:web:39e85da2503409f50b7287",
     ),
   );
   runApp(const PrijevozKalkulatorApp());
