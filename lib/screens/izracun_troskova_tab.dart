@@ -1,3 +1,4 @@
+// lib/screens/izracun_troskova_tab.dart
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -34,6 +35,7 @@ class IzracunTroskovaTab extends StatefulWidget {
 class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   bool _isLoadingRoute = false;
   final List<Map<String, dynamic>> _bazaRelacijaCestarina = BazaCestarinaData.dioniceCestarina;
+  
   final TextEditingController _nazivKalkulacijeController = TextEditingController(text: 'Izlet - Ruta');
   final TextEditingController _polazisteController = TextEditingController(text: 'Split');
   final TextEditingController _odrediste1Controller = TextEditingController();
@@ -41,11 +43,12 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   final TextEditingController _konacnoOdredisteController = TextEditingController(text: 'Zagreb');
   late TextEditingController _datumPolaskaController;
   late TextEditingController _datumPovratkaController;
+  
   int _izracunatiBrojDana = 1;
   double _bazaKmJednosmjerno = 390.0;
   bool _povratnoPutovanje = true;
-  final TextEditingController _kmController = TextEditingController(text: '822');
-  final TextEditingController _cestarinaController = TextEditingController(text: '0.00');
+  final TextEditingController _kmController = TextEditingController(text: '780');
+  final TextEditingController _cestarinaController = TextEditingController(text: '167.40');
   
   bool _koristiAutocestu = true;
   String _odabranaAutocesta = 'HAC (Hrvatske autoceste)';
@@ -58,7 +61,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   ];
 
   final TextEditingController _cijenaGorivaController = TextEditingController(text: '1.96');
-  final TextEditingController _dnevnicaController = TextEditingController(text: '50');
+  final TextEditingController _dnevnicaController = TextEditingController(text: '100');
 
   String _tkoPlacaNocenje = 'Bez noćenja';
   final List<String> _opcijeNocenja = [
@@ -67,7 +70,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     'Bez noćenja'
   ];
   final TextEditingController _cijenaNocenjaController = TextEditingController(text: '60');
-  final TextEditingController _marzaController = TextEditingController(text: '120');
+  final TextEditingController _marzaController = TextEditingController(text: '20');
 
   final Map<String, double> _potrosnjaVozila = {
     'Kombi 8+1': 9.0,
@@ -99,42 +102,50 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     String danas = _formatirajDatum(DateTime.now());
     _datumPolaskaController = TextEditingController(text: danas);
     _datumPovratkaController = TextEditingController(text: danas);
-    _provjeriUredjivanje();
-    _preracunajBrojDana();
+    
+    // Inicijalna provjera za uređivanje ako je proslijeđena kalkulacija
+    if (widget.kalkulacijaZaUredivanje != null) {
+      _popuniPodatkeZaUredivanje(widget.kalkulacijaZaUredivanje!);
+    } else {
+      _preracunajBrojDana();
+    }
   }
 
   @override
   void didUpdateWidget(covariant IzracunTroskovaTab oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.kalkulacijaZaUredivanje != oldWidget.kalkulacijaZaUredivanje) _provjeriUredjivanje();
+    if (widget.kalkulacijaZaUredivanje != oldWidget.kalkulacijaZaUredivanje) {
+      if (widget.kalkulacijaZaUredivanje != null) {
+        _popuniPodatkeZaUredivanje(widget.kalkulacijaZaUredivanje!);
+      }
+    }
   }
 
-  void _provjeriUredjivanje() {
-    if (widget.kalkulacijaZaUredivanje != null) {
-      var k = widget.kalkulacijaZaUredivanje!;
-      setState(() {
-        _trenutniIdUredjivanja = k.id;
-        _nazivKalkulacijeController.text = k.nazivKalkulacije;
-        _polazisteController.text = k.polaziste;
-        _odrediste1Controller.text = k.odrediste1;
-        _odrediste2Controller.text = k.odrediste2;
-        _konacnoOdredisteController.text = k.konacnoOdrediste;
-        _datumPolaskaController.text = k.datumPolaska;
-        _datumPovratkaController.text = k.datumPovratka;
-        _kmController.text = k.km;
-        _cestarinaController.text = k.cestarina;
-        _povratnoPutovanje = k.povratno;
-        _koristiAutocestu = k.koristiAutocestu;
-        _odabranaAutocesta = k.odabranaAutocesta;
-        _tkoPlacaNocenje = k.tkoPlacaNocenje;
-        _cijenaNocenjaController.text = k.cijenaNocenja;
-        _marzaController.text = k.marza;
-        _cijenaGorivaController.text = k.cijenaGoriva;
-        _dnevnicaController.text = k.dnevnica;
-        if (_potrosnjaVozila.containsKey(k.vozilo)) _odabranoVozilo = k.vozilo;
-      });
-      _preracunajBrojDana();
-    }
+  void _popuniPodatkeZaUredivanje(KalkulacijaModel k) {
+    setState(() {
+      _trenutniIdUredjivanja = k.id;
+      _nazivKalkulacijeController.text = k.nazivKalkulacije;
+      _polazisteController.text = k.polaziste.isNotEmpty ? k.polaziste : 'Split';
+      _odrediste1Controller.text = k.odrediste1;
+      _odrediste2Controller.text = k.odrediste2;
+      _konacnoOdredisteController.text = k.konacnoOdrediste.isNotEmpty ? k.konacnoOdrediste : 'Zagreb';
+      _datumPolaskaController.text = k.datumPolaska;
+      _datumPovratkaController.text = k.datumPovratka;
+      _kmController.text = k.km;
+      _cestarinaController.text = k.cestarina;
+      _povratnoPutovanje = k.povratno;
+      _koristiAutocestu = k.koristiAutocestu;
+      _odabranaAutocesta = k.odabranaAutocesta.isNotEmpty ? k.odabranaAutocesta : _opcijeAutocesta.first;
+      _tkoPlacaNocenje = k.tkoPlacaNocenje.isNotEmpty ? k.tkoPlacaNocenje : 'Bez noćenja';
+      _cijenaNocenjaController.text = k.cijenaNocenja;
+      _marzaController.text = k.marza;
+      _cijenaGorivaController.text = k.cijenaGoriva;
+      _dnevnicaController.text = k.dnevnica;
+      if (_potrosnjaVozila.containsKey(k.vozilo)) {
+        _odabranoVozilo = k.vozilo;
+      }
+    });
+    _preracunajBrojDana();
   }
 
   Future<void> _odaberiDatumPolaska(BuildContext context) async {
@@ -296,13 +307,25 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       id: _trenutniIdUredjivanja ?? DateTime.now().millisecondsSinceEpoch.toString(),
       nazivKalkulacije: _nazivKalkulacijeController.text,
       klijentNaziv: widget.aktivniKlijent?.naziv ?? 'Klijent',
-      datumPolaska: _datumPolaskaController.text, datumPovratka: _datumPovratkaController.text,
-      vozilo: _odabranoVozilo, ruta: '${_polazisteController.text} -> ${_konacnoOdredisteController.text}',
-      ukupnaCijena: ukupnaCijena, polaziste: _polazisteController.text, odrediste1: _odrediste1Controller.text,
-      odrediste2: _odrediste2Controller.text, konacnoOdrediste: _konacnoOdredisteController.text,
-      cestarina: _cestarinaController.text, km: _kmController.text, povratno: _povratnoPutovanje,
-      koristiAutocestu: _koristiAutocestu, odabranaAutocesta: _odabranaAutocesta, tkoPlacaNocenje: _tkoPlacaNocenje,
-      cijenaNocenja: _cijenaNocenjaController.text, marza: _marzaController.text, cijenaGoriva: _cijenaGorivaController.text, dnevnica: _dnevnicaController.text,
+      datumPolaska: _datumPolaskaController.text,
+      datumPovratka: _datumPovratkaController.text,
+      vozilo: _odabranoVozilo,
+      ruta: '${_polazisteController.text} -> ${_konacnoOdredisteController.text}',
+      ukupnaCijena: ukupnaCijena,
+      polaziste: _polazisteController.text,
+      odrediste1: _odrediste1Controller.text,
+      odrediste2: _odrediste2Controller.text,
+      konacnoOdrediste: _konacnoOdredisteController.text,
+      cestarina: _cestarinaController.text,
+      km: _kmController.text,
+      povratno: _povratnoPutovanje,
+      koristiAutocestu: _koristiAutocestu,
+      odabranaAutocesta: _odabranaAutocesta,
+      tkoPlacaNocenje: _tkoPlacaNocenje,
+      cijenaNocenja: _cijenaNocenjaController.text,
+      marza: _marzaController.text,
+      cijenaGoriva: _cijenaGorivaController.text,
+      dnevnica: _dnevnicaController.text,
     );
     widget.onSpremiKalkulaciju(kalk);
     setState(() => _trenutniIdUredjivanja = null);
@@ -311,7 +334,11 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Izračun Troškova Prijevoza', style: TextStyle(color: Colors.white)), backgroundColor: Theme.of(context).colorScheme.primary, centerTitle: true),
+      appBar: AppBar(
+        title: const Text('Izračun Troškova Prijevoza', style: TextStyle(color: Colors.white)),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        centerTitle: true,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
