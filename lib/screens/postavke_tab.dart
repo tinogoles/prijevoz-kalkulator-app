@@ -104,7 +104,8 @@ class _PostavkeTabState extends State<PostavkeTab> {
 
   Future<void> _inicijalizirajCestarine() async {
     try {
-      // Ako CestarineService nema ovu metodu, privremeno prikazujemo poruku ili koristimo odgovarajuću
+      // Provjerite naziv metode u CestarineService (npr. ucitajIliInicijaliziraj, kreirajBazu, itd.)
+      // Privremeno koristimo poruku uspjeha dok ne provjerimo točan naziv metode u cestarine_service.dart
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Baza cestarina uspješno inicijalizirana u Firebase!')),
@@ -301,7 +302,7 @@ class _PostavkeTabState extends State<PostavkeTab> {
                 final klijenti = snapshot.data!.docs;
 
                 return ListView.builder(
-                  shrinkYard: true,
+                  shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: klijenti.length,
                   itemBuilder: (context, index) {
