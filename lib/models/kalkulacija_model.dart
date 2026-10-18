@@ -8,6 +8,8 @@ class KalkulacijaModel {
   final String vozilo;
   final String ruta;
   final double ukupnaCijena;
+  
+  // Opcionalna polja sa zadanim vrijednostima da ne ruše stari kod
   final String polaziste;
   final String odrediste1;
   final String odrediste2;
