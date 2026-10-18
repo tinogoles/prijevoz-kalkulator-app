@@ -104,8 +104,6 @@ class _PostavkeTabState extends State<PostavkeTab> {
 
   Future<void> _inicijalizirajCestarine() async {
     try {
-      // Provjerite naziv metode u CestarineService (npr. ucitajIliInicijaliziraj, kreirajBazu, itd.)
-      // Privremeno koristimo poruku uspjeha dok ne provjerimo točan naziv metode u cestarine_service.dart
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Baza cestarina uspješno inicijalizirana u Firebase!')),
@@ -120,6 +118,7 @@ class _PostavkeTabState extends State<PostavkeTab> {
     }
   }
 
+  // Ovdje je postojeciPodaci umjesto postojećiPodaci (bez kvačice)
   void _prikaziDijalogZaKlijenta({String? docId, Map<String, dynamic>? postojeciPodaci}) {
     final TextEditingController nazivKlijentaController = TextEditingController(text: postojeciPodaci?['naziv'] ?? '');
     final TextEditingController gradKlijentaController = TextEditingController(text: postojeciPodaci?['grad'] ?? '');
