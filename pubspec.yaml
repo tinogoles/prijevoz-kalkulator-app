@@ -14,9 +14,10 @@ dependencies:
   printing: ^5.11.1
   http: ^1.2.0
   shared_preferences: ^2.2.3
-  # Dodajemo Firebase pakete za sinkronizaciju:
+  # Firebase paketi:
   firebase_core: ^2.27.0
   cloud_firestore: ^4.15.5
+  firebase_auth: ^4.17.8
 
 dev_dependencies:
   flutter_test:
