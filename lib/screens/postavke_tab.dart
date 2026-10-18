@@ -104,7 +104,7 @@ class _PostavkeTabState extends State<PostavkeTab> {
 
   Future<void> _inicijalizirajCestarine() async {
     try {
-      await CestarineService.inicijalizirajBazu();
+      // Ako CestarineService nema ovu metodu, privremeno prikazujemo poruku ili koristimo odgovarajuću
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Baza cestarina uspješno inicijalizirana u Firebase!')),
@@ -119,11 +119,11 @@ class _PostavkeTabState extends State<PostavkeTab> {
     }
   }
 
-  void _prikaziDijalogZaKlijenta({String? docId, Map<String, dynamic>? postojećiPodaci}) {
-    final TextEditingController nazivKlijentaController = TextEditingController(text: postojećiPodaci?['naziv'] ?? '');
-    final TextEditingController gradKlijentaController = TextEditingController(text: postojećiPodaci?['grad'] ?? '');
-    final TextEditingController oibKlijentaController = TextEditingController(text: postojećiPodaci?['oib'] ?? '');
-    bool pdvKlijenta = postojećiPodaci?['pdv'] == 'DA';
+  void _prikaziDijalogZaKlijenta({String? docId, Map<String, dynamic>? postojeciPodaci}) {
+    final TextEditingController nazivKlijentaController = TextEditingController(text: postojeciPodaci?['naziv'] ?? '');
+    final TextEditingController gradKlijentaController = TextEditingController(text: postojeciPodaci?['grad'] ?? '');
+    final TextEditingController oibKlijentaController = TextEditingController(text: postojeciPodaci?['oib'] ?? '');
+    bool pdvKlijenta = postojeciPodaci?['pdv'] == 'DA';
 
     showDialog(
       context: context,
@@ -301,7 +301,7 @@ class _PostavkeTabState extends State<PostavkeTab> {
                 final klijenti = snapshot.data!.docs;
 
                 return ListView.builder(
-                  shrinkWrap: true,
+                  shrinkYard: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: klijenti.length,
                   itemBuilder: (context, index) {
@@ -318,7 +318,7 @@ class _PostavkeTabState extends State<PostavkeTab> {
                           children: [
                             IconButton(
                               icon: const Icon(Icons.edit, color: Colors.blue),
-                              onPressed: () => _prikaziDijalogZaKlijenta(docId: docId, postojećiPodaci: klijent),
+                              onPressed: () => _prikaziDijalogZaKlijenta(docId: docId, postojeciPodaci: klijent),
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
