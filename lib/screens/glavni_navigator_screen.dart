@@ -6,20 +6,22 @@ import '../models/klijent_model.dart';
 import '../models/kalkulacija_model.dart';
 import 'izracun_troskova_tab.dart';
 import 'kalkulacije_tab.dart';
+import 'klijenti_tab.dart';
 import 'postavke_tab.dart';
 
 class GlavniNavigatorScreen extends StatefulWidget {
   const GlavniNavigatorScreen({super.key});
+
   @override
   State<GlavniNavigatorScreen> createState() => _GlavniNavigatorScreenState();
 }
 
 class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
   int _currentIndex = 0;
-  PrijevoznikModel _prijevoznik = PrijevoznikModel();
+  PrijevoznikModel _prijevoznik = PrijevoznikModel(id: '1', naziv: 'Moj Obrt', oib: '', grad: '');
   List<KlijentModel> _klijenti = [];
-  List<KalkulacijaModel> _spremljeneKalkulacije = [];
   KlijentModel? _aktivniKlijent;
+  List<KalkulacijaModel> _kalkulacije = [];
   KalkulacijaModel? _kalkulacijaZaUredivanje;
 
   String get _userId => FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -32,97 +34,140 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
 
   void _ucitajPodatkeIzFirestore() {
     if (_userId.isEmpty) return;
-    final firestore = FirebaseFirestore.instance;
-    
-    firestore.collection('users').doc(_userId).collection('postavke').doc('prijevoznik').snapshots().listen((doc) {
-      if (doc.exists && doc.data() != null) {
-        setState(() => _prijevoznik = PrijevoznikModel.fromJson(doc.data()!));
+
+    // Slušanje postavki prijevoznika specifičnih za korisnika
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(_userId)
+        .collection('postavke')
+        .doc('prijevoznik')
+        .snapshots()
+        .listen((doc) {
+      if (doc.exists && mounted) {
+        setState(() {
+          _prijevoznik = PrijevoznikModel.fromMap(doc.data()!, doc.id);
+        });
       }
     });
 
-    firestore.collection('users').doc(_userId).collection('klijenti').snapshots().listen((snapshot) {
-      setState(() {
-        _klijenti = snapshot.docs.map((doc) {
-          var data = doc.data();
-          data['id'] = doc.id;
-          return KlijentModel.fromJson(data);
-        }).toList();
-        if (_klijenti.isNotEmpty && _aktivniKlijent == null) {
-          _aktivniKlijent = _klijenti.first;
-        } else if (_klijenti.isEmpty) {
-          _klijenti.add(KlijentModel(id: '1', naziv: 'Turistička Agencija Split', vlasnik: 'Marko Marić', grad: 'Split', oib: '98765432109', uSustavuPdv: true));
-          _aktivniKlijent = _klijenti.first;
-        }
-      });
+    // Slušanje klijenata specifičnih za korisnika
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(_userId)
+        .collection('klijenti')
+        .snapshots()
+        .listen((snapshot) {
+      if (mounted) {
+        setState(() {
+          _klijenti = snapshot.docs.map((d) => KlijentModel.fromMap(d.data(), d.id)).toList();
+          if (_klijenti.isNotEmpty && _aktivniKlijent == null) {
+            _aktivniKlijent = _klijenti.first;
+          }
+        });
+      }
     });
 
-    firestore.collection('users').doc(_userId).collection('kalkulacije').snapshots().listen((snapshot) {
-      setState(() {
-        _spremljeneKalkulacije = snapshot.docs.map((doc) {
-          var data = doc.data();
-          data['id'] = doc.id;
-          return KalkulacijaModel.fromJson(data);
-        }).toList();
-      });
+    // Slušanje kalkulacija specifičnih za korisnika
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(_userId)
+        .collection('kalkulacije')
+        .snapshots()
+        .listen((snapshot) {
+      if (mounted) {
+        setState(() {
+          _kalkulacije = snapshot.docs.map((d) => KalkulacijaModel.fromMap(d.data(), d.id)).toList();
+        });
+      }
     });
   }
 
-  Future<void> _spremiPodatkeUFirestore() async {
+  Future<void> _spremiKalkulacijuUBazu(KalkulacijaModel kalk) async {
     if (_userId.isEmpty) return;
-    final firestore = FirebaseFirestore.instance;
-    await firestore.collection('users').doc(_userId).collection('postavke').doc('prijevoznik').set(_prijevoznik.toJson());
-    for (var kalk in _spremljeneKalkulacije) {
-      await firestore.collection('users').doc(_userId).collection('kalkulacije').doc(kalk.id).set(kalk.toJson());
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(_userId)
+        .collection('kalkulacije')
+        .doc(kalk.id)
+        .set(kalk.toMap());
+
+    setState(() {
+      _kalkulacijaZaUredivanje = null;
+      _currentIndex = 1; // Prebaci na tab kalkulacija
+    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Kalkulacija uspješno spremljena!'), backgroundColor: Colors.green));
     }
   }
 
-  Future<void> _obrisiKalkulacijuIzFirestore(String id) async {
+  Future<void> _obrisiKalkulacijuIzBaze(String id) async {
     if (_userId.isEmpty) return;
-    await FirebaseFirestore.instance.collection('users').doc(_userId).collection('kalkulacije').doc(id).delete();
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(_userId)
+        .collection('kalkulacije')
+        .doc(id)
+        .delete();
+  }
+
+  Future<void> _azurirajPostavkePrijevoznika() async {
+    if (_userId.isEmpty) return;
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(_userId)
+        .collection('postavke')
+        .doc('prijevoznik')
+        .set(_prijevoznik.toMap());
   }
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> ekrani = [
+    final List<Widget> stranice = [
       IzracunTroskovaTab(
-        prijevoznik: _prijevoznik, klijenti: _klijenti, aktivniKlijent: _aktivniKlijent,
+        prijevoznik: _prijevoznik,
+        klijenti: _klijenti,
+        aktivniKlijent: _aktivniKlijent,
         kalkulacijaZaUredivanje: _kalkulacijaZaUredivanje,
         onKlijentChanged: (k) => setState(() => _aktivniKlijent = k),
-        onSpremiKalkulaciju: (kalk) {
-          setState(() {
-            int index = _spremljeneKalkulacije.indexWhere((element) => element.id == kalk.id);
-            if (index >= 0) _spremljeneKalkulacije[index] = kalk;
-            else _spremljeneKalkulacije.add(kalk);
-            _kalkulacijaZaUredivanje = null;
-          });
-          _spremiPodatkeUFirestore();
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Kalkulacija spremljena!'), backgroundColor: Colors.green));
-        },
+        onSpremiKalkulaciju: _spremiKalkulacijuUBazu,
       ),
       KalkulacijeTab(
-        kalkulacije: _spremljeneKalkulacije, prijevoznik: _prijevoznik, klijenti: _klijenti,
-        onObrisi: (id) {
-          setState(() => _spremljeneKalkulacije.removeWhere((element) => element.id == id));
-          _obrisiKalkulacijuIzFirestore(id);
-        },
-        onUredi: (kalk) {
-          var pronadjeni = _klijenti.firstWhere((k) => k.naziv == kalk.klijentNaziv, orElse: () => _klijenti.first);
-          setState(() { _aktivniKlijent = pronadjeni; _kalkulacijaZaUredivanje = kalk; _currentIndex = 0; });
+        kalkulacije: _kalkulacije,
+        prijevoznik: _prijevoznik,
+        klijenti: _klijenti,
+        onObrisi: _obrisiKalkulacijuIzBaze,
+        onUredi: (k) {
+          setState(() {
+            _kalkulacijaZaUredivanje = k;
+            _currentIndex = 0; // Vrati na tab za izračun
+          });
         },
       ),
-      PostavkeTab(prijevoznik: _prijevoznik, klijenti: _klijenti, onUpdate: () { setState(() {}); _spremiPodatkeUFirestore(); }),
+      KlijentiTab(
+        klijenti: _klijenti,
+        userId: _userId, // Proslijeđujemo userId za Firestore akcije u KlijentiTab-u ako je potrebno
+      ),
+      PostavkeTab(
+        prijevoznik: _prijevoznik,
+        klijenti: _klijenti,
+        onUpdate: _azurirajPostavkePrijevoznika,
+      ),
     ];
+
     return Scaffold(
-      body: ekrani[_currentIndex],
+      body: stranice[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        type: BottomNavigationBarType.fixed,
         selectedItemColor: const Color(0xFF0284C7),
+        unselectedItemColor: Colors.grey,
+        onTap: (index) => setState(() => _currentIndex = index),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.calculate), label: '1) Izračun'),
-          BottomNavigationBarItem(icon: Icon(Icons.folder_shared), label: '2) Kalkulacije'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: '3) Postavke'),
-        ],
+          BottomNavigationBarItem(icon: Icon(Icons.calculate), label: 'Izračun'),
+          BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Kalkulacije'),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Klijenti'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Postavke'),
+      ],
       ),
     );
   }
