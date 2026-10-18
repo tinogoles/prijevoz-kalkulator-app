@@ -11,33 +11,24 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _lozinkaController = TextEditingController();
-  bool _jeRegistracija = false;
   bool _isLoading = false;
   String _greska = '';
 
-  Future<void> _autentificiraj() async {
+  Future<void> _prijaviSe() async {
     setState(() {
       _isLoading = true;
       _greska = '';
     });
 
     try {
-      if (_jeRegistracija) {
-        // Registracija novog testera
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _lozinkaController.text.trim(),
-        );
-      } else {
-        // Prijava postojećeg korisnika
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _lozinkaController.text.trim(),
-        );
-      }
+      // Isključivo prijava postojećeg korisnika
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _lozinkaController.text.trim(),
+      );
     } on FirebaseAuthException catch (e) {
       setState(() {
-        _greska = e.message ?? 'Došlo je do greške.';
+        _greska = e.message ?? 'Došlo je do greške prilikom prijave.';
       });
     } finally {
       setState(() {
@@ -50,7 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_jeRegistracija ? 'Registracija Testera' : 'Prijava - Kalkulator Prijevoza'),
+        title: const Text('Prijava - Kalkulator Prijevoza'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
         centerTitle: true,
@@ -95,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: _isLoading ? null : _autentificiraj,
+                  onPressed: _isLoading ? null : _prijaviSe,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0284C7),
                     foregroundColor: Colors.white,
@@ -103,25 +94,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : Text(
-                          _jeRegistracija ? 'Registriraj se' : 'Prijavi se',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      : const Text(
+                          'Prijavi se',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
-                ),
-                const SizedBox(height: 12),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _jeRegistracija = !_jeRegistracija;
-                      _greska = '';
-                    });
-                  },
-                  child: Text(
-                    _jeRegistracija
-                        ? 'Već imate račun? Prijavite se'
-                        : 'Nemate račun? Registrirajte novog testera',
-                    style: const TextStyle(color: Color(0xFF0284C7)),
-                  ),
                 ),
               ],
             ),
