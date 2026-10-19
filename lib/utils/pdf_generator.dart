@@ -4,7 +4,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 class PdfGenerator {
-  // Pomoćne funkcije za sigurno čitanje polja bez obzira je li objekt ili Map
+  // Pomoćna funkcija za sigurno čitanje polja
   static String _getVal(dynamic obj, String field) {
     if (obj == null) return '';
     try {
@@ -163,7 +163,6 @@ class PdfGenerator {
 
     double ukupniIznosPonude = double.tryParse(kalkulacija.ukupnaCijena?.toString() ?? '0') ?? kalkulacija.ukupnaCijena;
     
-    // Provjera je li klijent u sustavu PDV-a iz prosljeđenog objekta klijenta (ako postoji)
     if (klijentObjekt != null) {
       if (klijentObjekt is Map) {
         klijentUsetPdv = klijentObjekt['uSustavuPdv'] ?? klijentObjekt['u_sustavu_pdva'] ?? klijentUsetPdv;
@@ -208,7 +207,7 @@ class PdfGenerator {
     // Priprema atributa klijenta
     String kNaziv = _getVal(klijentObjekt, 'naziv');
     if (kNaziv.isEmpty) kNaziv = kalkulacija.klijentNaziv;
-    String kVlasnik = _getVal(klijentObjekt, 'vlasnik'); // Odgovorna osoba / kontakt
+    String kVlasnik = _getVal(klijentObjekt, 'vlasnik');
     String kAdresa = _getVal(klijentObjekt, 'adresa');
     String kGrad = _getVal(klijentObjekt, 'grad');
     String kOib = _getVal(klijentObjekt, 'oib');
@@ -224,7 +223,7 @@ class PdfGenerator {
           build: (ctx) => pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              // Zaglavlje: Podaci prijevoznika (lijevo) i Broj ponude (desno)
+              // Zaglavlje: SVI PODACI PRIJEVOZNIKA (lijevo) i Broj ponude (desno)
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -257,7 +256,7 @@ class PdfGenerator {
               ),
               pw.SizedBox(height: 15),
 
-              // Datum izdavanja i svi atributi klijenta (desno poravnato)
+              // Datum izdavanja i atributi klijenta (desno poravnato)
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -309,7 +308,7 @@ class PdfGenerator {
               pw.Divider(thickness: 0.5, color: PdfColors.grey400),
               pw.SizedBox(height: 10),
 
-              // Financijski dio (AKO JE U PDV-u -> OSNOVICA + PDV, AKO NIJE -> SAMO UKUPNA CIJENA)
+              // Financijski dio (Osnovica + PDV ili samo Ukupna cijena)
               pw.Align(
                 alignment: pw.Alignment.centerRight,
                 child: pw.Column(
