@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/prijevoznik_model.dart';
+import '../services/klijenti_service.dart';
 import 'vozni_park_screen.dart';
 
 class PostavkeTab extends StatefulWidget {
@@ -10,10 +11,10 @@ class PostavkeTab extends StatefulWidget {
   final ValueChanged<PrijevoznikModel>? onSpremiPrijevoznika;
 
   const PostavkeTab({
-    Key? key,
+    super.key,
     this.prijevoznik,
     this.onSpremiPrijevoznika,
-  }) : super(key: key);
+  });
 
   @override
   State<PostavkeTab> createState() => _PostavkeTabState();
@@ -37,17 +38,38 @@ class _PostavkeTabState extends State<PostavkeTab> {
   String get userKey => currentUser?.email ?? currentUser?.uid ?? 'zadani_korisnik';
 
   bool _isInitializing = false;
-  final List<Map<String, dynamic>> _klijenti = [];
+  final KlijentiService _klijentiService = KlijentiService();
 
   @override
   void initState() {
     super.initState();
-    _ucitajKorisnickePodatke();
+    _klijentiService.addListener(_onKlijentiPromijenjeni);
+    _ucitajSvePodatke();
   }
 
-  Future<void> _ucitajKorisnickePodatke() async {
+  @override
+  void dispose() {
+    _klijentiService.removeListener(_onKlijentiPromijenjeni);
+    _nazivTvrtkeController.dispose();
+    _vlasnikController.dispose();
+    _adresaController.dispose();
+    _gradController.dispose();
+    _oibController.dispose();
+    _emailTvrtkeController.dispose();
+    _telefonController.dispose();
+    _bankaController.dispose();
+    _ibanController.dispose();
+    super.dispose();
+  }
+
+  void _onKlijentiPromijenjeni() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _ucitajSvePodatke() async {
     setState(() => _isLoading = true);
     try {
+      // Učitavanje postavki prijevoznika
       final doc = await FirebaseFirestore.instance
           .collection('korisnici')
           .doc(userKey)
@@ -61,8 +83,11 @@ class _PostavkeTabState extends State<PostavkeTab> {
       } else if (widget.prijevoznik != null) {
         _postaviPolja(widget.prijevoznik!);
       }
+
+      // Učitavanje klijenata s Clouda preko servisa
+      await _klijentiService.ucitajKlijente();
     } catch (e) {
-      debugPrint('Greška pri učitavanju korisničkih podataka: $e');
+      debugPrint('Greška pri učitavanju podataka: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -79,20 +104,6 @@ class _PostavkeTabState extends State<PostavkeTab> {
     _bankaController.text = p.banka;
     _ibanController.text = p.iban;
     _uSustavuPdvA = p.uSustavuPdv;
-  }
-
-  @override
-  void dispose() {
-    _nazivTvrtkeController.dispose();
-    _vlasnikController.dispose();
-    _adresaController.dispose();
-    _gradController.dispose();
-    _oibController.dispose();
-    _emailTvrtkeController.dispose();
-    _telefonController.dispose();
-    _bankaController.dispose();
-    _ibanController.dispose();
-    super.dispose();
   }
 
   Future<void> _spremiPodatkePrijevoznika() async {
@@ -229,7 +240,7 @@ class _PostavkeTabState extends State<PostavkeTab> {
                   child: const Text('Odustani'),
                 ),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if (_nazivCtrl.text.trim().isEmpty) return;
 
                     final noviKlijent = {
@@ -246,14 +257,11 @@ class _PostavkeTabState extends State<PostavkeTab> {
                       'uSustavuPdvA': _uSustavuPdvAKlijent,
                     };
 
-                    setState(() {
-                      if (klijent == null) {
-                        _klijenti.add(noviKlijent);
-                      } else {
-                        final index = _klijenti.indexWhere((k) => k['id'] == klijent['id']);
-                        if (index != -1) _klijenti[index] = noviKlijent;
-                      }
-                    });
+                    if (klijent == null) {
+                      await _klijentiService.dodajKlijenta(noviKlijent);
+                    } else {
+                      await _klijentiService.urediKlijenta(noviKlijent);
+                    }
 
                     if (setModalState != null) {
                       setModalState(() {});
@@ -281,6 +289,7 @@ class _PostavkeTabState extends State<PostavkeTab> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            final listaKlijenata = _klijentiService.klijenti;
             return Container(
               height: MediaQuery.of(context).size.height * 0.85,
               padding: const EdgeInsets.all(16),
@@ -305,13 +314,13 @@ class _PostavkeTabState extends State<PostavkeTab> {
                   ),
                   const Divider(height: 24),
                   Expanded(
-                    child: _klijenti.isEmpty
+                    child: listaKlijenata.isEmpty
                         ? const Center(child: Text('Nema unesenih klijenata.'))
                         : ListView.separated(
-                            itemCount: _klijenti.length,
+                            itemCount: listaKlijenata.length,
                             separatorBuilder: (context, index) => const Divider(),
                             itemBuilder: (context, index) {
-                              final klijent = _klijenti[index];
+                              final klijent = listaKlijenata[index];
                               return Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 4.0),
                                 child: Column(
@@ -357,10 +366,8 @@ class _PostavkeTabState extends State<PostavkeTab> {
                                         ),
                                         const SizedBox(width: 8),
                                         TextButton.icon(
-                                          onPressed: () {
-                                            setState(() {
-                                              _klijenti.removeWhere((k) => k['id'] == klijent['id']);
-                                            });
+                                          onPressed: () async {
+                                            await _klijentiService.obrisiKlijenta(klijent['id']);
                                             setModalState(() {});
                                           },
                                           icon: const Icon(Icons.delete, size: 18, color: Colors.red),
@@ -567,7 +574,7 @@ class _PostavkeTabState extends State<PostavkeTab> {
                           const SizedBox(height: 24),
                           const Divider(),
                           SizedBox(
-                            width: double.infinity,
+                            width: cardWidth,
                             child: ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red.shade700,
