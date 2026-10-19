@@ -112,8 +112,7 @@ class PdfGenerator {
                       _buildRedZbroja('Osnovica za ponudu:', '${osnovicaZaPonudu.toStringAsFixed(2)} EUR', font),
                       _buildRedZbroja('Izlazni PDV (25%):', '${izlazniPdv.toStringAsFixed(2)} EUR', font),
                     ] else ...[
-                      _buildRedZbroja('Ukupni iznos (bez razrade PDV-a):', '${totalZaSve.toStringAsFixed(2)} EUR', font),
-                      _buildRedZbroja('PDV:', '0.00 EUR (Nije u sustavu PDV-a)', font),
+                      _buildRedZbroja('Ukupan iznos (bez PDV razrade):', '${totalZaSve.toStringAsFixed(2)} EUR', font),
                     ],
                     pw.Divider(thickness: 1, color: PdfColors.red900),
                     _buildRedZbroja('TOTAL ZA SVE:', '${totalZaSve.toStringAsFixed(2)} EUR', font, isBold: true, color: PdfColors.red900, fontSize: 14),
@@ -145,10 +144,9 @@ class PdfGenerator {
     String tekstRelacije = '${kalkulacija.ruta} ${povratno ? "( i povratak )" : ""}';
 
     String mjestoIzdavanja = (prijevoznik.grad != null && prijevoznik.grad.toString().isNotEmpty) 
-        ? prijevoznik.grad 
+        ? prijevoznik.grad.toString().replaceAll(RegExp(r'^\d+\s*'), '') // Uklanja poštanski broj ako je spojen (npr. "21207 Kostanje" -> "Kostanje")
         : 'Mjesto';
 
-    // Sastavljanje stavki koje ponuda uključuje
     List<String> ukljucujeStavke = [];
     if (kalkulacija.koristiAutocestu) {
       ukljucujeStavke.add('korištenje autoceste');
@@ -175,7 +173,7 @@ class PdfGenerator {
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text('"${prijevoznik.naziv}" obrt za prijevoz', style: pw.TextStyle(font: fontBold, fontSize: 14)),
+                      pw.Text(prijevoznik.naziv ?? '', style: pw.TextStyle(font: fontBold, fontSize: 13)),
                       if (prijevoznik.vlasnik != null && prijevoznik.vlasnik.isNotEmpty)
                         pw.Text('Vlasnik: ${prijevoznik.vlasnik}', style: pw.TextStyle(font: font, fontSize: 9)),
                       pw.Text('Adresa: ${prijevoznik.adresa}, ${prijevoznik.grad}', style: pw.TextStyle(font: font, fontSize: 9)),
@@ -198,7 +196,7 @@ class PdfGenerator {
               ),
               pw.SizedBox(height: 15),
 
-              // Datum izdavanja i Podaci o klijentu (desno poravnato)
+              // Datum izdavanja i svi atributi klijenta (desno poravnato)
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -250,7 +248,7 @@ class PdfGenerator {
               pw.Divider(thickness: 0.5, color: PdfColors.grey400),
               pw.SizedBox(height: 10),
 
-              // Financijski dio (desno poravnato)
+              // Financijski dio (DINAMIČKI PREMA SUSTAVU PDV-a KLIJENTA)
               pw.Align(
                 alignment: pw.Alignment.centerRight,
                 child: pw.Column(
@@ -260,14 +258,13 @@ class PdfGenerator {
                       pw.Text('Osnovica (Bez PDV-a): ${osnovica.toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 10)),
                       pw.SizedBox(height: 3),
                       pw.Text('PDV (25%): ${pdvIznos.toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 10)),
+                      pw.SizedBox(height: 4),
+                      pw.Container(width: 230, child: pw.Divider(thickness: 1, color: PdfColors.black)),
+                      pw.SizedBox(height: 4),
+                      pw.Text('UKUPNA CIJENA S PDV-om: ${ukupniIznosPonude.toStringAsFixed(2)} EUR', style: pw.TextStyle(font: fontBold, fontSize: 11)),
                     ] else ...[
-                      pw.Text('PDV: 0.00 EUR (Nije u sustavu PDV-a)', style: pw.TextStyle(font: font, fontSize: 9)),
-                      pw.SizedBox(height: 3),
+                      pw.Text('UKUPNA CIJENA: ${ukupniIznosPonude.toStringAsFixed(2)} EUR', style: pw.TextStyle(font: fontBold, fontSize: 11)),
                     ],
-                    pw.SizedBox(height: 4),
-                    pw.Container(width: 230, child: pw.Divider(thickness: 1, color: PdfColors.black)),
-                    pw.SizedBox(height: 4),
-                    pw.Text('UKUPNA CIJENA S PDV-om: ${ukupniIznosPonude.toStringAsFixed(2)} EUR', style: pw.TextStyle(font: fontBold, fontSize: 11)),
                   ],
                 ),
               ),
@@ -278,10 +275,8 @@ class PdfGenerator {
               pw.SizedBox(height: 4),
               pw.Text('Ponuda vrijedi 7 dana', style: pw.TextStyle(font: font, fontSize: 9)),
 
-              // Spacer za guranje zakonske napomene na sam dno stranice
-              pw.Spacer(),
-
               // Zakonska napomena i zahvala na dnu
+              pw.Spacer(),
               pw.Divider(thickness: 0.8, color: PdfColors.grey700),
               pw.SizedBox(height: 4),
               pw.Center(
