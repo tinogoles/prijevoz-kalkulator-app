@@ -73,28 +73,40 @@ class KalkulacijaModel {
     'dnevnica': dnevnica,
   };
 
-  factory KalkulacijaModel.fromJson(Map<String, dynamic> json) => KalkulacijaModel(
-    id: json['id']?.toString() ?? '',
-    nazivKalkulacije: json['nazivKalkulacije']?.toString() ?? '',
-    klijentNaziv: json['klijentNaziv']?.toString() ?? '',
-    datumPolaska: json['datumPolaska']?.toString() ?? '',
-    datumPovratka: json['datumPovratka']?.toString() ?? '',
-    vozilo: json['vozilo']?.toString() ?? '',
-    ruta: json['ruta']?.toString() ?? '',
-    ukupnaCijena: (json['ukupnaCijena'] as num?)?.toDouble() ?? 0.0,
-    polaziste: json['polaziste']?.toString() ?? '',
-    odrediste1: json['odrediste1']?.toString() ?? '',
-    odrediste2: json['odrediste2']?.toString() ?? '',
-    konacnoOdrediste: json['konacnoOdrediste']?.toString() ?? '',
-    cestarina: json['cestarina']?.toString() ?? '0',
-    km: json['km']?.toString() ?? '0',
-    povratno: json['povratno'] ?? true,
-    koristiAutocestu: json['koristiAutocestu'] ?? true,
-    odabranaAutocesta: json['odabranaAutocesta']?.toString() ?? '',
-    tkoPlacaNocenje: json['tkoPlacaNocenje']?.toString() ?? '',
-    cijenaNocenja: json['cijenaNocenja']?.toString() ?? '60',
-    marza: json['marza']?.toString() ?? '20',
-    cijenaGoriva: json['cijenaGoriva']?.toString() ?? '1.96',
-    dnevnica: json['dnevnica']?.toString() ?? '100',
-  );
+  factory KalkulacijaModel.fromJson(Map<String, dynamic> json) {
+    // Fleksibilno čitanje polja kilometara bez obzira na naziv u bazi
+    String procitaniKm = (json['km'] ?? json['kilometri'] ?? json['brojKm'] ?? '0').toString();
+    if (procitaniKm == '0' || procitaniKm.isEmpty) {
+      // Ako nedostaje km, pokušaj ga ekstrahirati iz rute e.g. "Split -> Zagreb (780 km)"
+      String r = json['ruta']?.toString() ?? '';
+      RegExp reg = RegExp(r'\((\d+)\s*km\)');
+      var match = reg.firstMatch(r);
+      if (match != null) procitaniKm = match.group(1) ?? '0';
+    }
+
+    return KalkulacijaModel(
+      id: json['id']?.toString() ?? '',
+      nazivKalkulacije: json['nazivKalkulacije']?.toString() ?? json['naziv']?.toString() ?? '',
+      klijentNaziv: json['klijentNaziv']?.toString() ?? json['klijent']?.toString() ?? '',
+      datumPolaska: json['datumPolaska']?.toString() ?? '',
+      datumPovratka: json['datumPovratka']?.toString() ?? '',
+      vozilo: json['vozilo']?.toString() ?? '',
+      ruta: json['ruta']?.toString() ?? '',
+      ukupnaCijena: (json['ukupnaCijena'] as num?)?.toDouble() ?? (json['cijena'] as num?)?.toDouble() ?? 0.0,
+      polaziste: json['polaziste']?.toString() ?? '',
+      odrediste1: json['odrediste1']?.toString() ?? '',
+      odrediste2: json['odrediste2']?.toString() ?? '',
+      konacnoOdrediste: json['konacnoOdrediste']?.toString() ?? '',
+      cestarina: (json['cestarina'] ?? json['iznosCestarine'] ?? '0').toString(),
+      km: procitaniKm,
+      povratno: json['povratno'] ?? true,
+      koristiAutocestu: json['koristiAutocestu'] ?? true,
+      odabranaAutocesta: json['odabranaAutocesta']?.toString() ?? '',
+      tkoPlacaNocenje: json['tkoPlacaNocenje']?.toString() ?? '',
+      cijenaNocenja: (json['cijenaNocenja'] ?? '60').toString(),
+      marza: (json['marza'] ?? '20').toString(),
+      cijenaGoriva: (json['cijenaGoriva'] ?? '1.96').toString(),
+      dnevnica: (json['dnevnica'] ?? '100').toString(),
+    );
+  }
 }
