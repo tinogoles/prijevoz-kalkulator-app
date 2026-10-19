@@ -1,7 +1,7 @@
 // lib/services/klijenti_service.dart
 import 'package:flutter/foundation.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'firebase_auth/firebase_auth.dart'; // ili odgovarajući import za auth ovisno o projektu
+import 'package0cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class KlijentiService extends ChangeNotifier {
   static final KlijentiService _instance = KlijentiService._internal();
@@ -22,7 +22,7 @@ class KlijentiService extends ChangeNotifier {
     return user?.email ?? user?.uid ?? 'zadani_korisnik';
   }
 
-  // Dohvat klijenata s Firestore Clouda
+  // Automatsko učitavanje klijenata s Firestore Clouda
   Future<void> ucitajKlijente() async {
     _isLoading = true;
     notifyListeners();
@@ -35,7 +35,7 @@ class KlijentiService extends ChangeNotifier {
 
       _klijenti = snapshot.docs.map((doc) {
         final data = doc.data();
-        data['id'] = doc.id; // osiguravamo da je ID dokumenta spremljen
+        data['id'] = doc.id;
         return data;
       }).toList();
     } catch (e) {
@@ -57,7 +57,7 @@ class KlijentiService extends ChangeNotifier {
           .doc(_userKey)
           .collection('klijenti')
           .doc(docId)
-          .set(klijent);
+          .set(klijent, SetOptions(merge: true));
 
       _klijenti.add(klijent);
       notifyListeners();
