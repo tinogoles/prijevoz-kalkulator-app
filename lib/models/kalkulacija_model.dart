@@ -73,11 +73,10 @@ class KalkulacijaModel {
     'dnevnica': dnevnica,
   };
 
-  factory KalkulacijaModel.fromJson(Map<String, dynamic> json) {
-    // Fleksibilno čitanje polja kilometara bez obzira na naziv u bazi
+ factory KalkulacijaModel.fromJson(Map<String, dynamic> json) {
+    // Fleksibilno čitanje kilometara
     String procitaniKm = (json['km'] ?? json['kilometri'] ?? json['brojKm'] ?? '0').toString();
     if (procitaniKm == '0' || procitaniKm.isEmpty) {
-      // Ako nedostaje km, pokušaj ga ekstrahirati iz rute e.g. "Split -> Zagreb (780 km)"
       String r = json['ruta']?.toString() ?? '';
       RegExp reg = RegExp(r'\((\d+)\s*km\)');
       var match = reg.firstMatch(r);
@@ -104,7 +103,7 @@ class KalkulacijaModel {
       odabranaAutocesta: json['odabranaAutocesta']?.toString() ?? '',
       tkoPlacaNocenje: json['tkoPlacaNocenje']?.toString() ?? '',
       cijenaNocenja: (json['cijenaNocenja'] ?? '60').toString(),
-      marza: (json['marza'] ?? '20').toString(),
+      marza: (json['marza'] ?? json['postotakMarze'] ?? '20').toString(),
       cijenaGoriva: (json['cijenaGoriva'] ?? '1.96').toString(),
       dnevnica: (json['dnevnica'] ?? '100').toString(),
     );
