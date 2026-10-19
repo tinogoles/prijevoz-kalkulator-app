@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../models/vozilo_model.dart';
 
 class VozniParkScreen extends StatefulWidget {
   const VozniParkScreen({Key? key}) : super(key: key);
@@ -9,28 +8,49 @@ class VozniParkScreen extends StatefulWidget {
 }
 
 class _VozniParkScreenState extends State<VozniParkScreen> {
-  // Privremena lista u memoriji (naknadno povežemo s Firestore baze ili servisom)
-  final List<VoziloModel> _vozila = [];
+  // Lista vozila u voznom parku
+  final List<Map<String, dynamic>> _vozila = [
+    {
+      'id': '1',
+      'naziv': 'Mercedes Tourismo',
+      'kapacitet': '49 + 1 + 1',
+      'kategorija': 'Veliki autobus 50',
+      'potrosnja': '32.0',
+      'oprema': {'Klima uređaj': true, 'WC': true, 'Wi-Fi': true, 'Utičnica 220V': true, 'USB Punjač za mobitel': true},
+    },
+    {
+      'id': '2',
+      'naziv': 'Ford Transit',
+      'kapacitet': '8 + 1',
+      'kategorija': 'Kombi 8+1',
+      'potrosnja': '9.0',
+      'oprema': {'Klima uređaj': true, 'WC': false, 'Wi-Fi': true, 'Utičnica 220V': false, 'USB Punjač za mobitel': true},
+    },
+  ];
 
-  final List<String> _kategorijeCestarine = [
+  final List<String> _kategorijeVozila = [
     'Kombi 8+1',
     'Mini bus <20',
     'Midi bus 35',
     'Veliki autobus 50',
   ];
 
-  void _otvoriDijalogZaVozilo([VoziloModel? postojeceVozilo]) {
-    final _nazivController =
-        TextEditingController(text: postojeceVozilo?.naziv ?? '');
-    final _kapacitetController = TextEditingController(
-        text: postojeceVozilo != null ? postojeceVozilo.kapacitet.toString() : '');
+  void _otvoriDijalogVozilo([Map<String, dynamic>? vozilo]) {
+    final _nazivCtrl = TextEditingController(text: vozilo?['naziv'] ?? '');
+    final _kapacitetCtrl = TextEditingController(text: vozilo?['kapacitet'] ?? '');
+    final _potrosnjaCtrl = TextEditingController(text: vozilo?['potrosnja'] ?? '');
+    
+    String _odabranaKategorija = vozilo?['kategorija'] ?? _kategorijeVozila.first;
 
-    String odabranaKategorija = postojeceVozilo?.kategorijaCestarine ?? _kategorijeCestarine.first;
-    bool imaKlimu = postojeceVozilo?.imaKlimu ?? true;
-    bool imaWc = postojeceVozilo?.imaWc ?? false;
-    bool imaWifi = postojeceVozilo?.imaWifi ?? false;
-    bool ima220V = postojeceVozilo?.ima220V ?? false;
-    bool imaPunjac = postojeceVozilo?.imaPunjac ?? false;
+    Map<String, bool> _oprema = vozilo?['oprema'] != null
+        ? Map<String, bool>.from(vozilo!['oprema'])
+        : {
+            'Klima uređaj': false,
+            'WC': false,
+            'Wi-Fi': false,
+            'Utičnica 220V': false,
+            'USB Punjač za mobitel': false,
+          };
 
     showDialog(
       context: context,
@@ -38,82 +58,75 @@ class _VozniParkScreenState extends State<VozniParkScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text(postojeceVozilo == null ? 'Dodaj novo vozilo' : 'Uredi vozilo'),
+              title: Text(vozilo == null ? 'Dodaj novo vozilo' : 'Uredi vozilo'),
               content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: _nazivController,
-                      decoration: const InputDecoration(
-                        labelText: 'Naziv / Oznaka vozila (npr. Mercedes Sprinter)',
-                        border: OutlineInputBorder(),
+                child: SizedBox(
+                  width: 400,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        controller: _nazivCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Naziv / Oznaka vozila (npr. Mercedes)',
+                          isDense: true,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _kapacitetController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Kapacitet (broj sjedala)',
-                        border: OutlineInputBorder(),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _kapacitetCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Kapacitet (broj sjedala)',
+                          isDense: true,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      value: odabranaKategorija,
-                      decoration: const InputDecoration(
-                        labelText: 'Kategorija po cestarini',
-                        border: OutlineInputBorder(),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: _odabranaKategorija,
+                        decoration: const InputDecoration(
+                          labelText: 'Kategorija po cestarini',
+                          isDense: true,
+                        ),
+                        items: _kategorijeVozila.map((kat) {
+                          return DropdownMenuItem(value: kat, child: Text(kat));
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setDialogState(() => _odabranaKategorija = val);
+                          }
+                        },
                       ),
-                      items: _kategorijeCestarine.map((kat) {
-                        return DropdownMenuItem(
-                          value: kat,
-                          child: Text(kat),
+                      const SizedBox(height: 12),
+                      // Dodano polje za potrošnju ispod kategorije
+                      TextField(
+                        controller: _potrosnjaCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Potrošnja ( L/100km )',
+                          isDense: true,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Dodatna oprema:',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                      const SizedBox(height: 8),
+                      ..._oprema.keys.map((nazivOpreme) {
+                        return CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(nazivOpreme),
+                          value: _oprema[nazivOpreme],
+                          onChanged: (bool? value) {
+                            setDialogState(() {
+                              _oprema[nazivOpreme] = value ?? false;
+                            });
+                          },
                         );
                       }).toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setDialogState(() {
-                            odabranaKategorija = val;
-                          });
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Dodatna oprema:',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    CheckboxListTile(
-                      title: const Text('Klima uredaj'),
-                      value: imaKlimu,
-                      onChanged: (val) => setDialogState(() => imaKlimu = val ?? false),
-                    ),
-                    CheckboxListTile(
-                      title: const Text('WC'),
-                      value: imaWc,
-                      onChanged: (val) => setDialogState(() => imaWc = val ?? false),
-                    ),
-                    CheckboxListTile(
-                      title: const Text('Wi-Fi'),
-                      value: imaWifi,
-                      onChanged: (val) => setDialogState(() => imaWifi = val ?? false),
-                    ),
-                    CheckboxListTile(
-                      title: const Text('Uticnica 220V'),
-                      value: ima220V,
-                      onChanged: (val) => setDialogState(() => ima220V = val ?? false),
-                    ),
-                    CheckboxListTile(
-                      title: const Text('USB Punjac za mobitel'),
-                      value: imaPunjac,
-                      onChanged: (val) => setDialogState(() => imaPunjac = val ?? false),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               actions: [
@@ -123,26 +136,23 @@ class _VozniParkScreenState extends State<VozniParkScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    if (_nazivController.text.trim().isEmpty) return;
+                    if (_nazivCtrl.text.trim().isEmpty) return;
 
-                    final vozilo = VoziloModel(
-                      id: postojeceVozilo?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-                      naziv: _nazivController.text.trim(),
-                      kapacitet: int.tryParse(_kapacitetController.text.trim()) ?? 0,
-                      kategorijaCestarine: odabranaKategorija,
-                      imaKlimu: imaKlimu,
-                      imaWc: imaWc,
-                      imaWifi: imaWifi,
-                      ima220V: ima220V,
-                      imaPunjac: imaPunjac,
-                    );
+                    final novoVozilo = {
+                      'id': vozilo?['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+                      'naziv': _nazivCtrl.text.trim(),
+                      'kapacitet': _kapacitetCtrl.text.trim(),
+                      'kategorija': _odabranaKategorija,
+                      'potrosnja': _potrosnjaCtrl.text.trim().isNotEmpty ? _potrosnjaCtrl.text.trim() : '0.0',
+                      'oprema': Map<String, bool>.from(_oprema),
+                    };
 
                     setState(() {
-                      if (postojeceVozilo == null) {
-                        _vozila.add(vozilo);
+                      if (vozilo == null) {
+                        _vozila.add(novoVozilo);
                       } else {
-                        final idx = _vozila.indexWhere((v) => v.id == postojeceVozilo.id);
-                        if (idx != -1) _vozila[idx] = vozilo;
+                        final index = _vozila.indexWhere((v) => v['id'] == vozilo['id']);
+                        if (index != -1) _vozila[index] = novoVozilo;
                       }
                     });
 
@@ -160,7 +170,7 @@ class _VozniParkScreenState extends State<VozniParkScreen> {
 
   void _obrisiVozilo(String id) {
     setState(() {
-      _vozila.removeWhere((v) => v.id == id);
+      _vozila.removeWhere((v) => v['id'] == id);
     });
   }
 
@@ -168,68 +178,86 @@ class _VozniParkScreenState extends State<VozniParkScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Vozni Park'),
+        title: const Text('Upravljanje voznim parkom'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_circle),
+            tooltip: 'Dodaj vozilo',
+            onPressed: () => _otvoriDijalogVozilo(null),
+          ),
+        ],
       ),
-      body: _vozila.isEmpty
-          ? const Center(
-              child: Text(
-                'Nema unesenih vozila.\nKliknite na "+" za dodavanje novog vozila.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: _vozila.length,
-              itemBuilder: (context, index) {
-                final vozilo = _vozila[index];
-                return Card(
-                  elevation: 3,
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  child: ListTile(
-                    title: Text(
-                      vozilo.naziv,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 4),
-                        Text('Kapacitet: ${vozilo.kapacitet} sjedala | Cestarina: ${vozilo.kategorijaCestarine}'),
-                        const SizedBox(height: 6),
-                        Wrap(
-                          spacing: 8,
-                          children: [
-                            if (vozilo.imaKlimu) const Chip(label: Text('Klima'), avatar: Icon(Icons.ac_unit, size: 16)),
-                            if (vozilo.imaWc) const Chip(label: Text('WC'), avatar: Icon(Icons.wc, size: 16)),
-                            if (vozilo.imaWifi) const Chip(label: Text('Wi-Fi'), avatar: Icon(Icons.wifi, size: 16)),
-                            if (vozilo.ima220V) const Chip(label: Text('220V'), avatar: Icon(Icons.power, size: 16)),
-                            if (vozilo.imaPunjac) const Chip(label: Text('USB'), avatar: Icon(Icons.battery_charging_full, size: 16)),
-                          ],
-                        )
-                      ],
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blue),
-                          onPressed: () => _otvoriDijalogZaVozilo(vozilo),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _obrisiVozilo(vozilo.id),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Popis vozila i opreme',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () => _otvoriDijalogVozilo(null),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Dodaj novo vozilo'),
+                ),
+              ],
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _otvoriDijalogZaVozilo(),
-        icon: const Icon(Icons.add),
-        label: const Text('Novo vozilo'),
+            const Divider(height: 24),
+            Expanded(
+              child: _vozila.isEmpty
+                  ? const Center(child: Text('Nema unesenih vozila u voznom parku.'))
+                  : ListView.separated(
+                      itemCount: _vozila.length,
+                      separatorBuilder: (context, index) => const Divider(),
+                      itemBuilder: (context, index) {
+                        final vozilo = _vozila[index];
+                        Map<String, bool> oprema = Map<String, bool>.from(vozilo['oprema'] ?? {});
+                        List<String> aktivnaOprema = oprema.entries
+                            .where((e) => e.value == true)
+                            .map((e) => e.key)
+                            .toList();
+
+                        return ListTile(
+                          leading: const CircleAvatar(
+                            child: Icon(Icons.directions_bus),
+                          ),
+                          title: Text(
+                            vozilo['naziv'] ?? '',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 4),
+                              Text('Kapacitet: ${vozilo['kapacitet']} sjedala | Kategorija: ${vozilo['kategorija']}'),
+                              Text('Potrošnja: ${vozilo['potrosnja']} L/100km'),
+                              if (aktivnaOprema.isNotEmpty)
+                                Text('Oprema: ${aktivnaOprema.join(', ')}', style: const TextStyle(color: Colors.grey)),
+                            ],
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit, color: Colors.blue),
+                                onPressed: () => _otvoriDijalogVozilo(vozilo),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () => _obrisiVozilo(vozilo['id']),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
