@@ -1,3 +1,4 @@
+// lib/screens/izracun_troskova_tab.dart
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -85,6 +86,9 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   @override
   void initState() {
     super.initState();
+    _klijentiService.addListener(_onKlijentiPromijenjeni);
+    _klijentiService.ucitajKlijente();
+
     _dohvatiVozilaIzBaze();
     String danas = _formatirajDatum(DateTime.now());
     _datumPolaskaController = TextEditingController(text: danas);
@@ -95,6 +99,31 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     } else {
       _preracunajBrojDana();
     }
+  }
+
+  void _onKlijentiPromijenjeni() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
+  void dispose() {
+    _klijentiService.removeListener(_onKlijentiPromijenjeni);
+    _nazivKalkulacijeController.dispose();
+    _polazisteController.dispose();
+    _odrediste1Controller.dispose();
+    _odrediste2Controller.dispose();
+    _konacnoOdredisteController.dispose();
+    _datumPolaskaController.dispose();
+    _datumPovratkaController.dispose();
+    _kmController.dispose();
+    _cestarinaController.dispose();
+    _cijenaGorivaController.dispose();
+    _dnevnicaController.dispose();
+    _cijenaNocenjaController.dispose();
+    _marzaController.dispose();
+    super.dispose();
   }
 
   void _dohvatiVozilaIzBaze() {
@@ -339,18 +368,18 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   Widget build(BuildContext context) {
     List<Map<String, dynamic>> listaKlijenata = _klijentiService.klijenti;
 
-    // Pronalazak ID-a aktivnog klijenta ako postoji u listi
+    // Pronalazak ID-a ili naziva aktivnog klijenta ako postoji u listi s Clouda
     String? aktivniKlijentId;
     if (widget.aktivniKlijent != null) {
       for (var kMap in listaKlijenata) {
-        if ((kMap['id'] ?? '') == widget.aktivniKlijent!.id ||
-            (kMap['naziv'] ?? '') == widget.aktivniKlijent!.naziv) {
-          aktivniKlijentId = kMap['id'] ?? '';
+        if ((kMap['id'] ?? '').toString() == widget.aktivniKlijent!.id ||
+            (kMap['naziv'] ?? '').toString().trim().toLowerCase() == widget.aktivniKlijent!.naziv.trim().toLowerCase()) {
+          aktivniKlijentId = kMap['id']?.toString() ?? '';
           break;
         }
       }
     }
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_trenutniIdUredjivanja == null ? 'Izračun Troškova Prijevoza' : 'Uređivanje Kalkulacije', style: const TextStyle(color: Colors.white)),
@@ -362,30 +391,31 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Izbornik Klijenta s pouzdanom identifikacijom po ID-u
+            // Izbornik Klijenta s dinamičkim podacima s Clouda
             DropdownButtonFormField<String>(
               value: aktivniKlijentId,
               isExpanded: true,
               decoration: const InputDecoration(labelText: 'Klijent', border: OutlineInputBorder()),
               items: listaKlijenata.map((kMap) {
                 return DropdownMenuItem<String>(
-                  value: kMap['id'] ?? '',
-                  child: Text(kMap['naziv'] ?? '', overflow: TextOverflow.ellipsis),
+                  value: kMap['id']?.toString() ?? '',
+                  child: Text(kMap['naziv']?.toString() ?? '', overflow: TextOverflow.ellipsis),
                 );
               }).toList(),
               onChanged: (idKlijenta) {
-                if (idKlijenta != null) {
-                  var kMap = listaKlijenata.firstWhere((k) => (k['id'] ?? '') == idKlijenta);
+                if (idKlijenta != null && idKlijenta.isNotEmpty) {
+                  var kMap = listaKlijenata.firstWhere((k) => (k['id'] ?? '').toString() == idKlijenta);
                   KlijentModel odabrani = KlijentModel(
-                    id: kMap['id'] ?? '',
-                    naziv: kMap['naziv'] ?? '',
-                    adresa: kMap['adresa'] ?? '',
-                    grad: kMap['grad'] ?? '',
-                    oib: kMap['oib'] ?? '',
-                    email: kMap['email'] ?? '',
-                    telefon: kMap['telefon'] ?? '',
-                    banka: kMap['banka'] ?? '',
-                    iban: kMap['iban'] ?? '',
+                    id: kMap['id']?.toString() ?? '',
+                    naziv: kMap['naziv']?.toString() ?? '',
+                    adresa: kMap['adresa']?.toString() ?? '',
+                    grad: kMap['grad']?.toString() ?? '',
+                    oib: kMap['oib']?.toString() ?? '',
+                    email: kMap['email']?.toString() ?? '',
+                    telefon: kMap['telefon']?.toString() ?? '',
+                    banka: kMap['banka']?.toString() ?? '',
+                    iban: kMap['iban']?.toString() ?? '',
+                    uSustavuPdv: kMap['uSustavuPdvA'] ?? kMap['uSustavuPdv'] ?? false,
                   );
                   widget.onKlijentChanged(odabrani);
                   setState(() {});
