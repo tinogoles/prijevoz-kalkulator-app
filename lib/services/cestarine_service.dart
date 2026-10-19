@@ -5,7 +5,6 @@ import '../data/baza_cestarina_data.dart';
 class CestarineService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  /// Pomoćna funkcija za normalizaciju naziva gradova (uklanjanje kvačica i razmaka)
   static String _normalizirajKljuc(String unos) {
     return unos
         .trim()
@@ -18,33 +17,36 @@ class CestarineService {
         .replaceAll('đ', 'd');
   }
 
-  /// 1. Funkcija za inicijalno punjenje/osvježavanje Firebase baze
-  Future<void> inicijalizirajBazuUFirebaseu() async {
+  /// 1. Globalna inicijalizacija baze cestarina (dostupno svima)
+  Future<void> inicijalizirajGlobalnuBazu() async {
+    // Spremanje u globalne kolekcije na vrhu baze Firestore-a
     for (var entry in BazaCestarinaData.gradoviMapiranje.entries) {
       await _db
-          .collection('gradovi_mapiranje')
+          .collection('globalne_cestarine_gradovi')
           .doc(entry.key)
           .set(entry.value, SetOptions(merge: true));
     }
 
     for (var dionica in BazaCestarinaData.dioniceCestarina) {
       await _db
-          .collection('cestarine_dionice')
+          .collection('globalne_cestarine_dionice')
           .doc(dionica['id'])
           .set(dionica, SetOptions(merge: true));
     }
   }
 
-  /// 2. Pomoćna funkcija za dohvat naplatne postaje za zadani grad (s hibridnim Firestore + lokalnim fallbackom)
+  /// 2. Dohvat naplatne postaje za grad iz globalne baze
   Future<Map<String, String>?> dohvatiPostajuZaGrad(String gradNaziv) async {
     if (gradNaziv.trim().isEmpty) return null;
 
     final gradKey = _normalizirajKljuc(gradNaziv);
 
-    // 1. Probaj iz Firestorea
+    // 1. Provjera u globalnoj kolekciji na Firestoreu
     try {
-      final docSnapshot =
-          await _db.collection('gradovi_mapiranje').doc(gradKey).get();
+      final docSnapshot = await _db
+          .collection('globalne_cestarine_gradovi')
+          .doc(gradKey)
+          .get();
 
       if (docSnapshot.exists && docSnapshot.data() != null) {
         final data = docSnapshot.data()!;
@@ -55,7 +57,7 @@ class CestarineService {
       }
     } catch (_) {}
 
-    // 2. Rezervni (offline/brzi) dohvat iz BazaCestarinaData
+    // 2. Lokalni rezervni (fallback) dohvat iz BazaCestarinaData
     if (BazaCestarinaData.gradoviMapiranje.containsKey(gradKey)) {
       final data = BazaCestarinaData.gradoviMapiranje[gradKey]!;
       return {
@@ -64,7 +66,6 @@ class CestarineService {
       };
     }
 
-    // Prettraga po dijelu naziva u lokalnoj mapi
     for (var entry in BazaCestarinaData.gradoviMapiranje.entries) {
       if (entry.value['grad']!.toLowerCase().contains(gradNaziv.trim().toLowerCase())) {
         return {
@@ -77,7 +78,7 @@ class CestarineService {
     return null;
   }
 
-  /// 3. Izračun cestarine za dionicu između dvije naplatne postaje
+  /// 3. Izračun cijene dionice iz globalne baze cestarina
   Future<double> dohvatiCijenuDionice({
     required String ulaz,
     required String izlaz,
@@ -85,7 +86,6 @@ class CestarineService {
   }) async {
     if (ulaz.isEmpty || izlaz.isEmpty) return 0.0;
 
-    // Normalizacija kategorije u ključ baze ('Veliki autobus 50', 'Midi bus 35', 'Mini bus <20', 'Kombi 8+1')
     String katKljuc = 'Veliki autobus 50';
     String kLower = kategorijaVozila.toLowerCase();
     if (kLower.contains('kombi') || kLower.contains('8+1')) {
@@ -98,10 +98,10 @@ class CestarineService {
       katKljuc = 'Veliki autobus 50';
     }
 
-    // 1. Pretraga kroz Firestore
+    // 1. Pretraga u globalnim dionicama na Firestoreu
     try {
       final query1 = await _db
-          .collection('cestarine_dionice')
+          .collection('globalne_cestarine_dionice')
           .where('ulaz', isEqualTo: ulaz)
           .where('izlaz', isEqualTo: izlaz)
           .limit(1)
@@ -115,7 +115,7 @@ class CestarineService {
       }
 
       final query2 = await _db
-          .collection('cestarine_dionice')
+          .collection('globalne_cestarine_dionice')
           .where('ulaz', isEqualTo: izlaz)
           .where('izlaz', isEqualTo: ulaz)
           .limit(1)
@@ -129,7 +129,7 @@ class CestarineService {
       }
     } catch (_) {}
 
-    // 2. Rezervna lokalna pretraga u BazaCestarinaData
+    // 2. Lokalni rezervni (fallback) dohvat
     for (var dionica in BazaCestarinaData.dioniceCestarina) {
       String u = dionica['ulaz'].toString().toLowerCase();
       String i = dionica['izlaz'].toString().toLowerCase();
@@ -147,7 +147,7 @@ class CestarineService {
     return 0.0;
   }
 
-  /// 4. Glavna funkcija: Pametni izračun za cijelu rutu (podržava i međustajališta)
+  /// 4. Glavna funkcija za izračun ukupne cestarine (uz podršku za međustajališta)
   Future<double> izracunajUkupnuCestarinu({
     required String polaziste,
     required String odrediste,
@@ -166,7 +166,6 @@ class CestarineService {
     final String ulaznaPostaja = postajaPolaziste['postaja'] ?? '';
     final String izlaznaPostaja = postajaOdrediste['postaja'] ?? '';
 
-    // Ako imamo međustajalište
     if (medustajaliste != null && medustajaliste.trim().isNotEmpty) {
       final postajaMedustajaliste = await dohvatiPostajuZaGrad(medustajaliste);
       final String meduPostaja = postajaMedustajaliste?['postaja'] ?? '';
@@ -188,7 +187,6 @@ class CestarineService {
       }
     }
 
-    // Izravna dionica
     ukupno = await dohvatiCijenuDionice(
       ulaz: ulaznaPostaja,
       izlaz: izlaznaPostaja,
