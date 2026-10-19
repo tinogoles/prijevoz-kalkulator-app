@@ -80,18 +80,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
 
   String? _trenutniIdUredjivanja;
 
-  final Map<String, String> _mapiranjeGradovaNaCestarinu = {
-    'split': 'dugopolje',
-    'zagreb': 'lučko',
-    'zadar': 'zadar',
-    'šibenik': 'šibenik',
-    'karlovac': 'karlovac',
-    'rijeka': 'rijeka',
-    'slavonski brod': 'slavonski brod',
-    'osijek': 'osijek',
-    'varaždin': 'varaždin',
-  };
-
   String _formatirajDatum(DateTime d) => '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}.';
 
   @override
@@ -128,7 +116,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
           if (_dostupnaVozila.isNotEmpty && _odabranoVoziloMap == null) {
             _odabranoVoziloMap = _dostupnaVozila.first;
           } else if (_odabranoVoziloMap != null) {
-            // Osiguravamo da referenca ostane sinkronizirana s novim podacima iz streama
             try {
               _odabranoVoziloMap = _dostupnaVozila.firstWhere(
                 (v) => v['id'] == _odabranoVoziloMap!['id'],
@@ -351,6 +338,18 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   @override
   Widget build(BuildContext context) {
     List<Map<String, dynamic>> listaKlijenata = _klijentiService.klijenti;
+
+    // Pronalazak ID-a aktivnog klijenta ako postoji u listi
+    String? aktivniKlijentId;
+    if (widget.aktivniKlijent != null) {
+      for (var kMap in listaKlijenata) {
+        if ((kMap['id'] ?? '') == widget.aktivniKlijent!.id ||
+            (kMap['naziv'] ?? '') == widget.aktivniKlijent!.naziv) {
+          aktivniKlijentId = kMap['id'] ?? '';
+          break;
+        }
+      }
+    }
     
     return Scaffold(
       appBar: AppBar(
@@ -363,29 +362,34 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            DropdownButtonFormField<KlijentModel>(
-              value: widget.aktivniKlijent,
+            // Izbornik Klijenta s pouzdanom identifikacijom po ID-u
+            DropdownButtonFormField<String>(
+              value: aktivniKlijentId,
+              isExpanded: true,
               decoration: const InputDecoration(labelText: 'Klijent', border: OutlineInputBorder()),
               items: listaKlijenata.map((kMap) {
-                KlijentModel kM = KlijentModel(
-                  id: kMap['id'] ?? '',
-                  naziv: kMap['naziv'] ?? '',
-                  adresa: kMap['adresa'] ?? '',
-                  grad: kMap['grad'] ?? '',
-                  oib: kMap['oib'] ?? '',
-                  email: kMap['email'] ?? '',
-                  telefon: kMap['telefon'] ?? '',
-                  banka: kMap['banka'] ?? '',
-                  iban: kMap['iban'] ?? '',
-                );
-                return DropdownMenuItem<KlijentModel>(
-                  value: kM,
-                  child: Text(kM.naziv),
+                return DropdownMenuItem<String>(
+                  value: kMap['id'] ?? '',
+                  child: Text(kMap['naziv'] ?? '', overflow: TextOverflow.ellipsis),
                 );
               }).toList(),
-              onChanged: (val) {
-                widget.onKlijentChanged(val);
-                setState(() {});
+              onChanged: (idKlijenta) {
+                if (idKlijenta != null) {
+                  var kMap = listaKlijenata.firstWhere((k) => (k['id'] ?? '') == idKlijenta);
+                  KlijentModel odabrani = KlijentModel(
+                    id: kMap['id'] ?? '',
+                    naziv: kMap['naziv'] ?? '',
+                    adresa: kMap['adresa'] ?? '',
+                    grad: kMap['grad'] ?? '',
+                    oib: kMap['oib'] ?? '',
+                    email: kMap['email'] ?? '',
+                    telefon: kMap['telefon'] ?? '',
+                    banka: kMap['banka'] ?? '',
+                    iban: kMap['iban'] ?? '',
+                  );
+                  widget.onKlijentChanged(odabrani);
+                  setState(() {});
+                }
               },
             ),
             const SizedBox(height: 12),
@@ -414,7 +418,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             TextField(controller: _nazivKalkulacijeController, decoration: const InputDecoration(labelText: 'Naziv kalkulacije', border: OutlineInputBorder())),
             const SizedBox(height: 12),
             
-            // Dinamički izbornik vozila iz voznog parka s usporedbom po ID-u
+            // Dinamički izbornik vozila iz voznog parka s identifikacijom po ID-u
             DropdownButtonFormField<String>(
               value: _odabranoVoziloMap?['id'],
               isExpanded: true,
