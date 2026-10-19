@@ -28,6 +28,46 @@ class PdfGenerator {
     }
   }
 
+  // Metoda za internu kalkulaciju koja je nedostajala
+  static Future<void> printajInternuKalkulaciju(dynamic kalkulacija, dynamic prijevoznik, {bool klijentUsetPdv = false}) async {
+    final font = await PdfGoogleFonts.robotoRegular();
+    final fontBold = await PdfGoogleFonts.robotoBold();
+
+    String pNaziv = _getVal(prijevoznik, 'naziv');
+    double ukupniIznos = double.tryParse(kalkulacija.ukupnaCijena?.toString() ?? '0') ?? kalkulacija.ukupnaCijena;
+
+    Printing.layoutPdf(onLayout: (format) async {
+      final pdf = pw.Document();
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(36),
+          build: (ctx) => pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(pNaziv.isNotEmpty ? pNaziv : 'Prijevoznik', style: pw.TextStyle(font: fontBold, fontSize: 16)),
+              pw.SizedBox(height: 10),
+              pw.Center(
+                child: pw.Text('INTERNA KALKULACIJA', style: pw.TextStyle(font: fontBold, fontSize: 14)),
+              ),
+              pw.SizedBox(height: 15),
+              pw.Text('Naziv: ${kalkulacija.nazivKalkulacije}', style: pw.TextStyle(font: fontBold, fontSize: 11)),
+              pw.Text('Ruta: ${kalkulacija.ruta}', style: pw.TextStyle(font: font, fontSize: 10)),
+              pw.Text('Relacija / Termin: ${kalkulacija.datumPolaska} - ${kalkulacija.datumPovratka}', style: pw.TextStyle(font: font, fontSize: 10)),
+              pw.Text('Vozilo: ${kalkulacija.vozilo}', style: pw.TextStyle(font: font, fontSize: 10)),
+              pw.Divider(height: 20),
+              pw.Align(
+                alignment: pw.Alignment.centerRight,
+                child: pw.Text('UKUPNA KALKULACIJA: ${ukupniIznos.toStringAsFixed(2)} EUR', style: pw.TextStyle(font: fontBold, fontSize: 12)),
+              ),
+            ],
+          ),
+        ),
+      );
+      return pdf.save();
+    });
+  }
+
   static Future<void> printajPonuduPdf(dynamic kalkulacija, dynamic prijevoznik, {bool klijentUsetPdv = false, dynamic klijentObjekt}) async {
     final font = await PdfGoogleFonts.robotoRegular();
     final fontBold = await PdfGoogleFonts.robotoBold();
@@ -189,7 +229,7 @@ class PdfGenerator {
               pw.Align(
                 alignment: pw.Alignment.centerRight,
                 child: pw.Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
                   children: [
                     if (klijentUsetPdv) ...[
                       pw.Text('Osnovica (Bez PDV-a): ${osnovica.toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 10)),
