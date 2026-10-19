@@ -30,13 +30,11 @@ class _PostavkeTabState extends State<PostavkeTab> {
 
   bool _uSustavuPdvA = true;
 
-  // Korisnik aplikacije
   final String _korisnikImePrezime = 'Tino Goleš';
   final String _korisnikEmail = 'tino.goles@gmail.com';
 
   bool _isInitializing = false;
 
-  // Popis klijenata sa svim atributima u identičnom redoslijedu kao i prijevoznik
   final List<Map<String, dynamic>> _klijenti = [
     {
       'id': '1',
@@ -425,9 +423,6 @@ class _PostavkeTabState extends State<PostavkeTab> {
               spacing: 16,
               runSpacing: 16,
               children: [
-                // -------------------------------------------------------------
-                // KARTICA 1: Podaci o tvrtki / obrtu (Prijevoznik)
-                // -------------------------------------------------------------
                 SizedBox(
                   width: cardWidth,
                   child: Card(
@@ -516,10 +511,6 @@ class _PostavkeTabState extends State<PostavkeTab> {
                     ),
                   ),
                 ),
-
-                // -------------------------------------------------------------
-                // KARTICA 2: Logistika & Baze (Klijenti & Vozni park)
-                // -------------------------------------------------------------
                 SizedBox(
                   width: cardWidth,
                   child: Card(
@@ -570,10 +561,6 @@ class _PostavkeTabState extends State<PostavkeTab> {
                     ),
                   ),
                 ),
-
-                // -------------------------------------------------------------
-                // KARTICA 3: Korisnik aplikacije
-                // -------------------------------------------------------------
                 SizedBox(
                   width: cardWidth,
                   child: Card(
@@ -650,8 +637,8 @@ class _PostavkeTabState extends State<PostavkeTab> {
               ],
             );
           },
-        );
-      },
+        ),
+      ),
     );
   }
 }
