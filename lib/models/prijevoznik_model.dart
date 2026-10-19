@@ -25,7 +25,6 @@ class PrijevoznikModel {
     this.uSustavuPdv = true,
   });
 
-  // Metoda za kreiranje kopije objekta s izmijenjenim poljima
   PrijevoznikModel copyWith({
     String? naziv,
     String? vlasnik,
@@ -52,7 +51,6 @@ class PrijevoznikModel {
     );
   }
 
-  // Pretvaranje u Map za SharedPreferences / bazu
   Map<String, dynamic> toJson() => {
         'naziv': naziv,
         'vlasnik': vlasnik,
@@ -66,7 +64,6 @@ class PrijevoznikModel {
         'uSustavuPdv': uSustavuPdv,
       };
 
-  // Učitavanje iz Map-a bez pregazivanja sa zadanim tekstovima
   factory PrijevoznikModel.fromJson(Map<String, dynamic> json) => PrijevoznikModel(
         naziv: json['naziv']?.toString() ?? '',
         vlasnik: json['vlasnik']?.toString() ?? '',
