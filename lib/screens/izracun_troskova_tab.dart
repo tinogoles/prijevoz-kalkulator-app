@@ -344,7 +344,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
 
   @override
   Widget build(BuildContext context) {
-    // Pretvorba KlijentModel iz servisa prema nazivu aktivnog klijenta
     List<Map<String, dynamic>> listaKlijenata = _klijentiService.klijenti;
     
     return Scaffold(
@@ -365,7 +364,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
                 KlijentModel kM = KlijentModel(
                   id: kMap['id'] ?? '',
                   naziv: kMap['naziv'] ?? '',
-                  odgovornaOsoba: kMap['odgovornaOsoba'] ?? '',
                   adresa: kMap['adresa'] ?? '',
                   grad: kMap['grad'] ?? '',
                   oib: kMap['oib'] ?? '',
@@ -376,9 +374,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
                   uSustavuPdvA: kMap['uSustavuPdvA'] ?? true,
                 );
                 return DropdownMenuItem<KlijentModel>(
-                  value: widget.klijenti.any((x) => x.naziv == kM.naziv) 
-                      ? widget.klijenti.firstWhere((x) => x.naziv == kM.naziv) 
-                      : kM,
+                  value: kM,
                   child: Text(kM.naziv),
                 );
               }).toList(),
