@@ -1,24 +1,32 @@
+// lib/screens/postavke_tab.dart
 import 'package:flutter/material.dart';
+import '../models/prijevoznik_model.dart';
 import 'vozni_park_screen.dart';
 
 class PostavkeTab extends StatefulWidget {
-  const PostavkeTab({Key? key}) : super(key: key);
+  final PrijevoznikModel? prijevoznik;
+  final ValueChanged<PrijevoznikModel>? onSpremiPrijevoznika;
+
+  const PostavkeTab({
+    Key? key,
+    this.prijevoznik,
+    this.onSpremiPrijevoznika,
+  }) : super(key: key);
 
   @override
   State<PostavkeTab> createState() => _PostavkeTabState();
 }
 
 class _PostavkeTabState extends State<PostavkeTab> {
-  // Podaci o tvrtki / obrtu prijevoznika (razdvojeni Adresa i Grad)
-  final _nazivTvrtkeController = TextEditingController(text: '"Klanac" obrt za prijevoz putnika');
-  final _vlasnikController = TextEditingController(text: 'Ivan Jerčić');
-  final _adresaController = TextEditingController(text: 'Težačka 25');
-  final _gradController = TextEditingController(text: '21207 Kostanje');
-  final _oibController = TextEditingController(text: '52556102683');
-  final _emailTvrtkeController = TextEditingController(text: 'prijevoz.klanac@gmail.com');
-  final _telefonController = TextEditingController(text: '+385 98 244 823');
-  final _bankaController = TextEditingController(text: 'Zagrebačka banka');
-  final _ibanController = TextEditingController(text: 'HR6023600001102016872');
+  late TextEditingController _nazivTvrtkeController;
+  late TextEditingController _vlasnikController;
+  late TextEditingController _adresaController;
+  late TextEditingController _gradController;
+  late TextEditingController _oibController;
+  late TextEditingController _emailTvrtkeController;
+  late TextEditingController _telefonController;
+  late TextEditingController _bankaController;
+  late TextEditingController _ibanController;
 
   bool _uSustavuPdvA = true;
 
@@ -57,6 +65,62 @@ class _PostavkeTabState extends State<PostavkeTab> {
       'uSustavuPdvA': false,
     },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    final p = widget.prijevoznik;
+    _nazivTvrtkeController = TextEditingController(text: p?.naziv ?? '"Klanac" obrt za prijevoz putnika');
+    _vlasnikController = TextEditingController(text: p?.vlasnik ?? 'Ivan Jerčić');
+    _adresaController = TextEditingController(text: p?.adresa ?? 'Težačka 25');
+    _gradController = TextEditingController(text: p?.grad ?? 'Podgrađe');
+    _oibController = TextEditingController(text: p?.oib ?? '52556102683');
+    _emailTvrtkeController = TextEditingController(text: p?.email ?? 'prijevoz.klanac@gmail.com');
+    _telefonController = TextEditingController(text: p?.telefon ?? '+385 98 244 823');
+    _bankaController = TextEditingController(text: p?.banka ?? 'Zagrebačka banka');
+    _ibanController = TextEditingController(text: p?.iban ?? 'HR6023600001102016872');
+    _uSustavuPdvA = p?.uSustavuPdv ?? true;
+  }
+
+  @override
+  void dispose() {
+    _nazivTvrtkeController.dispose();
+    _vlasnikController.dispose();
+    _adresaController.dispose();
+    _gradController.dispose();
+    _oibController.dispose();
+    _emailTvrtkeController.dispose();
+    _telefonController.dispose();
+    _bankaController.dispose();
+    _ibanController.dispose();
+    super.dispose();
+  }
+
+  void _spremiPodatkePrijevoznika() {
+    final azuriraniPrijevoznik = PrijevoznikModel(
+      naziv: _nazivTvrtkeController.text.trim(),
+      vlasnik: _vlasnikController.text.trim(),
+      adresa: _adresaController.text.trim(),
+      grad: _gradController.text.trim(),
+      oib: _oibController.text.trim(),
+      email: _emailTvrtkeController.text.trim(),
+      telefon: _telefonController.text.trim(),
+      banka: _bankaController.text.trim(),
+      iban: _ibanController.text.trim(),
+      uSustavuPdv: _uSustavuPdvA,
+    );
+
+    if (widget.onSpremiPrijevoznika != null) {
+      widget.onSpremiPrijevoznika!(azuriraniPrijevoznik);
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Podaci o prijevozniku uspješno spremljeni!'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
 
   void _inicijalizirajBazuCestarina() async {
     setState(() => _isInitializing = true);
@@ -442,11 +506,7 @@ class _PostavkeTabState extends State<PostavkeTab> {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Podaci o prijevozniku uspješno spremljeni!')),
-                                );
-                              },
+                              onPressed: _spremiPodatkePrijevoznika,
                               icon: const Icon(Icons.save),
                               label: const Text('Spremi podatke'),
                             ),
@@ -590,8 +650,8 @@ class _PostavkeTabState extends State<PostavkeTab> {
               ],
             );
           },
-        ),
-      ),
+        );
+      },
     );
   }
 }
