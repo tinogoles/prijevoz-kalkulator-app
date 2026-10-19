@@ -1,11 +1,41 @@
-// Popis klijenata sa svim atributima identičnim prijevozniku
+import 'package:flutter/material.dart';
+import 'vozni_park_screen.dart';
+
+class PostavkeTab extends StatefulWidget {
+  const PostavkeTab({Key? key}) : super(key: key);
+
+  @override
+  State<PostavkeTab> createState() => _PostavkeTabState();
+}
+
+class _PostavkeTabState extends State<PostavkeTab> {
+  // Podaci o tvrtki / obrtu prijevoznika (razdvojeni Adresa i Grad)
+  final _nazivTvrtkeController = TextEditingController(text: '"Klanac" obrt za prijevoz putnika');
+  final _vlasnikController = TextEditingController(text: 'Ivan Jerčić');
+  final _adresaController = TextEditingController(text: 'Težačka 25');
+  final _gradController = TextEditingController(text: '21207 Kostanje');
+  final _oibController = TextEditingController(text: '52556102683');
+  final _emailTvrtkeController = TextEditingController(text: 'prijevoz.klanac@gmail.com');
+  final _telefonController = TextEditingController(text: '+385 98 244 823');
+  final _bankaController = TextEditingController(text: 'Zagrebačka banka');
+  final _ibanController = TextEditingController(text: 'HR6023600001102016872');
+
+  bool _uSustavuPdvA = true;
+
+  // Korisnik aplikacije
+  final String _korisnikImePrezime = 'Tino Goleš';
+  final String _korisnikEmail = 'tino.goles@gmail.com';
+
+  bool _isInitializing = false;
+
+  // Popis klijenata sa svim atributima u identičnom redoslijedu kao i prijevoznik
   final List<Map<String, dynamic>> _klijenti = [
     {
       'id': '1',
       'naziv': 'Dječji vrtić Omiš',
       'odgovornaOsoba': 'Ravnateljica Ana Anić',
-      'sjediste': 'Četvrt Vrilo 23, 21250 Omiš',
-      'adresa': 'Četvrt Vrilo 23, 21250 Omiš',
+      'adresa': 'Četvrt Vrilo 23',
+      'grad': '21250 Omiš',
       'oib': '32145678910',
       'email': 'info@dv-omis.hr',
       'telefon': '+385 21 862 111',
@@ -17,8 +47,8 @@
       'id': '2',
       'naziv': 'OŠ 1. listopada 1942 Čišla',
       'odgovornaOsoba': 'Ravnatelj Marko Marković',
-      'sjediste': 'Čišla bb, 21252 Gata',
-      'adresa': 'Čišla bb, 21252 Gata',
+      'adresa': 'Čišla bb',
+      'grad': '21252 Gata',
       'oib': '12345678901',
       'email': 'os-cisla@skole.hr',
       'telefon': '+385 21 868 010',
@@ -28,18 +58,33 @@
     },
   ];
 
+  void _inicijalizirajBazuCestarina() async {
+    setState(() => _isInitializing = true);
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (mounted) {
+      setState(() => _isInitializing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Baza cestarina uspješno inicijalizirana s preko 180 lokacija!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
   void _otvoriDijalogKlijent([Map<String, dynamic>? klijent, StateSetter? setModalState]) {
     final _nazivCtrl = TextEditingController(text: klijent?['naziv'] ?? '');
     final _odgovornaOsobaCtrl = TextEditingController(text: klijent?['odgovornaOsoba'] ?? '');
-    final _sjedisteCtrl = TextEditingController(text: klijent?['sjediste'] ?? '');
     final _adresaCtrl = TextEditingController(text: klijent?['adresa'] ?? '');
+    final _gradCtrl = TextEditingController(text: klijent?['grad'] ?? '');
     final _oibCtrl = TextEditingController(text: klijent?['oib'] ?? '');
     final _emailCtrl = TextEditingController(text: klijent?['email'] ?? '');
     final _telefonCtrl = TextEditingController(text: klijent?['telefon'] ?? '');
     final _bankaCtrl = TextEditingController(text: klijent?['banka'] ?? '');
     final _ibanCtrl = TextEditingController(text: klijent?['iban'] ?? '');
 
-    bool _uSustavuPdvA = klijent?['uSustavuPdvA'] ?? true;
+    bool _uSustavuPdvAKlijent = klijent?['uSustavuPdvA'] ?? true;
 
     showDialog(
       context: context,
@@ -63,13 +108,13 @@
                     ),
                     const SizedBox(height: 8),
                     TextField(
-                      controller: _sjedisteCtrl,
-                      decoration: const InputDecoration(labelText: 'Sjedište tvrtke / agencije', isDense: true),
+                      controller: _adresaCtrl,
+                      decoration: const InputDecoration(labelText: 'Adresa', isDense: true),
                     ),
                     const SizedBox(height: 8),
                     TextField(
-                      controller: _adresaCtrl,
-                      decoration: const InputDecoration(labelText: 'Adresa za dostavu / Operativno sjedište', isDense: true),
+                      controller: _gradCtrl,
+                      decoration: const InputDecoration(labelText: 'Grad / Mjesto', isDense: true),
                     ),
                     const SizedBox(height: 8),
                     TextField(
@@ -100,8 +145,8 @@
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('U sustavu PDV-a', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                      value: _uSustavuPdvA,
-                      onChanged: (val) => setDialogState(() => _uSustavuPdvA = val),
+                      value: _uSustavuPdvAKlijent,
+                      onChanged: (val) => setDialogState(() => _uSustavuPdvAKlijent = val),
                     ),
                   ],
                 ),
@@ -119,14 +164,14 @@
                       'id': klijent?['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
                       'naziv': _nazivCtrl.text.trim(),
                       'odgovornaOsoba': _odgovornaOsobaCtrl.text.trim(),
-                      'sjediste': _sjedisteCtrl.text.trim(),
                       'adresa': _adresaCtrl.text.trim(),
+                      'grad': _gradCtrl.text.trim(),
                       'oib': _oibCtrl.text.trim(),
                       'email': _emailCtrl.text.trim(),
                       'telefon': _telefonCtrl.text.trim(),
                       'banka': _bankaCtrl.text.trim(),
                       'iban': _ibanCtrl.text.trim(),
-                      'uSustavuPdvA': _uSustavuPdvA,
+                      'uSustavuPdvA': _uSustavuPdvAKlijent,
                     };
 
                     setState(() {
@@ -223,8 +268,8 @@
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           const SizedBox(height: 2),
-                                          Text('Kontakt: ${klijent['odgovornaOsoba']}'),
-                                          Text('Sjedište: ${klijent['sjediste']} | OIB: ${klijent['oib']}'),
+                                          Text('Odgovorna osoba: ${klijent['odgovornaOsoba']}'),
+                                          Text('Adresa: ${klijent['adresa']}, ${klijent['grad']} | OIB: ${klijent['oib']}'),
                                           Text('E-mail: ${klijent['email']} | Tel: ${klijent['telefon']}'),
                                           Text('Banka: ${klijent['banka']} | IBAN: ${klijent['iban']}'),
                                           Text('PDV status: ${klijent['uSustavuPdvA'] == true ? "U sustavu PDV-a" : "Nije u sustavu PDV-a"}'),
@@ -276,3 +321,277 @@
       },
     );
   }
+
+  void _odjavaKorisnika() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Odjava'),
+        content: const Text('Jeste li sigurni da se želite odjaviti iz aplikacije?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Odustani'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Odjavi se', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Postavke Aplikacije'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            double cardWidth = constraints.maxWidth > 950
+                ? (constraints.maxWidth - 48) / 3
+                : (constraints.maxWidth > 600 ? (constraints.maxWidth - 32) / 2 : constraints.maxWidth);
+
+            return Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: [
+                // -------------------------------------------------------------
+                // KARTICA 1: Podaci o tvrtki / obrtu (Prijevoznik)
+                // -------------------------------------------------------------
+                SizedBox(
+                  width: cardWidth,
+                  child: Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: const [
+                              Icon(Icons.business, color: Colors.blue, size: 28),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Podaci o tvrtki',
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(height: 24),
+                          TextField(
+                            controller: _nazivTvrtkeController,
+                            decoration: const InputDecoration(labelText: 'Naziv tvrtke / obrta', isDense: true),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _vlasnikController,
+                            decoration: const InputDecoration(labelText: 'Vlasnik / Odgovorna osoba', isDense: true),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _adresaController,
+                            decoration: const InputDecoration(labelText: 'Adresa', isDense: true),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _gradController,
+                            decoration: const InputDecoration(labelText: 'Grad / Mjesto', isDense: true),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _oibController,
+                            decoration: const InputDecoration(labelText: 'OIB', isDense: true),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _emailTvrtkeController,
+                            decoration: const InputDecoration(labelText: 'E-mail tvrtke', isDense: true),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _telefonController,
+                            decoration: const InputDecoration(labelText: 'Telefon / Mobitel', isDense: true),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _bankaController,
+                            decoration: const InputDecoration(labelText: 'Banka', isDense: true),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _ibanController,
+                            decoration: const InputDecoration(labelText: 'IBAN za plaćanje', isDense: true),
+                          ),
+                          const SizedBox(height: 12),
+                          SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text('U sustavu PDV-a', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                            value: _uSustavuPdvA,
+                            onChanged: (val) => setState(() => _uSustavuPdvA = val),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Podaci o prijevozniku uspješno spremljeni!')),
+                                );
+                              },
+                              icon: const Icon(Icons.save),
+                              label: const Text('Spremi podatke'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // -------------------------------------------------------------
+                // KARTICA 2: Logistika & Baze (Klijenti & Vozni park)
+                // -------------------------------------------------------------
+                SizedBox(
+                  width: cardWidth,
+                  child: Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: const [
+                              Icon(Icons.directions_bus, color: Colors.orange, size: 28),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Logistika & Baze',
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(height: 24),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.people_alt, color: Colors.indigo),
+                            title: const Text('Popis klijenata / agencija'),
+                            subtitle: const Text('Upravljanje adresarom klijenata'),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: _otvoriPopisKlijenata,
+                          ),
+                          const Divider(),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.directions_bus_filled, color: Colors.green),
+                            title: const Text('Vozni park'),
+                            subtitle: const Text('Dodavanje vozila i opreme'),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const VozniParkScreen()),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // -------------------------------------------------------------
+                // KARTICA 3: Korisnik aplikacije
+                // -------------------------------------------------------------
+                SizedBox(
+                  width: cardWidth,
+                  child: Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: const [
+                              Icon(Icons.person, color: Colors.green, size: 28),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Korisnik aplikacije',
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(height: 24),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const CircleAvatar(
+                              child: Icon(Icons.person_outline),
+                            ),
+                            title: Text(
+                              _korisnikImePrezime,
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            subtitle: Text(_korisnikEmail),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Sustav cestarina:',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: _isInitializing ? null : _inicijalizirajBazuCestarina,
+                              icon: _isInitializing
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.sync),
+                              label: Text(_isInitializing ? 'Inicijalizacija...' : 'Inicijaliziraj bazu cestarina'),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          const Divider(),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red.shade700,
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: _odjavaKorisnika,
+                              icon: const Icon(Icons.logout),
+                              label: const Text('Odjavi se (Log-out)'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
