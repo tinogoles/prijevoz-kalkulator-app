@@ -361,6 +361,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               value: widget.aktivniKlijent,
               decoration: const InputDecoration(labelText: 'Klijent', border: OutlineInputBorder()),
               items: listaKlijenata.map((kMap) {
+                // Kreiramo KlijentModel koristeći konstruktor prilagođen prema postavkama
                 KlijentModel kM = KlijentModel(
                   id: kMap['id'] ?? '',
                   naziv: kMap['naziv'] ?? '',
@@ -371,7 +372,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
                   telefon: kMap['telefon'] ?? '',
                   banka: kMap['banka'] ?? '',
                   iban: kMap['iban'] ?? '',
-                  uSustavuPdvA: kMap['uSustavuPdvA'] ?? true,
                 );
                 return DropdownMenuItem<KlijentModel>(
                   value: kM,
