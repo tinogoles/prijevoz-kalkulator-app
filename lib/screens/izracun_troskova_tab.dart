@@ -8,6 +8,7 @@ import '../models/prijevoznik_model.dart';
 import '../models/klijent_model.dart';
 import '../models/kalkulacija_model.dart';
 import '../data/baza_cestarina_data.dart';
+import '../services/cestarine_service.dart';
 import '../widgets/unos_rute_widget.dart';
 import '../widgets/nocenje_sekcija_widget.dart';
 import '../widgets/autocesta_sekcija_widget.dart';
@@ -35,8 +36,8 @@ class IzracunTroskovaTab extends StatefulWidget {
 
 class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   bool _isLoadingRoute = false;
-  final List<Map<String, dynamic>> _bazaRelacijaCestarina = BazaCestarinaData.dioniceCestarina;
   final KlijentiService _klijentiService = KlijentiService();
+  final CestarineService _cestarineService = CestarineService();
 
   List<Map<String, dynamic>> _dostupnaVozila = [];
   Map<String, dynamic>? _odabranoVoziloMap;
@@ -55,7 +56,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   double _bazaKmJednosmjerno = 390.0;
   bool _povratnoPutovanje = true;
   final TextEditingController _kmController = TextEditingController(text: '780');
-  final TextEditingController _cestarinaController = TextEditingController(text: '167.40');
+  final TextEditingController _cestarinaController = TextEditingController(text: '0.00');
   
   bool _koristiAutocestu = true;
   String _odabranaAutocesta = 'HAC (Hrvatske autoceste)';
@@ -142,17 +143,20 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             return data;
           }).toList();
 
-          if (_dostupnaVozila.isNotEmpty && _odabranoVoziloMap == null) {
-            _odabranoVoziloMap = _dostupnaVozila.first;
-          } else if (_odabranoVoziloMap != null) {
-            try {
-              _odabranoVoziloMap = _dostupnaVozila.firstWhere(
-                (v) => v['id'] == _odabranoVoziloMap!['id'],
-                orElse: () => _dostupnaVozila.first,
-              );
-            } catch (_) {
-              _odabranoVoziloMap = _dostupnaVozila.first;
+          // Ako uređujemo kalkulaciju, pokušavamo pronaći točno vozilo iz liste
+          if (widget.kalkulacijaZaUredivanje != null && widget.kalkulacijaZaUredivanje!.vozilo.isNotEmpty) {
+            final sklVozilo = widget.kalkulacijaZaUredivanje!.vozilo.toLowerCase();
+            _odabranoVoziloMap = _dostupnaVozila.firstWhere(
+              (v) => sklVozilo.contains(v['naziv'].toString().toLowerCase()),
+              orElse: () => _dostupnaVozila.isNotEmpty ? _dostupnaVozila.first : {},
+            );
+            if (_odabranoVoziloMap != null && _odabranoVoziloMap!.isEmpty) {
+              _odabranoVoziloMap = null;
             }
+          }
+
+          if (_odabranoVoziloMap == null && _dostupnaVozila.isNotEmpty) {
+            _odabranoVoziloMap = _dostupnaVozila.first;
           }
         });
       }
@@ -191,8 +195,8 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
         }
       }
       _kmController.text = kmVal;
+      _cestarinaController.text = k.cestarina.isNotEmpty ? k.cestarina : '0.00';
 
-      _cestarinaController.text = (k.cestarina.isNotEmpty && k.cestarina != '0') ? k.cestarina : '167.40';
       _povratnoPutovanje = k.povratno;
       _koristiAutocestu = k.koristiAutocestu;
       _odabranaAutocesta = k.odabranaAutocesta.isNotEmpty ? k.odabranaAutocesta : _opcijeAutocesta.first;
@@ -201,6 +205,15 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       _marzaController.text = k.marza.isNotEmpty ? k.marza : '20';
       _cijenaGorivaController.text = k.cijenaGoriva.isNotEmpty ? k.cijenaGoriva : '1.96';
       _dnevnicaController.text = k.dnevnica.isNotEmpty ? k.dnevnica : '100';
+
+      // Usklađivanje vozila s listom
+      if (_dostupnaVozila.isNotEmpty && k.vozilo.isNotEmpty) {
+        final sklVozilo = k.vozilo.toLowerCase();
+        _odabranoVoziloMap = _dostupnaVozila.firstWhere(
+          (v) => sklVozilo.contains(v['naziv'].toString().toLowerCase()),
+          orElse: () => _dostupnaVozila.first,
+        );
+      }
     });
     _preracunajBrojDana();
   }
@@ -293,12 +306,30 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
         }
       }
       double kmJedan = ukupnoMetara / 1000.0;
+
+      // Dinamički izračun cestarine prema našoj bazi i odabranom vozilu
+      double izracunataCestarina = 0.0;
+      if (_koristiAutocestu) {
+        String nazivVozilaKat = _odabranoVoziloMap?['naziv'] ?? 'Veliki autobus 50';
+        izracunataCestarina = await _cestarineService.izracunajUkupnuCestarinu(
+          polaziste: _polazisteController.text,
+          odrediste: _konacnoOdredisteController.text,
+          medustajaliste: _odrediste1Controller.text.isNotEmpty ? _odrediste1Controller.text : null,
+          kategorijaVozila: nazivVozilaKat,
+        );
+      }
+
       setState(() {
         _bazaKmJednosmjerno = kmJedan;
         _kmController.text = (_bazaKmJednosmjerno * (_povratnoPutovanje ? 2.0 : 1.0)).toStringAsFixed(0);
+        
+        double cestarinaUkupno = izracunataCestarina * (_povratnoPutovanje ? 2.0 : 1.0);
+        if (cestarinaUkupno > 0) {
+          _cestarinaController.text = cestarinaUkupno.toStringAsFixed(2);
+        }
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Izračunato: ${kmJedan.toStringAsFixed(1)} km'), backgroundColor: Colors.green));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Izračunato: ${kmJedan.toStringAsFixed(1)} km, Cestarina: ${_cestarinaController.text} €'), backgroundColor: Colors.green));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red));
     } finally {
@@ -368,7 +399,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   Widget build(BuildContext context) {
     List<Map<String, dynamic>> listaKlijenata = _klijentiService.klijenti;
 
-    // Pronalazak ID-a ili naziva aktivnog klijenta ako postoji u listi s Clouda
     String? aktivniKlijentId;
     if (widget.aktivniKlijent != null) {
       for (var kMap in listaKlijenata) {
@@ -391,7 +421,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Izbornik Klijenta s dinamičkim podacima s Clouda
             DropdownButtonFormField<String>(
               value: aktivniKlijentId,
               isExpanded: true,
@@ -448,7 +477,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             TextField(controller: _nazivKalkulacijeController, decoration: const InputDecoration(labelText: 'Naziv kalkulacije', border: OutlineInputBorder())),
             const SizedBox(height: 12),
             
-            // Dinamički izbornik vozila iz voznog parka s identifikacijom po ID-u
             DropdownButtonFormField<String>(
               value: _odabranoVoziloMap?['id'],
               isExpanded: true,
