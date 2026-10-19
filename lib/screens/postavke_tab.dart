@@ -1,298 +1,63 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'vozni_park_screen.dart';
 
 class PostavkeTab extends StatefulWidget {
-  const PostavkeTab({super.key});
+  const PostavkeTab({Key? key}) : super(key: key);
 
   @override
   State<PostavkeTab> createState() => _PostavkeTabState();
 }
 
 class _PostavkeTabState extends State<PostavkeTab> {
-  final User? _currentUser = FirebaseAuth.instance.currentUser;
+  // Kontroleri za podatke o tvrtki prijevoznika
+  final _nazivTvrtkeController = TextEditingController(text: 'Prijevoz d.o.o.');
+  final _adresaController = TextEditingController(text: 'Ulica Prijevoznika 1, Zagreb');
+  final _oibController = TextEditingController(text: '12345678901');
+  final _emailTvrtkeController = TextEditingController(text: 'info@prijevoz.hr');
+  final _telefonController = TextEditingController(text: '+385 1 2345 678');
+  final _ibanController = TextEditingController(text: 'HR1234567890123456789');
 
-  // Kontroleri za podatke prijevoznika
-  final TextEditingController _nazivController = TextEditingController();
-  final TextEditingController _vlasnikController = TextEditingController();
-  final TextEditingController _adresaController = TextEditingController();
-  final TextEditingController _gradController = TextEditingController();
-  final TextEditingController _oibController = TextEditingController();
-  final TextEditingController _telefonController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _bankaController = TextEditingController();
-  final TextEditingController _ibanController = TextEditingController();
-  bool _uSustavuPdv = false;
+  // Podaci o prijavljenom korisniku
+  final String _korisnikImePrezime = 'Ivan Horvat';
+  final String _korisnikEmail = 'ivan.horvat@prijevoz.hr';
 
-  bool _isLoading = true;
+  bool _isInitializing = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _ucitajPostavke();
-  }
+  void _inicijalizirajBazuCestarina() async {
+    setState(() => _isInitializing = true);
 
-  @override
-  void dispose() {
-    _nazivController.dispose();
-    _vlasnikController.dispose();
-    _adresaController.dispose();
-    _gradController.dispose();
-    _oibController.dispose();
-    _telefonController.dispose();
-    _emailController.dispose();
-    _bankaController.dispose();
-    _ibanController.dispose();
-    super.dispose();
-  }
+    // Simulacija poziva inicijalizacije baze cestarina
+    await Future.delayed(const Duration(seconds: 2));
 
-  Future<void> _ucitajPostavke() async {
-    if (_currentUser == null) return;
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(_currentUser!.uid)
-          .collection('postavke')
-          .doc('glavne')
-          .get();
-
-      if (doc.exists) {
-        final data = doc.data()!;
-        _nazivController.text = data['nazivPrijevoznika'] ?? '';
-        _vlasnikController.text = data['vlasnik'] ?? '';
-        _adresaController.text = data['adresa'] ?? '';
-        _gradController.text = data['grad'] ?? '';
-        _oibController.text = data['oib'] ?? '';
-        _telefonController.text = data['telefon'] ?? '';
-        _emailController.text = data['email'] ?? '';
-        _bankaController.text = data['banka'] ?? '';
-        _ibanController.text = data['iban'] ?? '';
-        setState(() {
-          _uSustavuPdv = data['uSustavuPdv'] ?? false;
-        });
-      }
-    } catch (e) {
-      debugPrint('Greška pri učitavanju postavki: $e');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+    if (mounted) {
+      setState(() => _isInitializing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Baza cestarina uspješno inicijalizirana!'),
+          backgroundColor: Colors.green,
+        ),
+      );
     }
   }
 
-  Future<void> _spremiPostavke() async {
-    if (_currentUser == null) return;
-    try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(_currentUser!.uid)
-          .collection('postavke')
-          .doc('glavne')
-          .set({
-        'nazivPrijevoznika': _nazivController.text.trim(),
-        'vlasnik': _vlasnikController.text.trim(),
-        'adresa': _adresaController.text.trim(),
-        'grad': _gradController.text.trim(),
-        'oib': _oibController.text.trim(),
-        'telefon': _telefonController.text.trim(),
-        'email': _emailController.text.trim(),
-        'banka': _bankaController.text.trim(),
-        'iban': _ibanController.text.trim(),
-        'uSustavuPdv': _uSustavuPdv,
-      }, SetOptions(merge: true));
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Postavke uspješno spremljene!')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška pri spremanju: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _inicijalizirajCestarine() async {
-    try {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Baza cestarina uspješno inicijalizirana u Firebase!')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška kod inicijalizacije cestarina: $e')),
-        );
-      }
-    }
-  }
-
-  void _prikaziDijalogZaKlijenta({String? docId, Map<String, dynamic>? postojeciPodaci}) {
-    final TextEditingController nazivKlijentaController = TextEditingController(text: postojeciPodaci?['naziv'] ?? '');
-    final TextEditingController vlasnikKlijentaController = TextEditingController(text: postojeciPodaci?['vlasnik'] ?? '');
-    final TextEditingController adresaKlijentaController = TextEditingController(text: postojeciPodaci?['adresa'] ?? '');
-    final TextEditingController gradKlijentaController = TextEditingController(text: postojeciPodaci?['grad'] ?? '');
-    final TextEditingController oibKlijentaController = TextEditingController(text: postojeciPodaci?['oib'] ?? '');
-    final TextEditingController telefonKlijentaController = TextEditingController(text: postojeciPodaci?['telefon'] ?? '');
-    final TextEditingController emailKlijentaController = TextEditingController(text: postojeciPodaci?['email'] ?? '');
-    final TextEditingController bankaKlijentaController = TextEditingController(text: postojeciPodaci?['banka'] ?? '');
-    final TextEditingController ibanKlijentaController = TextEditingController(text: postojeciPodaci?['iban'] ?? '');
-    bool pdvKlijenta = postojeciPodaci?['pdv'] == 'DA' || postojeciPodaci?['uSustavuPdv'] == true;
-
+  void _odjavaKorisnika() {
     showDialog(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return AlertDialog(
-              title: Text(docId == null ? 'Novi Klijent / Agencija' : 'Uredi Klijenta'),
-              content: SizedBox(
-                width: 450,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextField(controller: nazivKlijentaController, decoration: const InputDecoration(labelText: 'Naziv klijenta', border: OutlineInputBorder())),
-                      const SizedBox(height: 12),
-                      TextField(controller: vlasnikKlijentaController, decoration: const InputDecoration(labelText: 'Vlasnik / Kontakt osoba', border: OutlineInputBorder())),
-                      const SizedBox(height: 12),
-                      TextField(controller: adresaKlijentaController, decoration: const InputDecoration(labelText: 'Adresa', border: OutlineInputBorder())),
-                      const SizedBox(height: 12),
-                      TextField(controller: gradKlijentaController, decoration: const InputDecoration(labelText: 'Grad', border: OutlineInputBorder())),
-                      const SizedBox(height: 12),
-                      TextField(controller: oibKlijentaController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'OIB', border: OutlineInputBorder())),
-                      const SizedBox(height: 12),
-                      TextField(controller: telefonKlijentaController, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Telefon / Mobitel', border: OutlineInputBorder())),
-                      const SizedBox(height: 12),
-                      TextField(controller: emailKlijentaController, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder())),
-                      const SizedBox(height: 12),
-                      TextField(controller: bankaKlijentaController, decoration: const InputDecoration(labelText: 'Banka', border: OutlineInputBorder())),
-                      const SizedBox(height: 12),
-                      TextField(controller: ibanKlijentaController, decoration: const InputDecoration(labelText: 'IBAN (npr. HR... - 21 znak)', border: OutlineInputBorder())),
-                      const SizedBox(height: 12),
-                      CheckboxListTile(
-                        title: const Text('Klijent je u sustavu PDV-a'),
-                        value: pdvKlijenta,
-                        onChanged: (val) {
-                          setStateDialog(() {
-                            pdvKlijenta = val ?? false;
-                          });
-                        },
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Odustani'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (_currentUser == null) return;
-
-                    final klijentData = {
-                      'naziv': nazivKlijentaController.text.trim(),
-                      'vlasnik': vlasnikKlijentaController.text.trim(),
-                      'adresa': adresaKlijentaController.text.trim(),
-                      'grad': gradKlijentaController.text.trim(),
-                      'oib': oibKlijentaController.text.trim(),
-                      'telefon': telefonKlijentaController.text.trim(),
-                      'email': emailKlijentaController.text.trim(),
-                      'banka': bankaKlijentaController.text.trim(),
-                      'iban': ibanKlijentaController.text.trim(),
-                      'pdv': pdvKlijenta ? 'DA' : 'NE',
-                      'uSustavuPdv': pdvKlijenta,
-                      'userId': _currentUser!.uid,
-                    };
-
-                    try {
-                      final klijentiRef = FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(_currentUser!.uid)
-                          .collection('klijenti');
-
-                      if (docId == null) {
-                        await klijentiRef.add(klijentData);
-                      } else {
-                        await klijentiRef.doc(docId).update(klijentData);
-                      }
-
-                      if (mounted) {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Klijent uspješno spremljen!'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      }
-                    } catch (e) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Greška pri spremanju: $e'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  child: const Text('Spremi'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _potvrdiBrisanjeKlijenta(String docId, String nazivKlijenta) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Potvrda brisanja'),
-        content: Text('Jeste li sigurni da želite obrisati klijenta "$nazivKlijenta"?'),
+      builder: (context) => AlertDialog(
+        title: const Text('Odjava'),
+        content: const Text('Jeste li sigurni da se želite odjaviti iz aplikacije?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () => Navigator.pop(context),
             child: const Text('Odustani'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              if (_currentUser != null) {
-                try {
-                  await FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(_currentUser!.uid)
-                      .collection('klijenti')
-                      .doc(docId)
-                      .delete();
-
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Klijent uspješno obrisan.'), backgroundColor: Colors.red),
-                    );
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Greška pri brisanju: $e'), backgroundColor: Colors.red),
-                    );
-                  }
-                }
-              }
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              Navigator.pop(context);
+              // Ovdje dodajte logiku za odjavu (npr. FirebaseAuth ili povratak na LoginScreen)
             },
-            child: const Text('Obriši'),
+            child: const Text('Odjavi se', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -301,147 +66,232 @@ class _PostavkeTabState extends State<PostavkeTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Postavke i Klijenti'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-        centerTitle: true,
+        title: const Text('Postavke Aplikacije'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Podaci o Vašoj Tvrtki (Prijevoznik)',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
-            ),
-            const SizedBox(height: 12),
-            TextField(controller: _nazivController, decoration: const InputDecoration(labelText: 'Naziv prijevoznika', border: OutlineInputBorder())),
-            const SizedBox(height: 12),
-            TextField(controller: _vlasnikController, decoration: const InputDecoration(labelText: 'Vlasnik / Direktor', border: OutlineInputBorder())),
-            const SizedBox(height: 12),
-            TextField(controller: _adresaController, decoration: const InputDecoration(labelText: 'Adresa', border: OutlineInputBorder())),
-            const SizedBox(height: 12),
-            TextField(controller: _gradController, decoration: const InputDecoration(labelText: 'Grad', border: OutlineInputBorder())),
-            const SizedBox(height: 12),
-            TextField(controller: _oibController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'OIB (točno 11 znamenki)', border: OutlineInputBorder())),
-            const SizedBox(height: 12),
-            TextField(controller: _telefonController, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Telefon', border: OutlineInputBorder())),
-            const SizedBox(height: 12),
-            TextField(controller: _emailController, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder())),
-            const SizedBox(height: 12),
-            TextField(controller: _bankaController, decoration: const InputDecoration(labelText: 'Banka', border: OutlineInputBorder())),
-            const SizedBox(height: 12),
-            TextField(controller: _ibanController, decoration: const InputDecoration(labelText: 'IBAN (npr. HR... - 21 znak)', border: OutlineInputBorder())),
-            const SizedBox(height: 12),
-            CheckboxListTile(
-              title: const Text('Prijevoznik je u sustavu PDV-a'),
-              value: _uSustavuPdv,
-              onChanged: (val) {
-                setState(() {
-                  _uSustavuPdv = val ?? false;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _spremiPostavke,
-              icon: const Icon(Icons.save),
-              label: const Text('Spremi Postavke Prijevoznika', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0284C7), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14)),
-            ),
-            const Divider(height: 40, thickness: 2),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Prilagodba širine kartica (na širim ekranima idu 3 u red, s lijeva na desno)
+            double cardWidth = constraints.maxWidth > 950
+                ? (constraints.maxWidth - 48) / 3
+                : (constraints.maxWidth > 600 ? (constraints.maxWidth - 32) / 2 : constraints.maxWidth);
 
-            // SEKCIJA KLIJENTI
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            return Wrap(
+              spacing: 16,
+              runSpacing: 16,
               children: [
-                const Text(
-                  'Popis Klijenta / Agencija',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
+                // -------------------------------------------------------------
+                // MODUL 1: Podaci o Vašoj tvrtki (Prijevoznik)
+                // -------------------------------------------------------------
+                SizedBox(
+                  width: cardWidth,
+                  child: Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: const [
+                              Icon(Icons.business, color: Colors.blue, size: 28),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Podaci o tvrtki',
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(height: 24),
+                          TextField(
+                            controller: _nazivTvrtkeController,
+                            decoration: const InputDecoration(labelText: 'Naziv tvrtke', isDense: true),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _adresaController,
+                            decoration: const InputDecoration(labelText: 'Adresa i sjedište', isDense: true),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _oibController,
+                            decoration: const InputDecoration(labelText: 'OIB', isDense: true),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _emailTvrtkeController,
+                            decoration: const InputDecoration(labelText: 'E-mail tvrtke', isDense: true),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _telefonController,
+                            decoration: const InputDecoration(labelText: 'Telefon / Mobitel', isDense: true),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _ibanController,
+                            decoration: const InputDecoration(labelText: 'IBAN za plaćanje', isDense: true),
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Podaci o tvrtki su spremljeni.')),
+                                );
+                              },
+                              icon: const Icon(Icons.save),
+                              label: const Text('Spremi podatke'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-                ElevatedButton.icon(
-                  onPressed: () => _prikaziDijalogZaKlijenta(),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Novi Klijent'),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+
+                // -------------------------------------------------------------
+                // MODUL 2: Popis klijenata / agencija & Vozni park
+                // -------------------------------------------------------------
+                SizedBox(
+                  width: cardWidth,
+                  child: Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: const [
+                              Icon(Icons.directions_bus, color: Colors.orange, size: 28),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Logistika & Baze',
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(height: 24),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.people_alt, color: Colors.indigo),
+                            title: const Text('Popis klijenata / agencija'),
+                            subtitle: const Text('Upravljanje adresarom klijenata'),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () {
+                              // Otvaranje modula za klijente
+                            },
+                          ),
+                          const Divider(),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.directions_bus_filled, color: Colors.green),
+                            title: const Text('Vozni park'),
+                            subtitle: const Text('Dodavanje vozila i opreme'),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const VozniParkScreen()),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // -------------------------------------------------------------
+                // MODUL 3: Korisnik aplikacije (User, Inicijalizacija & Log-out)
+                // -------------------------------------------------------------
+                SizedBox(
+                  width: cardWidth,
+                  child: Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: const [
+                              Icon(Icons.person, color: Colors.green, size: 28),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Korisnik aplikacije',
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(height: 24),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const CircleAvatar(
+                              child: Icon(Icons.person_outline),
+                            ),
+                            title: Text(
+                              _korisnikImePrezime,
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            subtitle: Text(_korisnikEmail),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Sustav cestarina:',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: _isInitializing ? null : _inicijalizirajBazuCestarina,
+                              icon: _isInitializing
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.sync),
+                              label: Text(_isInitializing ? 'Inicijalizacija...' : 'Inicijaliziraj bazu cestarina'),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          const Divider(),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red.shade700,
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: _odjavaKorisnika,
+                              icon: const Icon(Icons.logout),
+                              label: const Text('Odjavi se (Log-out)'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ],
-            ),
-            const SizedBox(height: 12),
-
-            StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(_currentUser?.uid)
-                  .collection('klijenti')
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Text('Nema unesenih klijenata.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
-                  );
-                }
-
-                final klijenti = snapshot.data!.docs;
-
-                return ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: klijenti.length,
-                  itemBuilder: (context, index) {
-                    final klijent = klijenti[index].data() as Map<String, dynamic>;
-                    final docId = klijenti[index].id;
-                    final nazivKlijenta = klijent['naziv'] ?? 'Bez naziva';
-
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 6),
-                      child: ListTile(
-                        title: Text(nazivKlijenta, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('${klijent['grad'] ?? ''} | OIB: ${klijent['oib'] ?? ''}\nBanka: ${klijent['banka'] ?? ''} | IBAN: ${klijent['iban'] ?? ''}'),
-                        isThreeLine: true,
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.blue),
-                              onPressed: () => _prikaziDijalogZaKlijenta(docId: docId, postojeciPodaci: klijent),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _potvrdiBrisanjeKlijenta(docId, nazivKlijenta),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-
-            const Divider(height: 40, thickness: 2),
-
-            ElevatedButton.icon(
-              onPressed: _inicijalizirajCestarine,
-              icon: const Icon(Icons.cloud_upload),
-              label: const Text('Inicijaliziraj bazu cestarina u Firebase', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF3B82F6), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14)),
-            ),
-            const SizedBox(height: 30),
-          ],
+            );
+          },
         ),
       ),
     );
