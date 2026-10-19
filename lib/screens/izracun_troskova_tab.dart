@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/prijevoznik_model.dart';
 import '../models/klijent_model.dart';
 import '../models/kalkulacija_model.dart';
@@ -34,6 +36,11 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   bool _isLoadingRoute = false;
   final List<Map<String, dynamic>> _bazaRelacijaCestarina = BazaCestarinaData.dioniceCestarina;
   final KlijentiService _klijentiService = KlijentiService();
+
+  List<Map<String, dynamic>> _dostupnaVozila = [];
+  Map<String, dynamic>? _odabranoVoziloMap;
+
+  String get _userId => FirebaseAuth.instance.currentUser?.uid ?? '';
   
   final TextEditingController _nazivKalkulacijeController = TextEditingController(text: 'Izlet - Ruta');
   final TextEditingController _polazisteController = TextEditingController(text: 'Split');
@@ -71,13 +78,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   final TextEditingController _cijenaNocenjaController = TextEditingController(text: '60');
   final TextEditingController _marzaController = TextEditingController(text: '20');
 
-  final Map<String, double> _potrosnjaVozila = {
-    'Kombi 8+1': 9.0,
-    'Mini bus <20': 15.0,
-    'Midi bus 35': 30.0,
-    'Veliki autobus 50': 35.0,
-  };
-  late String _odabranoVozilo;
   String? _trenutniIdUredjivanja;
 
   final Map<String, String> _mapiranjeGradovaNaCestarinu = {
@@ -97,7 +97,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   @override
   void initState() {
     super.initState();
-    _odabranoVozilo = _potrosnjaVozila.keys.last;
+    _dohvatiVozilaIzBaze();
     String danas = _formatirajDatum(DateTime.now());
     _datumPolaskaController = TextEditingController(text: danas);
     _datumPovratkaController = TextEditingController(text: danas);
@@ -107,6 +107,30 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     } else {
       _preracunajBrojDana();
     }
+  }
+
+  void _dohvatiVozilaIzBaze() {
+    if (_userId.isEmpty) return;
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(_userId)
+        .collection('vozni_park')
+        .snapshots()
+        .listen((snapshot) {
+      if (mounted) {
+        setState(() {
+          _dostupnaVozila = snapshot.docs.map((d) {
+            var data = d.data();
+            data['id'] = d.id;
+            return data;
+          }).toList();
+
+          if (_dostupnaVozila.isNotEmpty && _odabranoVoziloMap == null) {
+            _odabranoVoziloMap = _dostupnaVozila.first;
+          }
+        });
+      }
+    });
   }
 
   @override
@@ -151,10 +175,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       _marzaController.text = k.marza.isNotEmpty ? k.marza : '20';
       _cijenaGorivaController.text = k.cijenaGoriva.isNotEmpty ? k.cijenaGoriva : '1.96';
       _dnevnicaController.text = k.dnevnica.isNotEmpty ? k.dnevnica : '100';
-      
-      if (_potrosnjaVozila.containsKey(k.vozilo)) {
-        _odabranoVozilo = k.vozilo;
-      }
     });
     _preracunajBrojDana();
   }
@@ -212,36 +232,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     } catch (_) {}
   }
 
-  void _automatskiDetektirajCestarinuPoGradovima(String polaziste, String odrediste) {
-    String p = polaziste.trim().toLowerCase();
-    String o = odrediste.trim().toLowerCase();
-
-    String? cestarinaUlaz = _mapiranjeGradovaNaCestarinu[p];
-    String? cestarinaIzlaz = _mapiranjeGradovaNaCestarinu[o];
-
-    if (cestarinaUlaz != null && cestarinaIzlaz != null) {
-      for (var relacija in _bazaRelacijaCestarina) {
-        String ulazBaza = (relacija['ulaz'] ?? '').toString().toLowerCase();
-        String izlazBaza = (relacija['izlaz'] ?? '').toString().toLowerCase();
-
-        bool poklapanje = (ulazBaza.contains(cestarinaUlaz) && izlazBaza.contains(cestarinaIzlaz)) ||
-                          (ulazBaza.contains(cestarinaIzlaz) && izlazBaza.contains(cestarinaUlaz));
-
-        if (poklapanje) {
-          setState(() {
-            _koristiAutocestu = true;
-            Map<String, dynamic> cestarineMap = relacija['cijene'] ?? {};
-            if (cestarineMap.containsKey(_odabranoVozilo)) {
-              double jednosmjerna = cestarineMap[_odabranoVozilo];
-              _cestarinaController.text = (jednosmjerna * (_povratnoPutovanje ? 2.0 : 1.0)).toStringAsFixed(2);
-            }
-          });
-          break;
-        }
-      }
-    }
-  }
-
   Future<void> _izracunajRutuMultiPoint() async {
     List<String> tocke = [];
     if (_polazisteController.text.trim().isNotEmpty) tocke.add(_polazisteController.text.trim());
@@ -281,8 +271,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
         _bazaKmJednosmjerno = kmJedan;
         _kmController.text = (_bazaKmJednosmjerno * (_povratnoPutovanje ? 2.0 : 1.0)).toStringAsFixed(0);
       });
-      
-      _automatskiDetektirajCestarinuPoGradovima(_polazisteController.text, _konacnoOdredisteController.text);
 
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Izračunato: ${kmJedan.toStringAsFixed(1)} km'), backgroundColor: Colors.green));
     } catch (e) {
@@ -301,7 +289,12 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     double nocenjeBruto = double.tryParse(_cijenaNocenjaController.text) ?? 60;
     double marza = double.tryParse(_marzaController.text) ?? 20;
 
-    double potrosnja = _potrosnjaVozila[_odabranoVozilo] ?? 35.0;
+    // Dohvaćamo potrošnju odabranog vozila iz baze
+    double potrosnja = 35.0;
+    if (_odabranoVoziloMap != null && _odabranoVoziloMap!['potrosnja'] != null) {
+      potrosnja = double.tryParse(_odabranoVoziloMap!['potrosnja'].toString()) ?? 35.0;
+    }
+
     int brojNocenja = (_izracunatiBrojDana > 1) ? (_izracunatiBrojDana - 1) : 0;
 
     double gorivoNeto = ((km / 100) * potrosnja * gorivoBruto) / 1.25;
@@ -314,13 +307,17 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     double osnovicaSMarzom = cistiTrosak + zarada;
     double ukupnaCijena = osnovicaSMarzom * 1.25;
 
+    String nazivVozilaPrikaz = _odabranoVoziloMap != null 
+        ? '${_odabranoVoziloMap!['naziv']} (${_odabranoVoziloMap!['kapacitet']})' 
+        : 'Vozilo';
+
     KalkulacijaModel kalk = KalkulacijaModel(
       id: _trenutniIdUredjivanja ?? DateTime.now().millisecondsSinceEpoch.toString(),
       nazivKalkulacije: _nazivKalkulacijeController.text,
       klijentNaziv: widget.aktivniKlijent?.naziv ?? 'Klijent',
       datumPolaska: _datumPolaskaController.text,
       datumPovratka: _datumPovratkaController.text,
-      vozilo: _odabranoVozilo,
+      vozilo: nazivVozilaPrikaz,
       ruta: '${_polazisteController.text} -> ${_konacnoOdredisteController.text} (${_kmController.text} km)',
       ukupnaCijena: ukupnaCijena,
       polaziste: _polazisteController.text,
@@ -361,7 +358,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               value: widget.aktivniKlijent,
               decoration: const InputDecoration(labelText: 'Klijent', border: OutlineInputBorder()),
               items: listaKlijenata.map((kMap) {
-                // Kreiramo KlijentModel koristeći konstruktor prilagođen prema postavkama
                 KlijentModel kM = KlijentModel(
                   id: kMap['id'] ?? '',
                   naziv: kMap['naziv'] ?? '',
@@ -408,12 +404,26 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             const SizedBox(height: 12),
             TextField(controller: _nazivKalkulacijeController, decoration: const InputDecoration(labelText: 'Naziv kalkulacije', border: OutlineInputBorder())),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: _odabranoVozilo,
-              decoration: const InputDecoration(labelText: 'Vozilo', border: OutlineInputBorder()),
-              items: _potrosnjaVozila.keys.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-              onChanged: (val) => setState(() => _odabranoVozilo = val!),
+            
+            // Dinamički izbornik vozila iz voznog parka
+            DropdownButtonFormField<Map<String, dynamic>>(
+              value: _dostupnaVozila.contains(_odabranoVoziloMap) ? _odabranoVoziloMap : null,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Vozilo iz voznog parka', border: OutlineInputBorder()),
+              items: _dostupnaVozila.map((vozilo) {
+                String nazivPrikaz = '${vozilo['naziv']} (${vozilo['kapacitet']} sjedala) - ${vozilo['potrosnja']} L/100km';
+                return DropdownMenuItem<Map<String, dynamic>>(
+                  value: vozilo,
+                  child: Text(nazivPrikaz, overflow: TextOverflow.ellipsis),
+                );
+              }).toList(),
+              onChanged: (val) {
+                setState(() {
+                  _odabranoVoziloMap = val;
+                });
+              },
             ),
+
             const SizedBox(height: 12),
             Row(children: [
               Expanded(child: TextField(controller: _cijenaGorivaController, decoration: const InputDecoration(labelText: 'Gorivo (€/L)', border: OutlineInputBorder()))),
