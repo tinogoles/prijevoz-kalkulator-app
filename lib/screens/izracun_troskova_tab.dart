@@ -1,5 +1,3 @@
-// lib/screens/izracun_troskova_tab.dart
-import '../services/klijenti_service.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -10,10 +8,10 @@ import '../data/baza_cestarina_data.dart';
 import '../widgets/unos_rute_widget.dart';
 import '../widgets/nocenje_sekcija_widget.dart';
 import '../widgets/autocesta_sekcija_widget.dart';
+import '../services/klijenti_service.dart';
 
 class IzracunTroskovaTab extends StatefulWidget {
   final PrijevoznikModel prijevoznik;
-  final List<KlijentModel> klijenti;
   final KlijentModel? aktivniKlijent;
   final KalkulacijaModel? kalkulacijaZaUredivanje;
   final ValueChanged<KlijentModel?> onKlijentChanged;
@@ -22,7 +20,6 @@ class IzracunTroskovaTab extends StatefulWidget {
   const IzracunTroskovaTab({
     super.key,
     required this.prijevoznik,
-    required this.klijenti,
     required this.aktivniKlijent,
     required this.kalkulacijaZaUredivanje,
     required this.onKlijentChanged,
@@ -36,6 +33,7 @@ class IzracunTroskovaTab extends StatefulWidget {
 class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   bool _isLoadingRoute = false;
   final List<Map<String, dynamic>> _bazaRelacijaCestarina = BazaCestarinaData.dioniceCestarina;
+  final KlijentiService _klijentiService = KlijentiService();
   
   final TextEditingController _nazivKalkulacijeController = TextEditingController(text: 'Izlet - Ruta');
   final TextEditingController _polazisteController = TextEditingController(text: 'Split');
@@ -132,7 +130,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       _datumPolaskaController.text = k.datumPolaska;
       _datumPovratkaController.text = k.datumPovratka;
 
-      // Pametno čitanje KM
       String kmVal = k.km;
       if (kmVal == '0' || kmVal.isEmpty) {
         RegExp reg = RegExp(r'\((\d+)\s*km\)');
@@ -347,6 +344,9 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
 
   @override
   Widget build(BuildContext context) {
+    // Pretvorba KlijentModel iz servisa prema nazivu aktivnog klijenta
+    List<Map<String, dynamic>> listaKlijenata = _klijentiService.klijenti;
+    
     return Scaffold(
       appBar: AppBar(
         title: Text(_trenutniIdUredjivanja == null ? 'Izračun Troškova Prijevoza' : 'Uređivanje Kalkulacije', style: const TextStyle(color: Colors.white)),
@@ -361,8 +361,31 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             DropdownButtonFormField<KlijentModel>(
               value: widget.aktivniKlijent,
               decoration: const InputDecoration(labelText: 'Klijent', border: OutlineInputBorder()),
-              items: widget.klijenti.map((k) => DropdownMenuItem(value: k, child: Text(k.naziv))).toList(),
-              onChanged: (val) { widget.onKlijentChanged(val); setState(() {}); },
+              items: listaKlijenata.map((kMap) {
+                KlijentModel kM = KlijentModel(
+                  id: kMap['id'] ?? '',
+                  naziv: kMap['naziv'] ?? '',
+                  odgovornaOsoba: kMap['odgovornaOsoba'] ?? '',
+                  adresa: kMap['adresa'] ?? '',
+                  grad: kMap['grad'] ?? '',
+                  oib: kMap['oib'] ?? '',
+                  email: kMap['email'] ?? '',
+                  telefon: kMap['telefon'] ?? '',
+                  banka: kMap['banka'] ?? '',
+                  iban: kMap['iban'] ?? '',
+                  uSustavuPdvA: kMap['uSustavuPdvA'] ?? true,
+                );
+                return DropdownMenuItem<KlijentModel>(
+                  value: widget.klijenti.any((x) => x.naziv == kM.naziv) 
+                      ? widget.klijenti.firstWhere((x) => x.naziv == kM.naziv) 
+                      : kM,
+                  child: Text(kM.naziv),
+                );
+              }).toList(),
+              onChanged: (val) {
+                widget.onKlijentChanged(val);
+                setState(() {});
+              },
             ),
             const SizedBox(height: 12),
             UnosRuteWidget(
