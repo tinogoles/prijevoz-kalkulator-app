@@ -130,16 +130,30 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       _konacnoOdredisteController.text = k.konacnoOdrediste.isNotEmpty ? k.konacnoOdrediste : 'Zagreb';
       _datumPolaskaController.text = k.datumPolaska;
       _datumPovratkaController.text = k.datumPovratka;
-      _kmController.text = k.km.toString();
-      _cestarinaController.text = k.cestarina.toString();
+
+      // Pametno čitanje KM
+      String kmVal = k.km;
+      if (kmVal == '0' || kmVal.isEmpty) {
+        RegExp reg = RegExp(r'\((\d+)\s*km\)');
+        var match = reg.firstMatch(k.ruta);
+        if (match != null) {
+          kmVal = match.group(1) ?? '780';
+        } else {
+          kmVal = '780';
+        }
+      }
+      _kmController.text = kmVal;
+
+      _cestarinaController.text = (k.cestarina.isNotEmpty && k.cestarina != '0') ? k.cestarina : '167.40';
       _povratnoPutovanje = k.povratno;
       _koristiAutocestu = k.koristiAutocestu;
       _odabranaAutocesta = k.odabranaAutocesta.isNotEmpty ? k.odabranaAutocesta : _opcijeAutocesta.first;
       _tkoPlacaNocenje = k.tkoPlacaNocenje.isNotEmpty ? k.tkoPlacaNocenje : 'Bez noćenja';
-      _cijenaNocenjaController.text = k.cijenaNocenja.toString();
-      _marzaController.text = k.marza.toString();
-      _cijenaGorivaController.text = k.cijenaGoriva.toString();
-      _dnevnicaController.text = k.dnevnica.toString();
+      _cijenaNocenjaController.text = k.cijenaNocenja.isNotEmpty ? k.cijenaNocenja : '60';
+      _marzaController.text = k.marza.isNotEmpty ? k.marza : '20';
+      _cijenaGorivaController.text = k.cijenaGoriva.isNotEmpty ? k.cijenaGoriva : '1.96';
+      _dnevnicaController.text = k.dnevnica.isNotEmpty ? k.dnevnica : '100';
+      
       if (_potrosnjaVozila.containsKey(k.vozilo)) {
         _odabranoVozilo = k.vozilo;
       }
@@ -284,12 +298,12 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     _preracunajBrojDana();
     double km = double.tryParse(_kmController.text) ?? 0;
     double cestarinaBruto = double.tryParse(_cestarinaController.text) ?? 0;
-    double gorivoBruto = double.tryParse(_cijenaGorivaController.text) ?? 0;
-    double dnevnica = double.tryParse(_dnevnicaController.text) ?? 0;
-    double nocenjeBruto = double.tryParse(_cijenaNocenjaController.text) ?? 0;
-    double marza = double.tryParse(_marzaController.text) ?? 0;
+    double gorivoBruto = double.tryParse(_cijenaGorivaController.text) ?? 1.96;
+    double dnevnica = double.tryParse(_dnevnicaController.text) ?? 100;
+    double nocenjeBruto = double.tryParse(_cijenaNocenjaController.text) ?? 60;
+    double marza = double.tryParse(_marzaController.text) ?? 20;
 
-    double potrosnja = _potrosnjaVozila[_odabranoVozilo] ?? 9.0;
+    double potrosnja = _potrosnjaVozila[_odabranoVozilo] ?? 35.0;
     int brojNocenja = (_izracunatiBrojDana > 1) ? (_izracunatiBrojDana - 1) : 0;
 
     double gorivoNeto = ((km / 100) * potrosnja * gorivoBruto) / 1.25;
@@ -309,7 +323,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       datumPolaska: _datumPolaskaController.text,
       datumPovratka: _datumPovratkaController.text,
       vozilo: _odabranoVozilo,
-      ruta: '${_polazisteController.text} -> ${_konacnoOdredisteController.text}',
+      ruta: '${_polazisteController.text} -> ${_konacnoOdredisteController.text} (${_kmController.text} km)',
       ukupnaCijena: ukupnaCijena,
       polaziste: _polazisteController.text,
       odrediste1: _odrediste1Controller.text,
