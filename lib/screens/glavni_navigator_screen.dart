@@ -1,4 +1,3 @@
-// lib/screens/glavni_navigator_screen.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -81,7 +80,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
       }
     });
 
-    // Slušanje kalkulacija - korištenje KalkulacijaModel.fromJson za ispravno učitavanje svih polja
+    // Slušanje kalkulacija
     FirebaseFirestore.instance
         .collection('users')
         .doc(_userId)
@@ -92,7 +91,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
         setState(() {
           _kalkulacije = snapshot.docs.map<KalkulacijaModel>((d) {
             var m = d.data();
-            m['id'] = d.id; // Osiguravamo da je ID dokumenta unutar mape
+            m['id'] = d.id;
             return KalkulacijaModel.fromJson(m);
           }).toList();
         });
@@ -103,7 +102,6 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
   Future<void> _spremiKalkulacijuUBazu(KalkulacijaModel kalk) async {
     if (_userId.isEmpty) return;
     
-    // Spremanje apsolutno svih polja iz modela putem toJson()
     await FirebaseFirestore.instance
         .collection('users')
         .doc(_userId)
@@ -137,7 +135,6 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
     final List<Widget> stranice = [
       IzracunTroskovaTab(
         prijevoznik: _prijevoznik,
-        klijenti: _klijenti,
         aktivniKlijent: _aktivniKlijent,
         kalkulacijaZaUredivanje: _kalkulacijaZaUredivanje,
         onKlijentChanged: (k) => setState(() => _aktivniKlijent = k),
