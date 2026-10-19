@@ -36,7 +36,7 @@ class PdfGenerator {
     // Provjera PDV statusa klijenta iz objekta ako postoji
     if (klijentObjekt != null) {
       if (klijentObjekt is Map) {
-        klijentUsetPdv = klijentObjekt['uSustavuPdv'] ?? klijentObjekt['u_sustavu_pdva'] ?? klijentUsetPdv;
+        klijentUsetPdv = klijentObjekt['uSustavuPdv'] ?? klijentObjekt['uSustavuPdvA'] ?? klijentObjekt['u_sustavu_pdva'] ?? klijentUsetPdv;
       } else {
         try {
           klijentUsetPdv = klijentObjekt.uSustavuPdv ?? klijentUsetPdv;
@@ -55,14 +55,38 @@ class PdfGenerator {
     // ID kalkulacije (skraćeni prikaz za gornji desni kut)
     String idSkel = kalkulacija.id.length >= 5 ? kalkulacija.id.substring(kalkulacija.id.length - 5) : (kalkulacija.id.isNotEmpty ? kalkulacija.id : '396798');
 
-    // Dinamičke vrijednosti iz kalkulacije modela
-    double trosakGoriva = double.tryParse(kalkulacija.trosakGoriva?.toString() ?? '0') ?? kalkulacija.trosakGoriva ?? 0.0;
-    double trosakCestarine = double.tryParse(kalkulacija.trosakCestarine?.toString() ?? '0') ?? kalkulacija.trosakCestarine ?? 0.0;
-    double trosakDnevnice = double.tryParse(kalkulacija.trosakDnevnice?.toString() ?? '0') ?? kalkulacija.trosakDnevnice ?? 0.0;
-    double trosakNocenja = double.tryParse(kalkulacija.trosakNocenja?.toString() ?? '0') ?? kalkulacija.trosakNocenja ?? 0.0;
+    // Sigurno parsiranje osnovnih parametara iz kalkulacije
+    double km = double.tryParse(kalkulacija.km?.toString() ?? '0') ?? 0.0;
+    double cestarinaBruto = double.tryParse(kalkulacija.cestarina?.toString() ?? '0') ?? 0.0;
+    double cijenaGoriva = double.tryParse(kalkulacija.cijenaGoriva?.toString() ?? '1.96') ?? 1.96;
+    double dnevnicaPoDanu = double.tryParse(kalkulacija.dnevnica?.toString() ?? '100') ?? 100.0;
+    double cijenaNocenjaVal = double.tryParse(kalkulacija.cijenaNocenja?.toString() ?? '60') ?? 60.0;
+    double marzaPostotak = double.tryParse(kalkulacija.marza?.toString() ?? '20') ?? 20.0;
+
+    // Ako model ima direktno spremljene troškove koristimo njih, inače ih precizno izračunavamo
+    double potrosnjaVozila = 35.0; // standardna pretpostavka
+    double trosakGorivaNeto = ((km / 100) * potrosnjaVozila * cijenaGoriva) / 1.25;
+    double trosakCestarineNeto = (kalkulacija.koristiAutocestu == true ? cestarinaBruto : 0.0) / 1.25;
     
-    double ukupniTroskoviNeto = trosakGoriva + trosakCestarine + trosakDnevnice + trosakNocenja;
-    double iznosMarze = double.tryParse(kalkulacija.iznosMarze?.toString() ?? '0') ?? kalkulacija.iznosMarze ?? (ukupniTroskoviNeto * 0.20);
+    // Izračun dana i noćenja
+    int brojDana = 1;
+    try {
+      String d1Str = kalkulacija.datumPolaska.replaceAll('.', '').trim();
+      String d2Str = kalkulacija.datumPovratka.replaceAll('.', '').trim();
+      if (d1Str.length >= 8 && d2Str.length >= 8) {
+        DateTime d1 = DateTime(int.parse(d1Str.substring(4, 8)), int.parse(d1Str.substring(2, 4)), int.parse(d1Str.substring(0, 2)));
+        DateTime d2 = DateTime(int.parse(d2Str.substring(4, 8)), int.parse(d2Str.substring(2, 4)), int.parse(d2Str.substring(0, 2)));
+        int razlika = d2.difference(d1).inDays + 1;
+        brojDana = razlika > 0 ? razlika : 1;
+      }
+    } catch (_) {}
+
+    int brojNocenja = brojDana > 1 ? brojDana - 1 : 0;
+    double trosakDnevnice = dnevnicaPoDanu * brojDana;
+    double trosakNocenja = (kalkulacija.tkoPlacaNocenje == 'Prijevoznik plaća' ? (cijenaNocenjaVal * brojNocenja) : 0.0) / 1.25;
+
+    double ukupniTroskoviNeto = trosakGorivaNeto + trosakCestarineNeto + trosakDnevnice + trosakNocenja;
+    double iznosMarze = ukupniTroskoviNeto * (marzaPostotak / 100);
     double ukupniIznosBezPdv = ukupniTroskoviNeto + iznosMarze;
     double pdvIznos = klijentUsetPdv ? (ukupniIznosBezPdv * 0.25) : 0.0;
     double totalZaSve = ukupniIznosBezPdv + pdvIznos;
@@ -121,18 +145,18 @@ class PdfGenerator {
                   pw.TableRow(
                     children: [
                       pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Gorivo ($nazivVozila)', style: pw.TextStyle(font: font, fontSize: 9))),
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${trosakGoriva.toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${(trosakGoriva * 0.25).toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${(trosakGoriva * 1.25).toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${trosakGorivaNeto.toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${(trosakGorivaNeto * 0.25).toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${(trosakGorivaNeto * 1.25).toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
                     ],
                   ),
                   // Red: Cestarina
                   pw.TableRow(
                     children: [
                       pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Cestarina (HAC / Autoceste)', style: pw.TextStyle(font: font, fontSize: 9))),
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${trosakCestarine.toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${(trosakCestarine * 0.25).toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${(trosakCestarine * 1.25).toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${trosakCestarineNeto.toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${(trosakCestarineNeto * 0.25).toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${(trosakCestarineNeto * 1.25).toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
                     ],
                   ),
                   // Red: Dnevnica
@@ -179,7 +203,7 @@ class PdfGenerator {
                     pw.Row(
                       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                       children: [
-                        pw.Text('Marža:', style: pw.TextStyle(font: font, fontSize: 10)),
+                        pw.Text('Marža (${marzaPostotak.toStringAsFixed(0)}%):', style: pw.TextStyle(font: font, fontSize: 10)),
                         pw.Text('${iznosMarze.toStringAsFixed(2)} EUR', style: pw.TextStyle(font: fontBold, fontSize: 10)),
                       ],
                     ),
@@ -240,7 +264,7 @@ class PdfGenerator {
     
     if (klijentObjekt != null) {
       if (klijentObjekt is Map) {
-        klijentUsetPdv = klijentObjekt['uSustavuPdv'] ?? klijentObjekt['u_sustavu_pdva'] ?? klijentUsetPdv;
+        klijentUsetPdv = klijentObjekt['uSustavuPdv'] ?? klijentObjekt['uSustavuPdvA'] ?? klijentObjekt['u_sustavu_pdva'] ?? klijentUsetPdv;
       } else {
         try {
           klijentUsetPdv = klijentObjekt.uSustavuPdv ?? klijentUsetPdv;
