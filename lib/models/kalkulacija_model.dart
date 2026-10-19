@@ -8,8 +8,6 @@ class KalkulacijaModel {
   final String vozilo;
   final String ruta;
   final double ukupnaCijena;
-  
-  // Opcionalna polja sa zadanim vrijednostima da ne ruše stari kod
   final String polaziste;
   final String odrediste1;
   final String odrediste2;
@@ -76,24 +74,24 @@ class KalkulacijaModel {
   };
 
   factory KalkulacijaModel.fromJson(Map<String, dynamic> json) => KalkulacijaModel(
-    id: json['id'] ?? '',
-    nazivKalkulacije: json['nazivKalkulacije'] ?? '',
-    klijentNaziv: json['klijentNaziv'] ?? '',
-    datumPolaska: json['datumPolaska'] ?? '',
-    datumPovratka: json['datumPovratka'] ?? '',
-    vozilo: json['vozilo'] ?? '',
-    ruta: json['ruta'] ?? '',
+    id: json['id']?.toString() ?? '',
+    nazivKalkulacije: json['nazivKalkulacije']?.toString() ?? '',
+    klijentNaziv: json['klijentNaziv']?.toString() ?? '',
+    datumPolaska: json['datumPolaska']?.toString() ?? '',
+    datumPovratka: json['datumPovratka']?.toString() ?? '',
+    vozilo: json['vozilo']?.toString() ?? '',
+    ruta: json['ruta']?.toString() ?? '',
     ukupnaCijena: (json['ukupnaCijena'] as num?)?.toDouble() ?? 0.0,
-    polaziste: json['polaziste'] ?? '',
-    odrediste1: json['odrediste1'] ?? '',
-    odrediste2: json['odrediste2'] ?? '',
-    konacnoOdrediste: json['konacnoOdrediste'] ?? '',
+    polaziste: json['polaziste']?.toString() ?? '',
+    odrediste1: json['odrediste1']?.toString() ?? '',
+    odrediste2: json['odrediste2']?.toString() ?? '',
+    konacnoOdrediste: json['konacnoOdrediste']?.toString() ?? '',
     cestarina: json['cestarina']?.toString() ?? '0',
     km: json['km']?.toString() ?? '0',
     povratno: json['povratno'] ?? true,
     koristiAutocestu: json['koristiAutocestu'] ?? true,
-    odabranaAutocesta: json['odabranaAutocesta'] ?? '',
-    tkoPlacaNocenje: json['tkoPlacaNocenje'] ?? '',
+    odabranaAutocesta: json['odabranaAutocesta']?.toString() ?? '',
+    tkoPlacaNocenje: json['tkoPlacaNocenje']?.toString() ?? '',
     cijenaNocenja: json['cijenaNocenja']?.toString() ?? '60',
     marza: json['marza']?.toString() ?? '20',
     cijenaGoriva: json['cijenaGoriva']?.toString() ?? '1.96',
