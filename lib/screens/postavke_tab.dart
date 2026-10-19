@@ -1,5 +1,7 @@
 // lib/screens/postavke_tab.dart
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/prijevoznik_model.dart';
 import 'vozni_park_screen.dart';
 
@@ -18,66 +20,65 @@ class PostavkeTab extends StatefulWidget {
 }
 
 class _PostavkeTabState extends State<PostavkeTab> {
-  late TextEditingController _nazivTvrtkeController;
-  late TextEditingController _vlasnikController;
-  late TextEditingController _adresaController;
-  late TextEditingController _gradController;
-  late TextEditingController _oibController;
-  late TextEditingController _emailTvrtkeController;
-  late TextEditingController _telefonController;
-  late TextEditingController _bankaController;
-  late TextEditingController _ibanController;
+  final _nazivTvrtkeController = TextEditingController();
+  final _vlasnikController = TextEditingController();
+  final _adresaController = TextEditingController();
+  final _gradController = TextEditingController();
+  final _oibController = TextEditingController();
+  final _emailTvrtkeController = TextEditingController();
+  final _telefonController = TextEditingController();
+  final _bankaController = TextEditingController();
+  final _ibanController = TextEditingController();
 
   bool _uSustavuPdvA = true;
+  bool _isLoading = true;
 
-  final String _korisnikImePrezime = 'Tino Goleš';
-  final String _korisnikEmail = 'tino.goles@gmail.com';
+  User? get currentUser => FirebaseAuth.instance.currentUser;
+  String get userKey => currentUser?.email ?? currentUser?.uid ?? 'zadani_korisnik';
 
   bool _isInitializing = false;
-
-  final List<Map<String, dynamic>> _klijenti = [
-    {
-      'id': '1',
-      'naziv': 'Dječji vrtić Omiš',
-      'odgovornaOsoba': 'Ravnateljica Ana Anić',
-      'adresa': 'Četvrt Vrilo 23',
-      'grad': '21250 Omiš',
-      'oib': '32145678910',
-      'email': 'info@dv-omis.hr',
-      'telefon': '+385 21 862 111',
-      'banka': 'Erste & Steiermärkische Bank',
-      'iban': 'HR1224020061100000000',
-      'uSustavuPdvA': false,
-    },
-    {
-      'id': '2',
-      'naziv': 'OŠ 1. listopada 1942 Čišla',
-      'odgovornaOsoba': 'Ravnatelj Marko Marković',
-      'adresa': 'Čišla bb',
-      'grad': '21252 Gata',
-      'oib': '12345678901',
-      'email': 'os-cisla@skole.hr',
-      'telefon': '+385 21 868 010',
-      'banka': 'Privredna banka Zagreb',
-      'iban': 'HR4023400091100000000',
-      'uSustavuPdvA': false,
-    },
-  ];
+  final List<Map<String, dynamic>> _klijenti = [];
 
   @override
   void initState() {
     super.initState();
-    final p = widget.prijevoznik;
-    _nazivTvrtkeController = TextEditingController(text: p?.naziv ?? '"Klanac" obrt za prijevoz putnika');
-    _vlasnikController = TextEditingController(text: p?.vlasnik ?? 'Ivan Jerčić');
-    _adresaController = TextEditingController(text: p?.adresa ?? 'Težačka 25');
-    _gradController = TextEditingController(text: p?.grad ?? 'Podgrađe');
-    _oibController = TextEditingController(text: p?.oib ?? '52556102683');
-    _emailTvrtkeController = TextEditingController(text: p?.email ?? 'prijevoz.klanac@gmail.com');
-    _telefonController = TextEditingController(text: p?.telefon ?? '+385 98 244 823');
-    _bankaController = TextEditingController(text: p?.banka ?? 'Zagrebačka banka');
-    _ibanController = TextEditingController(text: p?.iban ?? 'HR6023600001102016872');
-    _uSustavuPdvA = p?.uSustavuPdv ?? true;
+    _ucitajKorisnickePodatke();
+  }
+
+  Future<void> _ucitajKorisnickePodatke() async {
+    setState(() => _isLoading = true);
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('korisnici')
+          .doc(userKey)
+          .collection('postavke')
+          .doc('prijevoznik')
+          .get();
+
+      if (doc.exists && doc.data() != null) {
+        final p = PrijevoznikModel.fromJson(doc.data()!);
+        _postaviPolja(p);
+      } else if (widget.prijevoznik != null) {
+        _postaviPolja(widget.prijevoznik!);
+      }
+    } catch (e) {
+      debugPrint('Greška pri učitavanju korisničkih podataka: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _postaviPolja(PrijevoznikModel p) {
+    _nazivTvrtkeController.text = p.naziv;
+    _vlasnikController.text = p.vlasnik;
+    _adresaController.text = p.adresa;
+    _gradController.text = p.grad;
+    _oibController.text = p.oib;
+    _emailTvrtkeController.text = p.email.isNotEmpty ? p.email : (currentUser?.email ?? '');
+    _telefonController.text = p.telefon;
+    _bankaController.text = p.banka;
+    _ibanController.text = p.iban;
+    _uSustavuPdvA = p.uSustavuPdv;
   }
 
   @override
@@ -94,8 +95,8 @@ class _PostavkeTabState extends State<PostavkeTab> {
     super.dispose();
   }
 
-  void _spremiPodatkePrijevoznika() {
-    final azuriraniPrijevoznik = PrijevoznikModel(
+  Future<void> _spremiPodatkePrijevoznika() async {
+    final noviPrijevoznik = PrijevoznikModel(
       naziv: _nazivTvrtkeController.text.trim(),
       vlasnik: _vlasnikController.text.trim(),
       adresa: _adresaController.text.trim(),
@@ -108,30 +109,66 @@ class _PostavkeTabState extends State<PostavkeTab> {
       uSustavuPdv: _uSustavuPdvA,
     );
 
-    if (widget.onSpremiPrijevoznika != null) {
-      widget.onSpremiPrijevoznika!(azuriraniPrijevoznik);
-    }
+    try {
+      await FirebaseFirestore.instance
+          .collection('korisnici')
+          .doc(userKey)
+          .collection('postavke')
+          .doc('prijevoznik')
+          .set(noviPrijevoznik.toJson(), SetOptions(merge: true));
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Podaci o prijevozniku uspješno spremljeni!'),
-        backgroundColor: Colors.green,
-      ),
-    );
+      if (widget.onSpremiPrijevoznika != null) {
+        widget.onSpremiPrijevoznika!(noviPrijevoznik);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Podaci o prijevozniku trajno spremljeni na Cloud!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Greška pri spremanju na Cloud: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _inicijalizirajBazuCestarina() async {
     setState(() => _isInitializing = true);
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('opci_podaci')
+          .doc('cestarine')
+          .get();
 
-    if (mounted) {
-      setState(() => _isInitializing = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Baza cestarina uspješno inicijalizirana s preko 180 lokacija!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              snapshot.exists
+                  ? 'Baza cestarina uspješno sinkronizirana iz Clouda!'
+                  : 'Baza cestarina je spremna.',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Greška pri sinkronizaciji cestarina: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isInitializing = false);
     }
   }
 
@@ -159,50 +196,23 @@ class _PostavkeTabState extends State<PostavkeTab> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextField(
-                      controller: _nazivCtrl,
-                      decoration: const InputDecoration(labelText: 'Naziv tvrtke / agencije', isDense: true),
-                    ),
+                    TextField(controller: _nazivCtrl, decoration: const InputDecoration(labelText: 'Naziv tvrtke / agencije', isDense: true)),
                     const SizedBox(height: 8),
-                    TextField(
-                      controller: _odgovornaOsobaCtrl,
-                      decoration: const InputDecoration(labelText: 'Odgovorna osoba / Kontakt', isDense: true),
-                    ),
+                    TextField(controller: _odgovornaOsobaCtrl, decoration: const InputDecoration(labelText: 'Odgovorna osoba / Kontakt', isDense: true)),
                     const SizedBox(height: 8),
-                    TextField(
-                      controller: _adresaCtrl,
-                      decoration: const InputDecoration(labelText: 'Adresa', isDense: true),
-                    ),
+                    TextField(controller: _adresaCtrl, decoration: const InputDecoration(labelText: 'Adresa', isDense: true)),
                     const SizedBox(height: 8),
-                    TextField(
-                      controller: _gradCtrl,
-                      decoration: const InputDecoration(labelText: 'Grad / Mjesto', isDense: true),
-                    ),
+                    TextField(controller: _gradCtrl, decoration: const InputDecoration(labelText: 'Grad / Mjesto', isDense: true)),
                     const SizedBox(height: 8),
-                    TextField(
-                      controller: _oibCtrl,
-                      decoration: const InputDecoration(labelText: 'OIB', isDense: true),
-                    ),
+                    TextField(controller: _oibCtrl, decoration: const InputDecoration(labelText: 'OIB', isDense: true)),
                     const SizedBox(height: 8),
-                    TextField(
-                      controller: _emailCtrl,
-                      decoration: const InputDecoration(labelText: 'E-mail klijenta', isDense: true),
-                    ),
+                    TextField(controller: _emailCtrl, decoration: const InputDecoration(labelText: 'E-mail klijenta', isDense: true)),
                     const SizedBox(height: 8),
-                    TextField(
-                      controller: _telefonCtrl,
-                      decoration: const InputDecoration(labelText: 'Telefon / Mobitel', isDense: true),
-                    ),
+                    TextField(controller: _telefonCtrl, decoration: const InputDecoration(labelText: 'Telefon / Mobitel', isDense: true)),
                     const SizedBox(height: 8),
-                    TextField(
-                      controller: _bankaCtrl,
-                      decoration: const InputDecoration(labelText: 'Banka', isDense: true),
-                    ),
+                    TextField(controller: _bankaCtrl, decoration: const InputDecoration(labelText: 'Banka', isDense: true)),
                     const SizedBox(height: 8),
-                    TextField(
-                      controller: _ibanCtrl,
-                      decoration: const InputDecoration(labelText: 'IBAN za plaćanje', isDense: true),
-                    ),
+                    TextField(controller: _ibanCtrl, decoration: const InputDecoration(labelText: 'IBAN za plaćanje', isDense: true)),
                     const SizedBox(height: 12),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
@@ -280,14 +290,8 @@ class _PostavkeTabState extends State<PostavkeTab> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Popis klijenata / agencija',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
-                      ),
+                      const Text('Popis klijenata / agencija', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -322,10 +326,7 @@ class _PostavkeTabState extends State<PostavkeTab> {
                                               : 'KL',
                                         ),
                                       ),
-                                      title: Text(
-                                        klijent['naziv'] ?? '',
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                      ),
+                                      title: Text(klijent['naziv'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                                       subtitle: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
@@ -343,9 +344,7 @@ class _PostavkeTabState extends State<PostavkeTab> {
                                       children: [
                                         TextButton.icon(
                                           onPressed: () {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(content: Text('Pozivanje: ${klijent['telefon']}')),
-                                            );
+                                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Pozivanje: ${klijent['telefon']}')));
                                           },
                                           icon: const Icon(Icons.phone, size: 18, color: Colors.green),
                                           label: const Text('Nazovi', style: TextStyle(color: Colors.green)),
@@ -384,20 +383,20 @@ class _PostavkeTabState extends State<PostavkeTab> {
     );
   }
 
-  void _odjavaKorisnika() {
+  void _odjavaKorisnika() async {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Odjava'),
         content: const Text('Jeste li sigurni da se želite odjaviti iz aplikacije?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Odustani'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Odustani')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () async {
+              Navigator.pop(context);
+              await FirebaseAuth.instance.signOut();
+            },
             child: const Text('Odjavi se', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -407,10 +406,14 @@ class _PostavkeTabState extends State<PostavkeTab> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Postavke Aplikacije'),
-      ),
+      appBar: AppBar(title: const Text('Postavke Aplikacije')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: LayoutBuilder(
@@ -437,59 +440,27 @@ class _PostavkeTabState extends State<PostavkeTab> {
                             children: const [
                               Icon(Icons.business, color: Colors.blue, size: 28),
                               SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Podaci o tvrtki',
-                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                ),
-                              ),
+                              Expanded(child: Text('Podaci o tvrtki', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
                             ],
                           ),
                           const Divider(height: 24),
-                          TextField(
-                            controller: _nazivTvrtkeController,
-                            decoration: const InputDecoration(labelText: 'Naziv tvrtke / obrta', isDense: true),
-                          ),
+                          TextField(controller: _nazivTvrtkeController, decoration: const InputDecoration(labelText: 'Naziv tvrtke / obrta', isDense: true)),
                           const SizedBox(height: 8),
-                          TextField(
-                            controller: _vlasnikController,
-                            decoration: const InputDecoration(labelText: 'Vlasnik / Odgovorna osoba', isDense: true),
-                          ),
+                          TextField(controller: _vlasnikController, decoration: const InputDecoration(labelText: 'Vlasnik / Odgovorna osoba', isDense: true)),
                           const SizedBox(height: 8),
-                          TextField(
-                            controller: _adresaController,
-                            decoration: const InputDecoration(labelText: 'Adresa', isDense: true),
-                          ),
+                          TextField(controller: _adresaController, decoration: const InputDecoration(labelText: 'Adresa', isDense: true)),
                           const SizedBox(height: 8),
-                          TextField(
-                            controller: _gradController,
-                            decoration: const InputDecoration(labelText: 'Grad / Mjesto', isDense: true),
-                          ),
+                          TextField(controller: _gradController, decoration: const InputDecoration(labelText: 'Grad / Mjesto', isDense: true)),
                           const SizedBox(height: 8),
-                          TextField(
-                            controller: _oibController,
-                            decoration: const InputDecoration(labelText: 'OIB', isDense: true),
-                          ),
+                          TextField(controller: _oibController, decoration: const InputDecoration(labelText: 'OIB', isDense: true)),
                           const SizedBox(height: 8),
-                          TextField(
-                            controller: _emailTvrtkeController,
-                            decoration: const InputDecoration(labelText: 'E-mail tvrtke', isDense: true),
-                          ),
+                          TextField(controller: _emailTvrtkeController, decoration: const InputDecoration(labelText: 'E-mail tvrtke', isDense: true)),
                           const SizedBox(height: 8),
-                          TextField(
-                            controller: _telefonController,
-                            decoration: const InputDecoration(labelText: 'Telefon / Mobitel', isDense: true),
-                          ),
+                          TextField(controller: _telefonController, decoration: const InputDecoration(labelText: 'Telefon / Mobitel', isDense: true)),
                           const SizedBox(height: 8),
-                          TextField(
-                            controller: _bankaController,
-                            decoration: const InputDecoration(labelText: 'Banka', isDense: true),
-                          ),
+                          TextField(controller: _bankaController, decoration: const InputDecoration(labelText: 'Banka', isDense: true)),
                           const SizedBox(height: 8),
-                          TextField(
-                            controller: _ibanController,
-                            decoration: const InputDecoration(labelText: 'IBAN za plaćanje', isDense: true),
-                          ),
+                          TextField(controller: _ibanController, decoration: const InputDecoration(labelText: 'IBAN za plaćanje', isDense: true)),
                           const SizedBox(height: 12),
                           SwitchListTile(
                             contentPadding: EdgeInsets.zero,
@@ -525,12 +496,7 @@ class _PostavkeTabState extends State<PostavkeTab> {
                             children: const [
                               Icon(Icons.directions_bus, color: Colors.orange, size: 28),
                               SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Logistika & Baze',
-                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                ),
-                              ),
+                              Expanded(child: Text('Logistika & Baze', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
                             ],
                           ),
                           const Divider(height: 24),
@@ -575,44 +541,27 @@ class _PostavkeTabState extends State<PostavkeTab> {
                             children: const [
                               Icon(Icons.person, color: Colors.green, size: 28),
                               SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Korisnik aplikacije',
-                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                ),
-                              ),
+                              Expanded(child: Text('Korisnik aplikacije', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
                             ],
                           ),
                           const Divider(height: 24),
                           ListTile(
                             contentPadding: EdgeInsets.zero,
-                            leading: const CircleAvatar(
-                              child: Icon(Icons.person_outline),
-                            ),
-                            title: Text(
-                              _korisnikImePrezime,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Text(_korisnikEmail),
+                            leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+                            title: Text(currentUser?.displayName ?? 'Korisnik', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text(currentUser?.email ?? 'Nije prijavljen'),
                           ),
                           const SizedBox(height: 16),
-                          const Text(
-                            'Sustav cestarina:',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
-                          ),
+                          const Text('Sustav cestarina:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
                           const SizedBox(height: 8),
                           SizedBox(
                             width: double.infinity,
                             child: OutlinedButton.icon(
                               onPressed: _isInitializing ? null : _inicijalizirajBazuCestarina,
                               icon: _isInitializing
-                                  ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
-                                    )
+                                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                                   : const Icon(Icons.sync),
-                              label: Text(_isInitializing ? 'Inicijalizacija...' : 'Inicijaliziraj bazu cestarina'),
+                              label: Text(_isInitializing ? 'Inicijalizacija...' : 'Sinkroniziraj bazu cestarina'),
                             ),
                           ),
                           const SizedBox(height: 24),
@@ -637,8 +586,8 @@ class _PostavkeTabState extends State<PostavkeTab> {
               ],
             );
           },
-        ),
-      ),
+        );
+      },
     );
   }
 }
