@@ -1,3 +1,4 @@
+// lib/screens/kalkulacije_tab.dart
 import 'package:flutter/material.dart';
 import '../models/prijevoznik_model.dart';
 import '../models/klijent_model.dart';
@@ -62,10 +63,19 @@ class KalkulacijeTab extends StatelessWidget {
               itemCount: kalkulacije.length,
               itemBuilder: (ctx, idx) {
                 var k = kalkulacije[idx];
-                bool klijentPdv = klijenti.firstWhere(
-                  (kl) => kl.naziv == k.klijentNaziv,
-                  orElse: () => KlijentModel(id: '', uSustavuPdv: true),
-                ).uSustavuPdv;
+
+                // Sigurno pronalaženje klijenta po nazivu (ignorirajući razmake i velika/mala slova)
+                KlijentModel? pronadjeniKlijent;
+                try {
+                  pronadjeniKlijent = klijenti.firstWhere(
+                    (kl) => kl.naziv.trim().toLowerCase() == k.klijentNaziv.trim().toLowerCase(),
+                  );
+                } catch (_) {
+                  pronadjeniKlijent = null;
+                }
+
+                // Ako klijent postoji, uzimamo njegov stvarni status PDV-a, inače pretpostavljamo false ili true prema potrebi
+                bool klijentPdv = pronadjeniKlijent?.uSustavuPdv ?? false;
 
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -81,7 +91,8 @@ class KalkulacijeTab extends StatelessWidget {
                           style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
                         ),
                         const SizedBox(height: 4),
-                        Text('Klijent: ${k.klijentNaziv}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text('Klijent: ${k.klijentNaziv} ${klijentPdv ? "(U sustavu PDV-a)" : "(Nije u sustavu PDV-a)"}', 
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
                         Text('Ruta: ${k.ruta}'),
                         Text('Termin: ${k.datumPolaska} - ${k.datumPovratka}'),
                         const SizedBox(height: 6),
@@ -95,7 +106,6 @@ class KalkulacijeTab extends StatelessWidget {
                           runSpacing: 8,
                           alignment: WrapAlignment.spaceBetween,
                           children: [
-                            // Gumbi za PDF (Interna i Ponuda sa natpisima)
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -109,16 +119,16 @@ class KalkulacijeTab extends StatelessWidget {
                                   icon: const Icon(Icons.description, color: Colors.blue, size: 20),
                                   label: const Text('Print ponude', style: TextStyle(color: Colors.blue, fontSize: 13)),
                                   onPressed: () {
-                                    var pronadjeniKlijent = klijenti.firstWhere(
-                                      (kl) => kl.naziv == k.klijentNaziv,
-                                      orElse: () => KlijentModel(id: ''),
+                                    PdfGenerator.printajPonuduPdf(
+                                      k, 
+                                      prijevoznik, 
+                                      klijentUsetPdv: klijentPdv, 
+                                      klijentObjekt: pronadjeniKlijent,
                                     );
-                                    PdfGenerator.printajPonuduPdf(k, prijevoznik, klijentUsetPdv: klijentPdv, klijentObjekt: pronadjeniKlijent);
                                   },
                                 ),
                               ],
                             ),
-                            // Gumbi za Uredi i Obriši sa natpisima (uz zaštitu od direktnog brisanja)
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
