@@ -37,7 +37,6 @@ class _PostavkeTabState extends State<PostavkeTab> {
   User? get currentUser => FirebaseAuth.instance.currentUser;
   String get userKey => currentUser?.email ?? currentUser?.uid ?? 'zadani_korisnik';
 
-  bool _isInitializing = false;
   final KlijentiService _klijentiService = KlijentiService();
 
   @override
@@ -149,37 +148,6 @@ class _PostavkeTabState extends State<PostavkeTab> {
           ),
         );
       }
-    }
-  }
-
-  void _inicijalizirajBazuCestarina() async {
-    setState(() => _isInitializing = true);
-    try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('opci_podaci')
-          .doc('cestarine')
-          .get();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              snapshot.exists
-                  ? 'Baza cestarina uspješno sinkronizirana iz Clouda!'
-                  : 'Baza cestarina je spremna.',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška pri sinkronizaciji cestarina: $e'), backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isInitializing = false);
     }
   }
 
@@ -557,19 +525,6 @@ class _PostavkeTabState extends State<PostavkeTab> {
                             leading: const CircleAvatar(child: Icon(Icons.person_outline)),
                             title: Text(currentUser?.displayName ?? 'Korisnik', style: const TextStyle(fontWeight: FontWeight.bold)),
                             subtitle: Text(currentUser?.email ?? 'Nije prijavljen'),
-                          ),
-                          const SizedBox(height: 16),
-                          const Text('Sustav cestarina:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
-                          const SizedBox(height: 8),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              onPressed: _isInitializing ? null : _inicijalizirajBazuCestarina,
-                              icon: _isInitializing
-                                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                                  : const Icon(Icons.sync),
-                              label: Text(_isInitializing ? 'Inicijalizacija...' : 'Sinkroniziraj bazu cestarina'),
-                            ),
                           ),
                           const SizedBox(height: 24),
                           const Divider(),
