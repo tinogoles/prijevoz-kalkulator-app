@@ -127,6 +127,16 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
 
           if (_dostupnaVozila.isNotEmpty && _odabranoVoziloMap == null) {
             _odabranoVoziloMap = _dostupnaVozila.first;
+          } else if (_odabranoVoziloMap != null) {
+            // Osiguravamo da referenca ostane sinkronizirana s novim podacima iz streama
+            try {
+              _odabranoVoziloMap = _dostupnaVozila.firstWhere(
+                (v) => v['id'] == _odabranoVoziloMap!['id'],
+                orElse: () => _dostupnaVozila.first,
+              );
+            } catch (_) {
+              _odabranoVoziloMap = _dostupnaVozila.first;
+            }
           }
         });
       }
@@ -289,7 +299,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     double nocenjeBruto = double.tryParse(_cijenaNocenjaController.text) ?? 60;
     double marza = double.tryParse(_marzaController.text) ?? 20;
 
-    // Dohvaćamo potrošnju odabranog vozila iz baze
     double potrosnja = 35.0;
     if (_odabranoVoziloMap != null && _odabranoVoziloMap!['potrosnja'] != null) {
       potrosnja = double.tryParse(_odabranoVoziloMap!['potrosnja'].toString()) ?? 35.0;
@@ -405,22 +414,24 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             TextField(controller: _nazivKalkulacijeController, decoration: const InputDecoration(labelText: 'Naziv kalkulacije', border: OutlineInputBorder())),
             const SizedBox(height: 12),
             
-            // Dinamički izbornik vozila iz voznog parka
-            DropdownButtonFormField<Map<String, dynamic>>(
-              value: _dostupnaVozila.contains(_odabranoVoziloMap) ? _odabranoVoziloMap : null,
+            // Dinamički izbornik vozila iz voznog parka s usporedbom po ID-u
+            DropdownButtonFormField<String>(
+              value: _odabranoVoziloMap?['id'],
               isExpanded: true,
               decoration: const InputDecoration(labelText: 'Vozilo iz voznog parka', border: OutlineInputBorder()),
               items: _dostupnaVozila.map((vozilo) {
                 String nazivPrikaz = '${vozilo['naziv']} (${vozilo['kapacitet']} sjedala) - ${vozilo['potrosnja']} L/100km';
-                return DropdownMenuItem<Map<String, dynamic>>(
-                  value: vozilo,
+                return DropdownMenuItem<String>(
+                  value: vozilo['id'],
                   child: Text(nazivPrikaz, overflow: TextOverflow.ellipsis),
                 );
               }).toList(),
-              onChanged: (val) {
-                setState(() {
-                  _odabranoVoziloMap = val;
-                });
+              onChanged: (String? idVozila) {
+                if (idVozila != null) {
+                  setState(() {
+                    _odabranoVoziloMap = _dostupnaVozila.firstWhere((v) => v['id'] == idVozila);
+                  });
+                }
               },
             ),
 
