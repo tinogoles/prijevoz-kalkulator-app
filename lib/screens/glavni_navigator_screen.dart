@@ -1,3 +1,4 @@
+// lib/screens/glavni_navigator_screen.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -80,7 +81,7 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
       }
     });
 
-    // Slušanje kalkulacija
+    // Slušanje kalkulacija - korištenje KalkulacijaModel.fromJson za ispravno učitavanje svih polja
     FirebaseFirestore.instance
         .collection('users')
         .doc(_userId)
@@ -91,16 +92,8 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
         setState(() {
           _kalkulacije = snapshot.docs.map<KalkulacijaModel>((d) {
             var m = d.data();
-            return KalkulacijaModel(
-              id: d.id,
-              nazivKalkulacije: m['nazivKalkulacije'] ?? '',
-              klijentNaziv: m['klijentNaziv'] ?? '',
-              ruta: m['ruta'] ?? '',
-              datumPolaska: m['datumPolaska'] ?? '',
-              datumPovratka: m['datumPovratka'] ?? '',
-              ukupnaCijena: (m['ukupnaCijena'] ?? 0).toDouble(),
-              vozilo: m['vozilo'] ?? '',
-            );
+            m['id'] = d.id; // Osiguravamo da je ID dokumenta unutar mape
+            return KalkulacijaModel.fromJson(m);
           }).toList();
         });
       }
@@ -109,20 +102,14 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
 
   Future<void> _spremiKalkulacijuUBazu(KalkulacijaModel kalk) async {
     if (_userId.isEmpty) return;
+    
+    // Spremanje apsolutno svih polja iz modela putem toJson()
     await FirebaseFirestore.instance
         .collection('users')
         .doc(_userId)
         .collection('kalkulacije')
         .doc(kalk.id)
-        .set({
-      'nazivKalkulacije': kalk.nazivKalkulacije,
-      'klijentNaziv': kalk.klijentNaziv,
-      'ruta': kalk.ruta,
-      'datumPolaska': kalk.datumPolaska,
-      'datumPovratka': kalk.datumPovratka,
-      'ukupnaCijena': kalk.ukupnaCijena,
-      'vozilo': kalk.vozilo,
-    });
+        .set(kalk.toJson());
 
     setState(() {
       _kalkulacijaZaUredivanje = null;
@@ -147,7 +134,6 @@ class _GlavniNavigatorScreenState extends State<GlavniNavigatorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Točno 3 taba: Izračun, Kalkulacije, Postavke
     final List<Widget> stranice = [
       IzracunTroskovaTab(
         prijevoznik: _prijevoznik,
