@@ -1,12 +1,25 @@
+// lib/services/cestarine_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../data/baza_cestarina_data.dart';
 
 class CestarineService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
+  /// Pomoćna funkcija za normalizaciju naziva gradova (uklanjanje kvačica i razmaka)
+  static String _normalizirajKljuc(String unos) {
+    return unos
+        .trim()
+        .toLowerCase()
+        .replaceAll(' ', '_')
+        .replaceAll('č', 'c')
+        .replaceAll('ć', 'c')
+        .replaceAll('š', 's')
+        .replaceAll('ž', 'z')
+        .replaceAll('đ', 'd');
+  }
+
   /// 1. Funkcija za inicijalno punjenje/osvježavanje Firebase baze
   Future<void> inicijalizirajBazuUFirebaseu() async {
-    // Punjenje kolekcije 'gradovi_mapiranje'
     for (var entry in BazaCestarinaData.gradoviMapiranje.entries) {
       await _db
           .collection('gradovi_mapiranje')
@@ -14,7 +27,6 @@ class CestarineService {
           .set(entry.value, SetOptions(merge: true));
     }
 
-    // Punjenje kolekcije 'cestarine_dionice'
     for (var dionica in BazaCestarinaData.dioniceCestarina) {
       await _db
           .collection('cestarine_dionice')
@@ -23,39 +35,43 @@ class CestarineService {
     }
   }
 
-  /// 2. Pomoćna funkcija za dohvat naplatne postaje za zadani grad
+  /// 2. Pomoćna funkcija za dohvat naplatne postaje za zadani grad (s hibridnim Firestore + lokalnim fallbackom)
   Future<Map<String, String>?> dohvatiPostajuZaGrad(String gradNaziv) async {
     if (gradNaziv.trim().isEmpty) return null;
 
-    final gradKey = gradNaziv.trim().toLowerCase().replaceAll(' ', '_');
+    final gradKey = _normalizirajKljuc(gradNaziv);
 
-    // Prvo tražimo po točnom ključu (id-u dokumenta)
-    final docSnapshot =
-        await _db.collection('gradovi_mapiranje').doc(gradKey).get();
+    // 1. Probaj iz Firestorea
+    try {
+      final docSnapshot =
+          await _db.collection('gradovi_mapiranje').doc(gradKey).get();
 
-    if (docSnapshot.exists) {
-      final data = docSnapshot.data();
-      if (data != null) {
+      if (docSnapshot.exists && docSnapshot.data() != null) {
+        final data = docSnapshot.data()!;
         return {
           'postaja': data['postaja'] ?? '',
           'koncesionar': data['koncesionar'] ?? '',
         };
       }
-    }
+    } catch (_) {}
 
-    // Pomoćna prettraga ako unos nije točan ključ
-    final query = await _db
-        .collection('gradovi_mapiranje')
-        .where('grad', isEqualTo: gradNaziv.trim())
-        .limit(1)
-        .get();
-
-    if (query.docs.isNotEmpty) {
-      final data = query.docs.first.data();
+    // 2. Rezervni (offline/brzi) dohvat iz BazaCestarinaData
+    if (BazaCestarinaData.gradoviMapiranje.containsKey(gradKey)) {
+      final data = BazaCestarinaData.gradoviMapiranje[gradKey]!;
       return {
         'postaja': data['postaja'] ?? '',
         'koncesionar': data['koncesionar'] ?? '',
       };
+    }
+
+    // Prettraga po dijelu naziva u lokalnoj mapi
+    for (var entry in BazaCestarinaData.gradoviMapiranje.entries) {
+      if (entry.value['grad']!.toLowerCase().contains(gradNaziv.trim().toLowerCase())) {
+        return {
+          'postaja': entry.value['postaja'] ?? '',
+          'koncesionar': entry.value['koncesionar'] ?? '',
+        };
+      }
     }
 
     return null;
@@ -69,30 +85,63 @@ class CestarineService {
   }) async {
     if (ulaz.isEmpty || izlaz.isEmpty) return 0.0;
 
-    // Tražimo dionicu neovisno o smjeru (ulaz-izlaz ili izlaz-ulaz)
-    final query1 = await _db
-        .collection('cestarine_dionice')
-        .where('ulaz', isEqualTo: ulaz)
-        .where('izlaz', isEqualTo: izlaz)
-        .limit(1)
-        .get();
-
-    if (query1.docs.isNotEmpty) {
-      final cijene = query1.docs.first.data()['cijene'] as Map<String, dynamic>?;
-      return (cijene?[kategorijaVozila] as num?)?.toDouble() ?? 0.0;
+    // Normalizacija kategorije u ključ baze ('Veliki autobus 50', 'Midi bus 35', 'Mini bus <20', 'Kombi 8+1')
+    String katKljuc = 'Veliki autobus 50';
+    String kLower = kategorijaVozila.toLowerCase();
+    if (kLower.contains('kombi') || kLower.contains('8+1')) {
+      katKljuc = 'Kombi 8+1';
+    } else if (kLower.contains('mini') || kLower.contains('<20')) {
+      katKljuc = 'Mini bus <20';
+    } else if (kLower.contains('midi') || kLower.contains('35')) {
+      katKljuc = 'Midi bus 35';
+    } else if (kLower.contains('veliki') || kLower.contains('50') || kLower.contains('autobus')) {
+      katKljuc = 'Veliki autobus 50';
     }
 
-    // Obrnuti smjer
-    final query2 = await _db
-        .collection('cestarine_dionice')
-        .where('ulaz', isEqualTo: izlaz)
-        .where('izlaz', isEqualTo: ulaz)
-        .limit(1)
-        .get();
+    // 1. Pretraga kroz Firestore
+    try {
+      final query1 = await _db
+          .collection('cestarine_dionice')
+          .where('ulaz', isEqualTo: ulaz)
+          .where('izlaz', isEqualTo: izlaz)
+          .limit(1)
+          .get();
 
-    if (query2.docs.isNotEmpty) {
-      final cijene = query2.docs.first.data()['cijene'] as Map<String, dynamic>?;
-      return (cijene?[kategorijaVozila] as num?)?.toDouble() ?? 0.0;
+      if (query1.docs.isNotEmpty) {
+        final cijene = query1.docs.first.data()['cijene'] as Map<String, dynamic>?;
+        if (cijene != null && cijene.containsKey(katKljuc)) {
+          return (cijene[katKljuc] as num).toDouble();
+        }
+      }
+
+      final query2 = await _db
+          .collection('cestarine_dionice')
+          .where('ulaz', isEqualTo: izlaz)
+          .where('izlaz', isEqualTo: ulaz)
+          .limit(1)
+          .get();
+
+      if (query2.docs.isNotEmpty) {
+        final cijene = query2.docs.first.data()['cijene'] as Map<String, dynamic>?;
+        if (cijene != null && cijene.containsKey(katKljuc)) {
+          return (cijene[katKljuc] as num).toDouble();
+        }
+      }
+    } catch (_) {}
+
+    // 2. Rezervna lokalna pretraga u BazaCestarinaData
+    for (var dionica in BazaCestarinaData.dioniceCestarina) {
+      String u = dionica['ulaz'].toString().toLowerCase();
+      String i = dionica['izlaz'].toString().toLowerCase();
+      String ulazLower = ulaz.toLowerCase();
+      String izlazLower = izlaz.toLowerCase();
+
+      if ((u == ulazLower && i == izlazLower) || (u == izlazLower && i == ulazLower)) {
+        Map<String, dynamic> cijene = dionica['cijene'];
+        if (cijene.containsKey(katKljuc)) {
+          return (cijene[katKljuc] as num).toDouble();
+        }
+      }
     }
 
     return 0.0;
@@ -107,7 +156,6 @@ class CestarineService {
   }) async {
     double ukupno = 0.0;
 
-    // Dohvati postaje za polazište i odredište
     final postajaPolaziste = await dohvatiPostajuZaGrad(polaziste);
     final postajaOdrediste = await dohvatiPostajuZaGrad(odrediste);
 
@@ -118,20 +166,18 @@ class CestarineService {
     final String ulaznaPostaja = postajaPolaziste['postaja'] ?? '';
     final String izlaznaPostaja = postajaOdrediste['postaja'] ?? '';
 
-    // Ako imamo međustajalište (npr. Split -> Lučko/Zagreb -> Krapina)
+    // Ako imamo međustajalište
     if (medustajaliste != null && medustajaliste.trim().isNotEmpty) {
       final postajaMedustajaliste = await dohvatiPostajuZaGrad(medustajaliste);
       final String meduPostaja = postajaMedustajaliste?['postaja'] ?? '';
 
       if (meduPostaja.isNotEmpty) {
-        // Zbroji Dionica 1 (Polazište -> Međustajalište)
         ukupno += await dohvatiCijenuDionice(
           ulaz: ulaznaPostaja,
           izlaz: meduPostaja,
           kategorijaVozila: kategorijaVozila,
         );
 
-        // Zbroji Dionica 2 (Međustajalište -> Odredište)
         ukupno += await dohvatiCijenuDionice(
           ulaz: meduPostaja,
           izlaz: izlaznaPostaja,
@@ -142,7 +188,7 @@ class CestarineService {
       }
     }
 
-    // Izračun za izravnu dionicu bez međustajališta
+    // Izravna dionica
     ukupno = await dohvatiCijenuDionice(
       ulaz: ulaznaPostaja,
       izlaz: izlaznaPostaja,
