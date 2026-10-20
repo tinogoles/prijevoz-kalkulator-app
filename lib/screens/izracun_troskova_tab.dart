@@ -331,9 +331,9 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       List<String> dinamickiGradovi = List.from(tocke);
       List<Map<String, dynamic>> dionice = [];
 
-      // Dohvaćamo točnu kategoriju vozila direktno iz odabranog vozila
+    // Dohvaćamo točnu kategoriju vozila direktno iz odabranog vozila
       String katVozila = _odabranoVoziloMap?['kategorija'] ??
-                          'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)';
+                          'II. Skupina (Vozila do 3.5t / kombi)';
 
       if ((pLower.contains('split') && kLower.contains('krapina')) ||
           (pLower.contains('krapina') && pLower.contains('split'))) {
@@ -370,6 +370,36 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             'naziv': 'Autoput 2 (AZM A2 - Zagreb -> Krapina)',
             'opis': 'Zagreb -> Krapina',
             'cijena': cijenaA2,
+            'ukljuceno': true,
+          });
+        }
+      } else if ((pLower.contains('split') && kLower.contains('zagreb')) ||
+                 (pLower.contains('zagreb') && pLower.contains('split'))) {
+        
+        dinamickiGradovi = [
+          _polazisteController.text,
+          _konacnoOdredisteController.text,
+        ];
+
+        if (_koristiAutocestu) {
+          double cijenaBosiljevoSplit = await _cestarineService.izracunajUkupnuCestarinu(
+            polaziste: 'Bosiljevo',
+            odrediste: 'Split',
+            kategorijaVozila: katVozila,
+          );
+
+          double cijenaLuckoBosiljevo = await _cestarineService.izracunajUkupnuCestarinu(
+            polaziste: 'Lučko',
+            odrediste: 'Bosiljevo',
+            kategorijaVozila: katVozila,
+          );
+
+          double ukupnaCestarinaZGST = cijenaLuckoBosiljevo + cijenaBosiljevoSplit;
+
+          dionice.add({
+            'naziv': 'Autoput 1 (HAC A1 - Zagreb -> Split)',
+            'opis': 'Zagreb -> Split',
+            'cijena': ukupnaCestarinaZGST,
             'ukljuceno': true,
           });
         }
@@ -432,7 +462,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       _cestarinaController.text = cestarinaUkupno.toStringAsFixed(2);
     });
   }
-
   void _spremi() {
     _preracunajBrojDana();
     double km = double.tryParse(_kmController.text) ?? 0;
