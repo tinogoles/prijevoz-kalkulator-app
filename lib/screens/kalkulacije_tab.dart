@@ -64,18 +64,21 @@ class KalkulacijeTab extends StatelessWidget {
               itemBuilder: (ctx, idx) {
                 var k = kalkulacije[idx];
 
-                // Sigurno pronalaženje klijenta po nazivu (ignorirajući razmake i velika/mala slova)
+                // Fleksibilno pronalaženje klijenta po ID-u ili nazivu
                 KlijentModel? pronadjeniKlijent;
                 try {
                   pronadjeniKlijent = klijenti.firstWhere(
-                    (kl) => kl.naziv.trim().toLowerCase() == k.klijentNaziv.trim().toLowerCase(),
+                    (kl) => (kl.id.isNotEmpty && kl.id == k.klijentId) ||
+                            kl.naziv.trim().toLowerCase() == k.klijentNaziv.trim().toLowerCase() ||
+                            kl.naziv.trim().toLowerCase().contains(k.klijentNaziv.trim().toLowerCase()) ||
+                            k.klijentNaziv.trim().toLowerCase().contains(kl.naziv.trim().toLowerCase()),
                   );
                 } catch (_) {
                   pronadjeniKlijent = null;
                 }
 
-                // Ako klijent postoji, uzimamo njegov stvarni status PDV-a, inače pretpostavljamo false ili true prema potrebi
-                bool klijentPdv = pronadjeniKlijent?.uSustavuPdv ?? false;
+                // Određivanje PDV statusa klijenta s fallbackom na podatke iz same kalkulacije
+                bool klijentPdv = pronadjeniKlijent?.uSustavuPdv ?? k.klijentUSustavuPdv ?? false;
 
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -112,7 +115,12 @@ class KalkulacijeTab extends StatelessWidget {
                                 TextButton.icon(
                                   icon: const Icon(Icons.picture_as_pdf, color: Colors.red, size: 20),
                                   label: const Text('Interna kalkulacija', style: TextStyle(color: Colors.red, fontSize: 13)),
-                                  onPressed: () => PdfGenerator.printajInternuKalkulaciju(k, prijevoznik, klijentUsetPdv: klijentPdv),
+                                  onPressed: () => PdfGenerator.printajInternuKalkulaciju(
+                                    k, 
+                                    prijevoznik, 
+                                    klijentUsetPdv: klijentPdv,
+                                    klijentObjekt: pronadjeniKlijent,
+                                  ),
                                 ),
                                 const SizedBox(width: 8),
                                 TextButton.icon(
