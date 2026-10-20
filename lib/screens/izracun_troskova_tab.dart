@@ -307,12 +307,14 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
 
       double izracunataCestarina = 0.0;
       if (_koristiAutocestu) {
-        String nazivVozilaKat = _odabranoVoziloMap?['naziv'] ?? 'Veliki autobus 50';
+        // Uzimamo kategoriju cestarine iz odabranog vozila u voznom parku
+        String kategorijaVozilaKat = _odabranoVoziloMap?['kategorija'] ?? _odabranoVoziloMap?['kategorijaCestarine'] ?? 'Veliki autobus 50';
+        
         izracunataCestarina = await _cestarineService.izracunajUkupnuCestarinu(
           polaziste: _polazisteController.text,
           odrediste: _konacnoOdredisteController.text,
           medustajaliste: _odrediste1Controller.text.isNotEmpty ? _odrediste1Controller.text : null,
-          kategorijaVozila: nazivVozilaKat,
+          kategorijaVozila: kategorijaVozilaKat,
         );
       }
 
@@ -364,14 +366,13 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
         ? '${_odabranoVoziloMap!['naziv']} (${_odabranoVoziloMap!['kapacitet']})' 
         : 'Vozilo';
 
-    // Sigurno dohvaćanje PDV statusa aktivnog klijenta
     bool klijentPdvStatus = widget.aktivniKlijent?.uSustavuPdv ?? false;
 
     KalkulacijaModel kalk = KalkulacijaModel(
       id: _trenutniIdUredjivanja ?? DateTime.now().millisecondsSinceEpoch.toString(),
       nazivKalkulacije: _nazivKalkulacijeController.text,
       klijentNaziv: widget.aktivniKlijent?.naziv ?? 'Klijent',
-      klijentUSustavuPdv: klijentPdvStatus, // Prenosi se stvarni status klijenta u kalkulaciju
+      klijentUSustavuPdv: klijentPdvStatus,
       datumPolaska: _datumPolaskaController.text,
       datumPovratka: _datumPovratkaController.text,
       vozilo: nazivVozilaPrikaz,
@@ -528,13 +529,17 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               opcijeAutocesta: _opcijeAutocesta,
             ),
             const SizedBox(height: 16),
+            
+            // Gumb za izračun rute i cestarine smješten neposredno uz parametre puta
             ElevatedButton.icon(
               onPressed: _isLoadingRoute ? null : _izracunajRutuMultiPoint,
               icon: const Icon(Icons.route),
-              label: Text(_isLoadingRoute ? 'Računam...' : 'Izračunaj kilometre po točkama (OSRM)'),
+              label: Text(_isLoadingRoute ? 'Računam...' : 'Izračunaj kilometre i cestarinu po točkama (OSRM)'),
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0284C7), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14)),
             ),
             const SizedBox(height: 12),
+            
+            // Gumb za spremanje / ažuriranje kalkulacije na dnu
             ElevatedButton.icon(
               onPressed: _spremi,
               icon: const Icon(Icons.calculate),
