@@ -18,9 +18,9 @@ class _VozniParkScreenState extends State<VozniParkScreen> {
 
   final List<String> _hacSkupineCestarine = [
     'I. Skupina (Osobna vozila / motocikli)',
-    'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)',
-    'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)',
-    'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)',
+    'II. Skupina (Vozila do 3.5t / kombi)',
+    'III. Skupina (Vozila preko 3.5t / midi bus)',
+    'IV. Skupina (Vozila preko 3.5t / veliki autobus)',
   ];
 
   @override
@@ -65,7 +65,22 @@ class _VozniParkScreenState extends State<VozniParkScreen> {
     final _kapacitetCtrl = TextEditingController(text: vozilo?['kapacitet'] ?? '');
     final _potrosnjaCtrl = TextEditingController(text: vozilo?['potrosnja'] ?? '');
     
-    String _odabranaSkupina = vozilo?['kategorija'] ?? _hacSkupineCestarine[1];
+    String ucitanaKategorija = vozilo?['kategorija'] ?? '';
+
+    // Normalizacija / mapiranje ako je ostao stari dugački naziv
+    if (ucitanaKategorija.contains('II.')) {
+      ucitanaKategorija = _hacSkupineCestarine[1];
+    } else if (ucitanaKategorija.contains('III.')) {
+      ucitanaKategorija = _hacSkupineCestarine[2];
+    } else if (ucitanaKategorija.contains('IV.')) {
+      ucitanaKategorija = _hacSkupineCestarine[3];
+    } else if (ucitanaKategorija.contains('I.')) {
+      ucitanaKategorija = _hacSkupineCestarine[0];
+    }
+
+    String _odabranaSkupina = _hacSkupineCestarine.contains(ucitanaKategorija)
+        ? ucitanaKategorija
+        : _hacSkupineCestarine[1];
 
     Map<String, bool> _oprema = vozilo?['oprema'] != null
         ? Map<String, bool>.from(vozilo!['oprema'])
