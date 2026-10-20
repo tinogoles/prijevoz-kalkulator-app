@@ -15,23 +15,28 @@ class CestarineService {
         .replaceAll('đ', 'd');
   }
 
-  /// 1. Dohvat naplatne postaje za grad iz baze cestarine_gradovi
+  /// 1. Dohvat naplatne postaje za grad iz baze gradovi_mapiranje
   Future<Map<String, String>?> dohvatiPostajuZaGrad(String gradNaziv) async {
     if (gradNaziv.trim().isEmpty) return null;
 
     final gradKey = _normalizirajKljuc(gradNaziv);
 
     try {
+      // ISPRAVLJENO: Slušamo točnu kolekciju 'gradovi_mapiranje' iz BazaCestarinaData
       final docSnapshot = await _db
-          .collection('cestarine_gradovi')
+          .collection('gradovi_mapiranje')
           .doc(gradKey)
           .get();
 
       if (docSnapshot.exists && docSnapshot.data() != null) {
         final data = docSnapshot.data()!;
+        
+        // Izvlačimo najbliži ulaz ili odgovarajući podatak o postaji
+        String postajaVal = data['najblizi_ulaz'] ?? data['izlaz_a2'] ?? '';
+        
         return {
-          'postaja': data['postaja'] ?? '',
-          'koncesionar': data['koncesionar'] ?? '',
+          'postaja': postajaVal,
+          'koncesionar': data['koncesionar'] ?? 'HAC',
         };
       }
     } catch (e) {
@@ -70,7 +75,7 @@ class CestarineService {
       double? pronadjiCijenuUDokumentu(Map<String, dynamic> docData) {
         print('Pronađen dokument u bazi. Polja u dokumentu: ${docData.keys.toList()}');
         
-        // 1. Provjera izravnog polja na root razini (npr. skupina2)[cite: 11]
+        // 1. Provjera izravnog polja na root razini (npr. skupina1, skupina2...)
         if (docData.containsKey(dbKljuc) && docData[dbKljuc] != null) {
           double val = (docData[dbKljuc] as num).toDouble();
           print('Pronađena cijena direktno po ključu $dbKljuc: $val');
