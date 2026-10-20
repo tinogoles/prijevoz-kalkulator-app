@@ -8,11 +8,18 @@ class PdfGenerator {
     if (obj == null) return '';
     try {
       if (obj is Map) {
+        // Provjera različitih varijanti naziva ključeva u mapi
+        if (field == 'naziv') {
+          return (obj['naziv'] ?? obj['nazivTvrtke'] ?? obj['naziv_tvrtke'] ?? '').toString();
+        }
+        if (field == 'vlasnik') {
+          return (obj['vlasnik'] ?? obj['odgovornaOsoba'] ?? obj['odgovorna_osoba'] ?? '').toString();
+        }
         return (obj[field] ?? '').toString();
       }
       switch (field) {
-        case 'naziv': return (obj.naziv ?? '').toString();
-        case 'vlasnik': return (obj.vlasnik ?? '').toString();
+        case 'naziv': return (obj.naziv ?? obj.nazivTvrtke ?? '').toString();
+        case 'vlasnik': return (obj.vlasnik ?? obj.odgovornaOsoba ?? '').toString();
         case 'adresa': return (obj.adresa ?? '').toString();
         case 'grad': return (obj.grad ?? '').toString();
         case 'oib': return (obj.oib ?? '').toString();
@@ -20,7 +27,7 @@ class PdfGenerator {
         case 'telefon': return (obj.telefon ?? '').toString();
         case 'banka': return (obj.banka ?? '').toString();
         case 'iban': return (obj.iban ?? '').toString();
-        case 'uSustavuPdv': return (obj.uSustavuPdv ?? false).toString();
+        case 'uSustavuPdv': return (obj.uSustavuPdv ?? obj.uSustavuPdvA ?? false).toString();
         default: return '';
       }
     } catch (_) {
@@ -33,7 +40,7 @@ class PdfGenerator {
     final font = await PdfGoogleFonts.robotoRegular();
     final fontBold = await PdfGoogleFonts.robotoBold();
 
-    // Provjera PDV statusa klijenta iz objekta ako postoji
+    // Provjera PDV statusa klijenta
     if (klijentObjekt != null) {
       if (klijentObjekt is Map) {
         klijentUsetPdv = klijentObjekt['uSustavuPdv'] ?? klijentObjekt['uSustavuPdvA'] ?? klijentObjekt['u_sustavu_pdva'] ?? klijentUsetPdv;
@@ -46,29 +53,26 @@ class PdfGenerator {
 
     // Podaci prijevoznika
     String pNaziv = _getVal(prijevoznik, 'naziv');
+    if (pNaziv.isEmpty) pNaziv = 'Moj Obrt';
     String pOib = _getVal(prijevoznik, 'oib');
 
     // Podaci klijenta
     String kNaziv = _getVal(klijentObjekt, 'naziv');
     if (kNaziv.isEmpty) kNaziv = kalkulacija.klijentNaziv;
 
-    // ID kalkulacije (skraćeni prikaz za gornji desni kut)
     String idSkel = kalkulacija.id.length >= 5 ? kalkulacija.id.substring(kalkulacija.id.length - 5) : (kalkulacija.id.isNotEmpty ? kalkulacija.id : '396798');
 
-    // Sigurno parsiranje osnovnih parametara iz kalkulacije
     double km = double.tryParse(kalkulacija.km?.toString() ?? '0') ?? 0.0;
     double cestarinaBruto = double.tryParse(kalkulacija.cestarina?.toString() ?? '0') ?? 0.0;
     double cijenaGoriva = double.tryParse(kalkulacija.cijenaGoriva?.toString() ?? '1.96') ?? 1.96;
     double dnevnicaPoDanu = double.tryParse(kalkulacija.dnevnica?.toString() ?? '100') ?? 100.0;
-    double cijenaNocenjaVal = double.tryParse(kalkulacija.cijenaNocenja?.toString() ?? '60') ?? 60.0;
+    double cijenaNocenjaVal = double.tryParse(kalkulacija.cijenaNocenja?.toString() ?? '50') ?? 50.0;
     double marzaPostotak = double.tryParse(kalkulacija.marza?.toString() ?? '20') ?? 20.0;
 
-    // Ako model ima direktno spremljene troškove koristimo njih, inače ih precizno izračunavamo
-    double potrosnjaVozila = 35.0; // standardna pretpostavka
+    double potrosnjaVozila = 35.0; 
     double trosakGorivaNeto = ((km / 100) * potrosnjaVozila * cijenaGoriva) / 1.25;
     double trosakCestarineNeto = (kalkulacija.koristiAutocestu == true ? cestarinaBruto : 0.0) / 1.25;
     
-    // Izračun dana i noćenja
     int brojDana = 1;
     try {
       String d1Str = kalkulacija.datumPolaska.replaceAll('.', '').trim();
@@ -83,9 +87,13 @@ class PdfGenerator {
 
     int brojNocenja = brojDana > 1 ? brojDana - 1 : 0;
     double trosakDnevnice = dnevnicaPoDanu * brojDana;
-    double trosakNocenja = (kalkulacija.tkoPlacaNocenje == 'Prijevoznik plaća' ? (cijenaNocenjaVal * brojNocenja) : 0.0) / 1.25;
+    
+    // Ispravan izračun neto i PDV-a za noćenje (Brutto / 1.25)
+    double nocenjeBrutoTotal = (kalkulacija.tkoPlacaNocenje == 'Prijevoznik plaća' ? (cijenaNocenjaVal * brojNocenja) : 0.0);
+    double trosakNocenjaNeto = nocenjeBrutoTotal / 1.25;
+    double trosakNocenjaPdv = nocenjeBrutoTotal - trosakNocenjaNeto;
 
-    double ukupniTroskoviNeto = trosakGorivaNeto + trosakCestarineNeto + trosakDnevnice + trosakNocenja;
+    double ukupniTroskoviNeto = trosakGorivaNeto + trosakCestarineNeto + trosakDnevnice + trosakNocenjaNeto;
     double iznosMarze = ukupniTroskoviNeto * (marzaPostotak / 100);
     double ukupniIznosBezPdv = ukupniTroskoviNeto + iznosMarze;
     double pdvIznos = klijentUsetPdv ? (ukupniIznosBezPdv * 0.25) : 0.0;
@@ -102,7 +110,6 @@ class PdfGenerator {
           build: (ctx) => pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              // ZAGLAVLJE
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -115,13 +122,11 @@ class PdfGenerator {
               pw.Divider(thickness: 1, color: PdfColors.black),
               pw.SizedBox(height: 8),
 
-              // PODACI O PRIJEVOZNIKU I KLIJENTU
               pw.Text('Prijevoznik: "$pNaziv"${pOib.isNotEmpty ? " (OIB: $pOib)" : ""}', style: pw.TextStyle(font: font, fontSize: 10)),
               pw.Text('Klijent: $kNaziv (PDV sustav: ${klijentUsetPdv ? "DA" : "NE"})', style: pw.TextStyle(font: font, fontSize: 10)),
               pw.Text('Ruta: ${kalkulacija.ruta} | Termin: ${kalkulacija.datumPolaska} - ${kalkulacija.datumPovratka}', style: pw.TextStyle(font: font, fontSize: 10)),
               pw.SizedBox(height: 14),
 
-              // TABLICA STAVKI TROŠKOVA
               pw.Table(
                 border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
                 columnWidths: {
@@ -131,7 +136,6 @@ class PdfGenerator {
                   3: const pw.FlexColumnWidth(1.5),
                 },
                 children: [
-                  // Zaglavlje tablice
                   pw.TableRow(
                     decoration: const pw.BoxDecoration(color: PdfColors.blue900),
                     children: [
@@ -141,7 +145,6 @@ class PdfGenerator {
                       pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Ukupno (Bruto)', style: pw.TextStyle(font: fontBold, color: PdfColors.white, fontSize: 10))),
                     ],
                   ),
-                  // Red: Gorivo
                   pw.TableRow(
                     children: [
                       pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Gorivo ($nazivVozila)', style: pw.TextStyle(font: font, fontSize: 9))),
@@ -150,7 +153,6 @@ class PdfGenerator {
                       pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${(trosakGorivaNeto * 1.25).toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
                     ],
                   ),
-                  // Red: Cestarina
                   pw.TableRow(
                     children: [
                       pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Cestarina (HAC / Autoceste)', style: pw.TextStyle(font: font, fontSize: 9))),
@@ -159,7 +161,6 @@ class PdfGenerator {
                       pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${(trosakCestarineNeto * 1.25).toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
                     ],
                   ),
-                  // Red: Dnevnica
                   pw.TableRow(
                     children: [
                       pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Dnevnica vozača', style: pw.TextStyle(font: font, fontSize: 9))),
@@ -168,20 +169,18 @@ class PdfGenerator {
                       pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${trosakDnevnice.toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
                     ],
                   ),
-                  // Red: Noćenje
                   pw.TableRow(
                     children: [
                       pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Noćenje vozača', style: pw.TextStyle(font: font, fontSize: 9))),
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${trosakNocenja.toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('0.00 EUR', style: pw.TextStyle(font: font, fontSize: 9))),
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${trosakNocenja.toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${trosakNocenjaNeto.toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${trosakNocenjaPdv.toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${nocenjeBrutoTotal.toStringAsFixed(2)} EUR', style: pw.TextStyle(font: font, fontSize: 9))),
                     ],
                   ),
                 ],
               ),
               pw.SizedBox(height: 15),
 
-              // FINANCIJSKI SAŽETAK KUTIJA
               pw.Container(
                 padding: const pw.EdgeInsets.all(12),
                 decoration: pw.BoxDecoration(
@@ -228,7 +227,6 @@ class PdfGenerator {
               ),
               pw.SizedBox(height: 15),
 
-              // TOTAL ZA SVE TRAKA
               pw.Container(
                 width: double.infinity,
                 padding: const pw.EdgeInsets.all(10),
@@ -293,6 +291,7 @@ class PdfGenerator {
     String tekstUkljucuje = ukljucujeStavke.isNotEmpty ? ukljucujeStavke.join(' i ') : 'standardne troškove prijevoza';
 
     String pNaziv = _getVal(prijevoznik, 'naziv');
+    if (pNaziv.isEmpty) pNaziv = 'Moj Obrt';
     String pVlasnik = _getVal(prijevoznik, 'vlasnik');
     String pAdresa = _getVal(prijevoznik, 'adresa');
     String pGrad = _getVal(prijevoznik, 'grad');
