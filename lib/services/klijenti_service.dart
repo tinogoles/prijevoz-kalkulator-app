@@ -18,10 +18,15 @@ class KlijentiService extends ChangeNotifier {
       _klijenti.map((k) => k['naziv'].toString()).toList();
 
   String get _userId {
-    return FirebaseAuth.instance.currentUser?.uid ?? '';
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      debugPrint('UPOZORENJE: Korisnik nije prijavljen!');
+      return '';
+    }
+    return user.uid;
   }
 
-  // Automatsko učitavanje klijenata s Firestore Clouda (Usklađeno s users/{userId})
+  // Čisto učitavanje isključivo s users/{userId}/klijenti
   Future<void> ucitajKlijente() async {
     if (_userId.isEmpty) return;
     _isLoading = true;
@@ -46,7 +51,7 @@ class KlijentiService extends ChangeNotifier {
     }
   }
 
-  // Dodavanje klijenta na Cloud
+  // Dodavanje klijenta isključivo na users/{userId}/klijenti
   Future<void> dodajKlijenta(Map<String, dynamic> klijent) async {
     if (_userId.isEmpty) return;
     try {
@@ -68,7 +73,7 @@ class KlijentiService extends ChangeNotifier {
     }
   }
 
-  // Uređivanje klijenta na Cloudu
+  // Uređivanje klijenta
   Future<void> urediKlijenta(Map<String, dynamic> klijent) async {
     if (_userId.isEmpty) return;
     try {
@@ -89,11 +94,11 @@ class KlijentiService extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('Greška pri uređivanju klijenta na Clouda: $e');
+      debugPrint('Greška pri uređivanju klijenta na Cloudu: $e');
     }
   }
 
-  // Brisanje klijenta s Clouda
+  // Brisanje klijenta
   Future<void> obrisiKlijenta(String id) async {
     if (_userId.isEmpty) return;
     try {
