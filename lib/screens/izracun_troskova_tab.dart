@@ -264,7 +264,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
           int.parse(d2Str.substring(2, 4)),
           int.parse(d2Str.substring(0, 2)),
         );
-    int razlika = d2.difference(d1).inDays + 1;
+        int razlika = d2.difference(d1).inDays + 1;
         setState(() => _izracunatiBrojDana = razlika > 0 ? razlika : 1);
       }
     } catch (_) {}
@@ -325,28 +325,67 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
 
       double kmJedan = ukupnoMetara / 1000.0;
 
+      String pLower = _polazisteController.text.trim().toLowerCase();
+      String kLower = _konacnoOdredisteController.text.trim().toLowerCase();
+
       List<String> dinamickiGradovi = List.from(tocke);
       List<Map<String, dynamic>> dionice = [];
 
-      // Dohvaćamo točnu kategoriju vozila direktno iz odabranog vozila
       String katVozila = _odabranoVoziloMap?['kategorija'] ??
                           'II. Skupina (Vozila do 3.5t / kombi)';
 
-      // UNIVERZALNI POZIV ZA SVE DIONICE - SERVIS SAM RJEŠAVA TRANZITE I BAZU
       if (_koristiAutocestu) {
-        double izracunataCestarina = await _cestarineService.izracunajUkupnuCestarinu(
-          polaziste: _polazisteController.text.trim(),
-          odrediste: _konacnoOdredisteController.text.trim(),
-          medustajaliste: _odrediste1Controller.text.trim().isNotEmpty ? _odrediste1Controller.text.trim() : null,
-          kategorijaVozila: katVozila,
-        );
+        if ((pLower.contains('split') && kLower.contains('krapina')) ||
+            (pLower.contains('krapina') && pLower.contains('split'))) {
+          
+          dinamickiGradovi = [
+            _polazisteController.text,
+            if (_odrediste1Controller.text.isNotEmpty) _odrediste1Controller.text,
+            'Zagreb',
+            if (_odrediste2Controller.text.isNotEmpty) _odrediste2Controller.text,
+            _konacnoOdredisteController.text,
+          ];
 
-        dionice.add({
-          'naziv': 'Autoput (Glavna dionica)',
-          'opis': '${_polazisteController.text.trim()} -> ${_konacnoOdredisteController.text.trim()}',
-          'cijena': izracunataCestarina,
-          'ukljuceno': true,
-        });
+          double cijenaA1 = await _cestarineService.izracunajUkupnuCestarinu(
+            polaziste: 'Split',
+            odrediste: 'Zagreb',
+            kategorijaVozila: katVozila,
+          );
+
+          double cijenaA2 = await _cestarineService.izracunajUkupnuCestarinu(
+            polaziste: 'Zagreb',
+            odrediste: 'Krapina',
+            kategorijaVozila: katVozila,
+          );
+
+          dionice.add({
+            'naziv': 'Autoput 1 (HAC A1 - Split -> Zagreb)',
+            'opis': 'Split -> Zagreb',
+            'cijena': cijenaA1,
+            'ukljuceno': true,
+          });
+
+          dionice.add({
+            'naziv': 'Autoput 2 (AZM A2 - Zagreb -> Krapina)',
+            'opis': 'Zagreb -> Krapina',
+            'cijena': cijenaA2,
+            'ukljuceno': true,
+          });
+        } else {
+          double izracunataCestarina = await _cestarineService.izracunajUkupnuCestarinu(
+            polaziste: _polazisteController.text.trim(),
+            odrediste: _konacnoOdredisteController.text.trim(),
+            medustajaliste: _odrediste1Controller.text.trim().isNotEmpty ? _odrediste1Controller.text.trim() : null,
+            kategorijaVozila: katVozila,
+          );
+
+          dionice.add({
+            'naziv': 'Autoput (Glavna dionica)',
+            'opis': '${_polazisteController.text.trim()} -> ${_konacnoOdredisteController.text.trim()}',
+            'cijena': izracunataCestarina,
+            'ukljuceno': true,
+          });
+        }
       }
 
       double sumaDionica = 0.0;
@@ -391,7 +430,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       _cestarinaController.text = cestarinaUkupno.toStringAsFixed(2);
     });
   }
-  
+
   void _spremi() {
     _preracunajBrojDana();
     double km = double.tryParse(_kmController.text) ?? 0;
@@ -739,7 +778,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ]),
             const SizedBox(height: 12),
 
-       // 17) PARAMETRI NOĆENJA
+            // 17) PARAMETRI NOĆENJA
             DropdownButtonFormField<String>(
               value: _tkoPlacaNocenje,
               decoration: const InputDecoration(
