@@ -42,6 +42,38 @@ class PdfGenerator {
     }
   }
 
+  // Pomoćna metoda za dinamički dohvat opreme vozila
+  static String _dohvatiOpremuTekst(dynamic kalkulacija) {
+    try {
+      dynamic opremaMap;
+      if (kalkulacija is Map) {
+        opremaMap = kalkulacija['oprema'] ?? kalkulacija['voziloOprema'];
+      } else {
+        try { opremaMap = kalkulacija.oprema; } catch (_) {}
+        if (opremaMap == null) {
+          try { opremaMap = kalkulacija.voziloOprema; } catch (_) {}
+        }
+      }
+
+      if (opremaMap is Map) {
+        List<String> aktivna = [];
+        opremaMap.forEach((key, val) {
+          if (val == true) {
+            aktivna.add(key.toString());
+          }
+        });
+        if (aktivna.isNotEmpty) {
+          return aktivna.join(', ');
+        }
+      } else if (opremaMap is List && opremaMap.isNotEmpty) {
+        return opremaMap.join(', ');
+      } else if (opremaMap is String && opremaMap.isNotEmpty) {
+        return opremaMap;
+      }
+    } catch (_) {}
+    return 'Klima uređaj, USB Punjač';
+  }
+
   static Future<void> printajInternuKalkulaciju(dynamic kalkulacija, dynamic prijevoznik, {bool klijentUsetPdv = false, dynamic klijentObjekt}) async {
     final font = await PdfGoogleFonts.robotoRegular();
     final fontBold = await PdfGoogleFonts.robotoBold();
@@ -73,7 +105,16 @@ class PdfGenerator {
     double cijenaNocenjaVal = double.tryParse(kalkulacija.cijenaNocenja?.toString() ?? '50') ?? 50.0;
     double marzaPostotak = double.tryParse(kalkulacija.marza?.toString() ?? '20') ?? 20.0;
 
-    double potrosnjaVozila = 35.0; 
+    // Dinamičko čitanje potrošnje umjesto fiksne vrijednosti 35.0
+    double potrosnjaVozila = 10.0;
+    try {
+      if (kalkulacija is Map) {
+        potrosnjaVozila = double.tryParse(kalkulacija['potrosnja']?.toString() ?? kalkulacija['potrosnjaVozila']?.toString() ?? '10.0') ?? 10.0;
+      } else {
+        try { potrosnjaVozila = double.tryParse(kalkulacija.potrosnjaVozila?.toString() ?? '10.0') ?? 10.0; } catch (_) {}
+      }
+    } catch (_) {}
+
     double trosakGorivaNeto = ((km / 100) * potrosnjaVozila * cijenaGoriva) / 1.25;
     double trosakCestarineNeto = (kalkulacija.koristiAutocestu == true ? cestarinaBruto : 0.0) / 1.25;
     
@@ -287,6 +328,9 @@ class PdfGenerator {
     if (kalkulacija.tkoPlacaNocenje == 'Prijevoznik plaća') ukljucujeStavke.add('noćenje vozača');
     String tekstUkljucuje = ukljucujeStavke.isNotEmpty ? ukljucujeStavke.join(' i ') : 'standardne troškove prijevoza';
 
+    // Dinamički dohvat stvarne opreme vozila
+    String opremaTekst = _dohvatiOpremuTekst(kalkulacija);
+
     String pNaziv = _getVal(prijevoznik, 'naziv');
     if (pNaziv.isEmpty) pNaziv = 'Moj Obrt';
     String pVlasnik = _getVal(prijevoznik, 'vlasnik');
@@ -380,7 +424,7 @@ class PdfGenerator {
               pw.Text('Datum povratka: ${kalkulacija.datumPovratka}', style: pw.TextStyle(font: font, fontSize: 9)),
               pw.Text('Relacija: $tekstRelacije', style: pw.TextStyle(font: font, fontSize: 9)),
               pw.Text('Vozilo: ${kalkulacija.vozilo}', style: pw.TextStyle(font: font, fontSize: 9)),
-              pw.Text('Atributi vozila: Dodatna oprema (klima, wi-fi, utičnice)', style: pw.TextStyle(font: font, fontSize: 9)),
+              pw.Text('Atributi vozila: Dodatna oprema ($opremaTekst)', style: pw.TextStyle(font: font, fontSize: 9)),
               pw.Text('Ponuda uključuje: $tekstUkljucuje', style: pw.TextStyle(font: font, fontSize: 9)),
               pw.SizedBox(height: 15),
               pw.Divider(thickness: 0.5, color: PdfColors.grey400),
