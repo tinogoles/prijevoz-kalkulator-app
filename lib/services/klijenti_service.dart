@@ -17,19 +17,19 @@ class KlijentiService extends ChangeNotifier {
   List<String> get naziviKlijenata =>
       _klijenti.map((k) => k['naziv'].toString()).toList();
 
-  String get _userKey {
-    final user = FirebaseAuth.instance.currentUser;
-    return user?.email ?? user?.uid ?? 'zadani_korisnik';
+  String get _userId {
+    return FirebaseAuth.instance.currentUser?.uid ?? '';
   }
 
-  // Automatsko učitavanje klijenata s Firestore Clouda
+  // Automatsko učitavanje klijenata s Firestore Clouda (Usklađeno s users/{userId})
   Future<void> ucitajKlijente() async {
+    if (_userId.isEmpty) return;
     _isLoading = true;
     notifyListeners();
     try {
       final snapshot = await FirebaseFirestore.instance
-          .collection('korisnici')
-          .doc(_userKey)
+          .collection('users')
+          .doc(_userId)
           .collection('klijenti')
           .get();
 
@@ -48,13 +48,15 @@ class KlijentiService extends ChangeNotifier {
 
   // Dodavanje klijenta na Cloud
   Future<void> dodajKlijenta(Map<String, dynamic> klijent) async {
+    if (_userId.isEmpty) return;
     try {
       final docId = klijent['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
       klijent['id'] = docId;
+      klijent['userId'] = _userId;
 
       await FirebaseFirestore.instance
-          .collection('korisnici')
-          .doc(_userKey)
+          .collection('users')
+          .doc(_userId)
           .collection('klijenti')
           .doc(docId)
           .set(klijent, SetOptions(merge: true));
@@ -68,13 +70,15 @@ class KlijentiService extends ChangeNotifier {
 
   // Uređivanje klijenta na Cloudu
   Future<void> urediKlijenta(Map<String, dynamic> klijent) async {
+    if (_userId.isEmpty) return;
     try {
       final id = klijent['id'];
       if (id == null) return;
+      klijent['userId'] = _userId;
 
       await FirebaseFirestore.instance
-          .collection('korisnici')
-          .doc(_userKey)
+          .collection('users')
+          .doc(_userId)
           .collection('klijenti')
           .doc(id.toString())
           .set(klijent, SetOptions(merge: true));
@@ -85,16 +89,17 @@ class KlijentiService extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('Greška pri uređivanju klijenta na Cloudu: $e');
+      debugPrint('Greška pri uređivanju klijenta na Clouda: $e');
     }
   }
 
   // Brisanje klijenta s Clouda
   Future<void> obrisiKlijenta(String id) async {
+    if (_userId.isEmpty) return;
     try {
       await FirebaseFirestore.instance
-          .collection('korisnici')
-          .doc(_userKey)
+          .collection('users')
+          .doc(_userId)
           .collection('klijenti')
           .doc(id)
           .delete();
