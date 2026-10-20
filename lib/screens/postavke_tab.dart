@@ -1,9 +1,9 @@
-// lib/screens/postavke_tab.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/prijevoznik_model.dart';
 import '../services/klijenti_service.dart';
+import '../data/baza_cestarine_data.dart'; // <--- DODAN IMPORT ZA BAZU CESTARINA
 import 'vozni_park_screen.dart';
 
 class PostavkeTab extends StatefulWidget {
@@ -72,7 +72,6 @@ class _PostavkeTabState extends State<PostavkeTab> {
     }
     setState(() => _isLoading = true);
     try {
-      // Učitavanje postavki prijevoznika s nove putanje users/{userId}/postavke/glavne
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(_userId)
@@ -99,7 +98,6 @@ class _PostavkeTabState extends State<PostavkeTab> {
         _postaviPolja(widget.prijevoznik!);
       }
 
-      // Učitavanje klijenata s Clouda preko servisa
       await _klijentiService.ucitajKlijente();
     } catch (e) {
       debugPrint('Greška pri učitavanju podataka: $e');
@@ -138,26 +136,25 @@ class _PostavkeTabState extends State<PostavkeTab> {
     );
 
     try {
-      // Spremanje isključivo na novu putanju users/{userId}/postavke/glavne
       await FirebaseFirestore.instance
           .collection('users')
           .doc(_userId)
           .collection('postavke')
           .doc('glavne')
           .set({
-            'naziv': noviPrijevoznik.naziv,
-            'nazivPrijevoznika': noviPrijevoznik.naziv,
-            'vlasnik': noviPrijevoznik.vlasnik,
-            'adresa': noviPrijevoznik.adresa,
-            'grad': noviPrijevoznik.grad,
-            'oib': noviPrijevoznik.oib,
-            'email': noviPrijevoznik.email,
-            'telefon': noviPrijevoznik.telefon,
-            'banka': noviPrijevoznik.banka,
-            'iban': noviPrijevoznik.iban,
-            'uSustavuPdv': noviPrijevoznik.uSustavuPdv,
-            'userId': _userId,
-          }, SetOptions(merge: true));
+        'naziv': noviPrijevoznik.naziv,
+        'nazivPrijevoznika': noviPrijevoznik.naziv,
+        'vlasnik': noviPrijevoznik.vlasnik,
+        'adresa': noviPrijevoznik.adresa,
+        'grad': noviPrijevoznik.grad,
+        'oib': noviPrijevoznik.oib,
+        'email': noviPrijevoznik.email,
+        'telefon': noviPrijevoznik.telefon,
+        'banka': noviPrijevoznik.banka,
+        'iban': noviPrijevoznik.iban,
+        'uSustavuPdv': noviPrijevoznik.uSustavuPdv,
+        'userId': _userId,
+      }, SetOptions(merge: true));
 
       if (widget.onSpremiPrijevoznika != null) {
         widget.onSpremiPrijevoznika!(noviPrijevoznik);
@@ -562,6 +559,57 @@ class _PostavkeTabState extends State<PostavkeTab> {
                           ),
                           const SizedBox(height: 24),
                           const Divider(),
+                          // --- DODAN GUMB ZA OSVJEŽAVANJE BAZE CESTARINA ---
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Osvježavanje baze cestarina i gradova u tijeku...'),
+                                  duration: Duration(seconds: 3),
+                                ),
+                              );
+
+                              try {
+                                await BazaCestarinaData.inicijalizirajCloudBazu();
+
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Baza cestarina uspješno osvježena na Cloudu!'),
+                                      backgroundColor: Colors.green,
+                                      duration: Duration(seconds: 4),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Greška pri osvježavanju: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            icon: const Icon(Icons.sync, color: Color(0xFFEA580C)),
+                            label: const Text(
+                              'Osvježi bazu cestarina',
+                              style: TextStyle(
+                                color: Color(0xFFEA580C),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFFEA580C)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              minimumSize: const Size.fromHeight(45),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          // ------------------------------------------------
                           SizedBox(
                             width: cardWidth,
                             child: ElevatedButton.icon(
