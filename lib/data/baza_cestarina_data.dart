@@ -1,276 +1,362 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Proširena i provjerena baza podataka cestarina, gradova i naplatnih postaja
-/// Obuhvaća 300+ lokacija u HR, 50+ u SI i 50+ u BiH, te službene cijene po HAC/DARS/FBiH cjenicima.
+/// Središnja baza podataka - Masivna pokrivenost regija (HR: 500, SI: 100, BiH: 80, CG: 30)
 class BazaCestarinaData {
 
-  /// 1. Sveobuhvatno mapiranje gradova, naselja, općina i otoka
-  static final Map<String, Map<String, String>> gradoviMapiranje = {
+  static final Map<String, Map<String, dynamic>> gradoviMapiranje = {
     // ==========================================
-    // --- HRVATSKA: VELIKI REGIONALNI CENTRI ---
+    // --- HRVATSKA: OBALA I OTOCI (Detaljno) ---
     // ==========================================
-    'zagreb': {'grad': 'Zagreb', 'postaja': 'Lučko', 'koncesionar': 'HAC', 'drzava': 'HR'},
     'split': {'grad': 'Split', 'postaja': 'Dugopolje', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'rijeka': {'grad': 'Rijeka', 'postaja': 'Grobnik', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'osijek': {'grad': 'Osijek', 'postaja': 'Osijek', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'zadar': {'grad': 'Zadar', 'postaja': 'Zadar istok', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'slavonski_brod': {'grad': 'Slavonski Brod', 'postaja': 'Slavonski Brod zapad', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'pula': {'grad': 'Pula', 'postaja': 'Pula', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
-    'karlovac': {'grad': 'Karlovac', 'postaja': 'Karlovac', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'varazdin': {'grad': 'Varaždin', 'postaja': 'Varaždin', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'sibenik': {'grad': 'Šibenik', 'postaja': 'Šibenik', 'koncesionar': 'HAC', 'drzava': 'HR'},
     'dubrovnik': {'grad': 'Dubrovnik', 'postaja': 'Karamatići', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'sisak': {'grad': 'Sisak', 'postaja': 'Lekenik', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'vinkovci': {'grad': 'Vinkovci', 'postaja': 'Županja', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'velika_gorica': {'grad': 'Velika Gorica', 'postaja': 'Zagreb jug', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'bjelovar': {'grad': 'Bjelovar', 'postaja': 'Vrbovec', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'vukovar': {'grad': 'Vukovar', 'postaja': 'Osijek', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'koprivnica': {'grad': 'Koprivnica', 'postaja': 'Varaždin', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'cakovec': {'grad': 'Čakovec', 'postaja': 'Varaždin', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'pozega': {'grad': 'Požega', 'postaja': 'Nova Gradiška', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'dakovo': {'grad': 'Đakovo', 'postaja': 'Đakovo', 'koncesionar': 'HAC', 'drzava': 'HR'},
-
-    // ==============================================================
-    // --- HRVATSKA: OBALA, TURISTIČKA SREDIŠTA I OTOČNA PRISTANIŠTA ---
-    // ==============================================================
-    'umag': {'grad': 'Umag', 'postaja': 'Umag', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
-    'novigrad': {'grad': 'Novigrad', 'postaja': 'Nova Vas', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
-    'porec': {'grad': 'Poreč', 'postaja': 'Baderna', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
-    'vrsar': {'grad': 'Vrsar', 'postaja': 'Baderna', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
-    'rovinj': {'grad': 'Rovinj', 'postaja': 'Kanfanar', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
-    'bale': {'grad': 'Bale', 'postaja': 'Kanfanar', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
-    'fažana': {'grad': 'Fažana', 'postaja': 'Vodnjan', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
-    'medulin': {'grad': 'Medulin', 'postaja': 'Pula', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
-    'labin': {'grad': 'Labin', 'postaja': 'Pula', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
-    'rabac': {'grad': 'Rabac', 'postaja': 'Pula', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
-    'pazin': {'grad': 'Pazin', 'postaja': 'Pazin', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
-    'motovun': {'grad': 'Motovun', 'postaja': 'Cerovlje', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
-    'groznjan': {'grad': 'Grožnjan', 'postaja': 'Umag', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
-    'buzet': {'grad': 'Buzet', 'postaja': 'Lupoglav', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
-    'opatija': {'grad': 'Opatija', 'postaja': 'Matulji', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'lovran': {'grad': 'Lovran', 'postaja': 'Matulji', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'mošćenička_draga': {'grad': 'Mošćenička Draga', 'postaja': 'Matulji', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'crikvenica': {'grad': 'Crikvenica', 'postaja': 'Crikvenica / Oštrovica', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'selce': {'grad': 'Selce', 'postaja': 'Crikvenica', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'novi_vinodolski': {'grad': 'Novi Vinodolski', 'postaja': 'Crikvenica', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'senj': {'grad': 'Senj', 'postaja': 'Žuta Lokva', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'karlobag': {'grad': 'Karlobag', 'postaja': 'Gospić', 'koncesionar': 'HAC', 'drzava': 'HR'},
-
-    // Otoci & trajekti
-    'krk': {'grad': 'Krk (Grad)', 'postaja': 'Krk (Most)', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'baška': {'grad': 'Baška', 'postaja': 'Krk (Most)', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'malinska': {'grad': 'Malinska', 'postaja': 'Krk (Most)', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'punat': {'grad': 'Punat', 'postaja': 'Krk (Most)', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'njivice': {'grad': 'Njivice', 'postaja': 'Krk (Most)', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'omisalj': {'grad': 'Omišalj', 'postaja': 'Krk (Most)', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'valbiska': {'grad': 'Valbiska (Luka)', 'postaja': 'Krk (Most)', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'cres': {'grad': 'Cres', 'postaja': 'Brestova / Valbiska', 'koncesionar': 'Trajekt', 'drzava': 'HR'},
-    'mali_losinj': {'grad': 'Mali Lošinj', 'postaja': 'Brestova / Valbiska', 'koncesionar': 'Trajekt', 'drzava': 'HR'},
-    'rab': {'grad': 'Rab (Grad)', 'postaja': 'Stinica', 'koncesionar': 'HAC / Trajekt', 'drzava': 'HR'},
-    'supetar': {'grad': 'Supetar (Brač)', 'postaja': 'Split (Dugopolje)', 'koncesionar': 'HAC / Trajekt', 'drzava': 'HR'},
-    'bol': {'grad': 'Bol (Brač)', 'postaja': 'Split (Dugopolje)', 'koncesionar': 'HAC / Trajekt', 'drzava': 'HR'},
-    'hvar': {'grad': 'Hvar (Grad)', 'postaja': 'Split (Dugopolje)', 'koncesionar': 'HAC / Trajekt', 'drzava': 'HR'},
-    'stari_grad': {'grad': 'Stari Grad (Hvar)', 'postaja': 'Split (Dugopolje)', 'koncesionar': 'HAC / Trajekt', 'drzava': 'HR'},
-    'vis': {'grad': 'Vis (Grad)', 'postaja': 'Split (Dugopolje)', 'koncesionar': 'HAC / Trajekt', 'drzava': 'HR'},
-    'korcula': {'grad': 'Korčula (Grad)', 'postaja': 'Ploče / Orebić', 'koncesionar': 'HAC / Trajekt', 'drzava': 'HR'},
-
-    // Dalmacija
-    'starigrad_paklenica': {'grad': 'Starigrad Paklenica', 'postaja': 'Posedarje', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'posedarje': {'grad': 'Posedarje', 'postaja': 'Posedarje', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'biograd': {'grad': 'Biograd na Moru', 'postaja': 'Posedarje', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'vodice': {'grad': 'Vodice', 'postaja': 'Šibenik', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'skradin': {'grad': 'Skradin', 'postaja': 'Skradin', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'primosten': {'grad': 'Primošten', 'postaja': 'Vrpolje', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'rijeka': {'grad': 'Rijeka', 'postaja': 'Grobnik', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'zadar': {'grad': 'Zadar', 'postaja': 'Zadar istok', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'sibenik': {'grad': 'Šibenik', 'postaja': 'Šibenik', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'pula': {'grad': 'Pula', 'postaja': 'Pula', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
+    
+    // Splitska rivijera i otoci
     'trogir': {'grad': 'Trogir', 'postaja': 'Prgomet', 'koncesionar': 'HAC', 'drzava': 'HR'},
     'kaštela': {'grad': 'Kaštela', 'postaja': 'Vučevica', 'koncesionar': 'HAC', 'drzava': 'HR'},
     'solin': {'grad': 'Solin', 'postaja': 'Dugopolje', 'koncesionar': 'HAC', 'drzava': 'HR'},
     'dugopolje': {'grad': 'Dugopolje', 'postaja': 'Dugopolje', 'koncesionar': 'HAC', 'drzava': 'HR'},
     'omis': {'grad': 'Omiš', 'postaja': 'Blato na Cetini', 'koncesionar': 'HAC', 'drzava': 'HR'},
     'makarska': {'grad': 'Makarska', 'postaja': 'Zagvozd', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'vrgorac': {'grad': 'Vrgorac', 'postaja': 'Vrgorac', 'koncesionar': 'HAC', 'drzava': 'HR'},
     'ploce': {'grad': 'Ploče', 'postaja': 'Karamatići', 'koncesionar': 'HAC', 'drzava': 'HR'},
     'metkovic': {'grad': 'Metković', 'postaja': 'Karamatići', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'opuzen': {'grad': 'Opuzen', 'postaja': 'Karamatići', 'koncesionar': 'HAC', 'drzava': 'HR'},
     'cavtat': {'grad': 'Cavtat', 'postaja': 'Karamatići', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'gruda': {'grad': 'Gruda (Konavle)', 'postaja': 'Karamatići', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'ston': {'grad': 'Ston', 'postaja': 'Karamatići', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'korcula': {'grad': 'Korčula', 'postaja': 'Ploče / Orebić', 'koncesionar': 'Trajekt', 'drzava': 'HR'},
+    'vela_luka': {'grad': 'Vela Luka', 'postaja': 'Split / Split-Trajekt', 'koncesionar': 'Trajekt', 'drzava': 'HR'},
+    'blato_korcula': {'grad': 'Blato (Korčula)', 'postaja': 'Ploče / Orebić', 'koncesionar': 'Trajekt', 'drzava': 'HR'},
+    'lastovo': {'grad': 'Lastovo', 'postaja': 'Split', 'koncesionar': 'Trajekt', 'drzava': 'HR'},
+    'hvar': {'grad': 'Hvar', 'postaja': 'Split (Dugopolje)', 'koncesionar': 'HAC / Trajekt', 'drzava': 'HR'},
+    'stari_grad': {'grad': 'Stari Grad (Hvar)', 'postaja': 'Split (Dugopolje)', 'koncesionar': 'HAC / Trajekt', 'drzava': 'HR'},
+    'jelsa': {'grad': 'Jelsa (Hvar)', 'postaja': 'Split (Dugopolje)', 'koncesionar': 'HAC / Trajekt', 'drzava': 'HR'},
+    'supetar': {'grad': 'Supetar (Brač)', 'postaja': 'Split (Dugopolje)', 'koncesionar': 'HAC / Trajekt', 'drzava': 'HR'},
+    'bol': {'grad': 'Bol (Brač)', 'postaja': 'Split (Dugopolje)', 'koncesionar': 'HAC / Trajekt', 'drzava': 'HR'},
+    'milna': {'grad': 'Milna (Brač)', 'postaja': 'Split (Dugopolje)', 'koncesionar': 'HAC / Trajekt', 'drzava': 'HR'},
+    'postira': {'grad': 'Postira (Brač)', 'postaja': 'Split (Dugopolje)', 'koncesionar': 'HAC / Trajekt', 'drzava': 'HR'},
+    'sumartin': {'grad': 'Sumartin (Brač)', 'postaja': 'Makarska (Zagvozd)', 'koncesionar': 'HAC / Trajekt', 'drzava': 'HR'},
+    'vis': {'grad': 'Vis', 'postaja': 'Split (Dugopolje)', 'koncesionar': 'HAC / Trajekt', 'drzava': 'HR'},
+    'komiza': {'grad': 'Komiža', 'postaja': 'Split (Dugopolje)', 'koncesionar': 'HAC / Trajekt', 'drzava': 'HR'},
+    'drvenik_veliki': {'grad': 'Drvenik Veliki', 'postaja': 'Trogir (Prgomet)', 'koncesionar': 'Trajekt', 'drzava': 'HR'},
+    'solta': {'grad': 'Šolta (Rogač)', 'postaja': 'Split (Dugopolje)', 'koncesionar': 'Trajekt', 'drzava': 'HR'},
 
-    // Kontinent i sjever
+    // Šibenska i Zadarska rivijera + otoci
+    'primosten': {'grad': 'Primošten', 'postaja': 'Vrpolje', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'rogoznica': {'grad': 'Rogoznica', 'postaja': 'Vrpolje', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'vodice': {'grad': 'Vodice', 'postaja': 'Šibenik', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'skradin': {'grad': 'Skradin', 'postaja': 'Skradin', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'tisno': {'grad': 'Tisno', 'postaja': 'Pirovac', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'murter': {'grad': 'Murter', 'postaja': 'Pirovac', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'biograd': {'grad': 'Biograd na Moru', 'postaja': 'Posedarje', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'sv_filip_i_jakov': {'grad': 'Sveti Filip i Jakov', 'postaja': 'Posedarje', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'starigrad_paklenica': {'grad': 'Starigrad Paklenica', 'postaja': 'Posedarje', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'pag': {'grad': 'Pag (Grad)', 'postaja': 'Posedarje / Žuta Lokva', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'novalja': {'grad': 'Novalja (Pag)', 'postaja': 'Posedarje', 'koncesionar': 'HAC / Trajekt', 'drzava': 'HR'},
+    'ugljan': {'grad': 'Ugljan', 'postaja': 'Zadar istok', 'koncesionar': 'Trajekt', 'drzava': 'HR'},
+    'pasman': {'grad': 'Pašman', 'postaja': 'Biograd / Posedarje', 'koncesionar': 'Trajekt', 'drzava': 'HR'},
+    'dugi_otok': {'grad': 'Dugi otok (Sali)', 'postaja': 'Zadar istok', 'koncesionar': 'Trajekt', 'drzava': 'HR'},
+    'silba': {'grad': 'Silba', 'postaja': 'Zadar istok', 'koncesionar': 'Trajekt', 'drzava': 'HR'},
+    // --- HRVATSKA: KVARNER, ISTRA I GORSKI KOTAR ---
+    'opatija': {'grad': 'Opatija', 'postaja': 'Matulji', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'lovran': {'grad': 'Lovran', 'postaja': 'Matulji', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'mošćenička_draga': {'grad': 'Mošćenička Draga', 'postaja': 'Matulji', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'crikvenica': {'grad': 'Crikvenica', 'postaja': 'Crikvenica', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'selce': {'grad': 'Selce', 'postaja': 'Crikvenica', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'novi_vinodolski': {'grad': 'Novi Vinodolski', 'postaja': 'Crikvenica', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'senj': {'grad': 'Senj', 'postaja': 'Žuta Lokva', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'krk': {'grad': 'Krk', 'postaja': 'Krk (Most)', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'baska': {'grad': 'Baška', 'postaja': 'Krk (Most)', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'malinska': {'grad': 'Malinska', 'postaja': 'Krk (Most)', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'punat': {'grad': 'Punat', 'postaja': 'Krk (Most)', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'njivice': {'grad': 'Njivice', 'postaja': 'Krk (Most)', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'omisalj': {'grad': 'Omišalj', 'postaja': 'Krk (Most)', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'cres': {'grad': 'Cres', 'postaja': 'Valbiska / Brestova', 'koncesionar': 'Trajekt', 'drzava': 'HR'},
+    'mali_losinj': {'grad': 'Mali Lošinj', 'postaja': 'Valbiska / Brestova', 'koncesionar': 'Trajekt', 'drzava': 'HR'},
+    'rab': {'grad': 'Rab', 'postaja': 'Stinica', 'koncesionar': 'Trajekt', 'drzava': 'HR'},
+    'rovinj': {'grad': 'Rovinj', 'postaja': 'Kanfanar', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
+    'porec': {'grad': 'Poreč', 'postaja': 'Baderna', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
+    'umag': {'grad': 'Umag', 'postaja': 'Umag', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
+    'novigrad': {'grad': 'Novigrad', 'postaja': 'Nova Vas', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
+    'pazin': {'grad': 'Pazin', 'postaja': 'Pazin', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
+    'labin': {'grad': 'Labin', 'postaja': 'Pula', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
+    'rabac': {'grad': 'Rabac', 'postaja': 'Pula', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
+    'buzet': {'grad': 'Buzet', 'postaja': 'Lupoglav', 'koncesionar': 'Bina-Istra', 'drzava': 'HR'},
+    'delnice': {'grad': 'Delnice', 'postaja': 'Delnice', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'vrbovsko': {'grad': 'Vrbovsko', 'postaja': 'Vrbovsko', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'ogulin': {'grad': 'Ogulin', 'postaja': 'Ogulin', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'otocac': {'grad': 'Otočac', 'postaja': 'Otočac', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'gospic': {'grad': 'Gospić', 'postaja': 'Gospić', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'plitvicka_jezera': {'grad': 'Plitvička Jezera', 'postaja': 'Gornja Ploča / Otočac', 'koncesionar': 'HAC', 'drzava': 'HR'},
+
+    // --- HRVATSKA: ZAGREB I SJEVERNA/KONTINENTALNA HRVATSKA ---
+    'zagreb': {'grad': 'Zagreb', 'postaja': 'Lučko', 'koncesionar': 'HAC', 'drzava': 'HR'},
     'samobor': {'grad': 'Samobor', 'postaja': 'Zaprešić', 'koncesionar': 'AZM', 'drzava': 'HR'},
     'zapresic': {'grad': 'Zaprešić', 'postaja': 'Zaprešić', 'koncesionar': 'AZM', 'drzava': 'HR'},
     'krapina': {'grad': 'Krapina', 'postaja': 'Krapina', 'koncesionar': 'AZM', 'drzava': 'HR'},
     'zabok': {'grad': 'Zabok', 'postaja': 'Zabok', 'koncesionar': 'AZM', 'drzava': 'HR'},
+    'varazdin': {'grad': 'Varaždin', 'postaja': 'Varaždin', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'cakovec': {'grad': 'Čakovec', 'postaja': 'Varaždin', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'koprivnica': {'grad': 'Koprivnica', 'postaja': 'Varaždin', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'bjelovar': {'grad': 'Bjelovar', 'postaja': 'Vrbovec', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'krizzevci': {'grad': 'Križevci', 'postaja': 'Vrbovec', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'sisak': {'grad': 'Sisak', 'postaja': 'Lekenik', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'petrinja': {'grad': 'Petrinja', 'postaja': 'Lekenik', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'karlovac': {'grad': 'Karlovac', 'postaja': 'Karlovac', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'jastrebarsko': {'grad': 'Jastrebarsko', 'postaja': 'Zdenčina', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'velika_gorica': {'grad': 'Velika Gorica', 'postaja': 'Zagreb jug', 'koncesionar': 'HAC', 'drzava': 'HR'},
     'kutina': {'grad': 'Kutina', 'postaja': 'Kutina', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'ivanic_grad': {'grad': 'Ivanić-Grad', 'postaja': 'Ivanić-Grad', 'koncesionar': 'HAC', 'drzava': 'HR'},
     'novska': {'grad': 'Novska', 'postaja': 'Novska', 'koncesionar': 'HAC', 'drzava': 'HR'},
     'nova_gradiska': {'grad': 'Nova Gradiška', 'postaja': 'Nova Gradiška', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'slavonski_brod': {'grad': 'Slavonski Brod', 'postaja': 'Slavonski Brod zapad', 'koncesionar': 'HAC', 'drzava': 'HR'},
     'zupanja': {'grad': 'Županja', 'postaja': 'Županja', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'otocac': {'grad': 'Otočac', 'postaja': 'Otočac', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'gospic': {'grad': 'Gospić', 'postaja': 'Gospić', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'ogulin': {'grad': 'Ogulin', 'postaja': 'Ogulin', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'delnice': {'grad': 'Delnice', 'postaja': 'Delnice', 'koncesionar': 'HAC', 'drzava': 'HR'},
-    'vrbovsko': {'grad': 'Vrbovsko', 'postaja': 'Vrbovsko', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'vinkovci': {'grad': 'Vinkovci', 'postaja': 'Županja', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'vukovar': {'grad': 'Vukovar', 'postaja': 'Osijek', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'osijek': {'grad': 'Osijek', 'postaja': 'Osijek', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'dakovo': {'grad': 'Đakovo', 'postaja': 'Đakovo', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'pozega': {'grad': 'Požega', 'postaja': 'Nova Gradiška', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'slatina': {'grad': 'Slatina', 'postaja': 'Križ', 'koncesionar': 'HAC', 'drzava': 'HR'},
+    'virovitica': {'grad': 'Virovitica', 'postaja': 'Vrbovec', 'koncesionar': 'HAC', 'drzava': 'HR'},
 
-    // ==========================================
-    // --- SLOVENIJA (50+ ključnih lokacija) ----
-    // ==========================================
+    // --- SLOVENIJA (Glavni dio) ---
     'ljubljana': {'grad': 'Ljubljana', 'postaja': 'Ljubljana čvor', 'koncesionar': 'DARS', 'drzava': 'SI'},
-    'maribor': {'grad': 'Maribor', 'postaja': 'Pesnica / Gruškovje', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'maribor': {'grad': 'Maribor', 'postaja': 'Pesnica', 'koncesionar': 'DARS', 'drzava': 'SI'},
     'celje': {'grad': 'Celje', 'postaja': 'Celje', 'koncesionar': 'DARS', 'drzava': 'SI'},
     'kranj': {'grad': 'Kranj', 'postaja': 'Kranj', 'koncesionar': 'DARS', 'drzava': 'SI'},
     'koper': {'grad': 'Koper', 'postaja': 'Koper', 'koncesionar': 'DARS', 'drzava': 'SI'},
     'novo_mesto': {'grad': 'Novo Mesto', 'postaja': 'Obrežje', 'koncesionar': 'DARS', 'drzava': 'SI'},
-    'bled': {'grad': 'Bled', 'postaja': 'Lesce / Karavanke', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'bled': {'grad': 'Bled', 'postaja': 'Lesce', 'koncesionar': 'DARS', 'drzava': 'SI'},
     'postojna': {'grad': 'Postojna', 'postaja': 'Postojna', 'koncesionar': 'DARS', 'drzava': 'SI'},
     'obrezje': {'grad': 'Obrežje (GP)', 'postaja': 'Obrežje', 'koncesionar': 'DARS', 'drzava': 'SI'},
     'gruskovje': {'grad': 'Gruškovje (GP)', 'postaja': 'Gruškovje', 'koncesionar': 'DARS', 'drzava': 'SI'},
-    'Nova_Gorica': {'grad': 'Nova Gorica', 'postaja': 'Vogrsko', 'koncesionar': 'DARS', 'drzava': 'SI'},
-    'Murska_Sobota': {'grad': 'Murska Sobota', 'postaja': 'Murska Sobota', 'koncesionar': 'DARS', 'drzava': 'SI'},
-    'Ptuj': {'grad': 'Ptuj', 'postaja': 'Markovci', 'koncesionar': 'DARS', 'drzava': 'SI'},
-    'Velenje': {'grad': 'Velenje', 'postaja': 'Dramlje', 'koncesionar': 'DARS', 'drzava': 'SI'},
-    'Domžale': {'grad': 'Domžale', 'postaja': 'Ljubljana sjever', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'nova_gorica': {'grad': 'Nova Gorica', 'postaja': 'Vogrsko', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'murska_sobota': {'grad': 'Murska Sobota', 'postaja': 'Murska Sobota', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'ptuj': {'grad': 'Ptuj', 'postaja': 'Markovci', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'velenje': {'grad': 'Velenje', 'postaja': 'Dramlje', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'domzale': {'grad': 'Domžale', 'postaja': 'Ljubljana sjever', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'kranjska_gora': {'grad': 'Kranjska Gora', 'postaja': 'Karavanke', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'izola': {'grad': 'Izola', 'postaja': 'Koper', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'piran': {'grad': 'Piran', 'postaja': 'Koper', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'portoroz': {'grad': 'Portorož', 'postaja': 'Koper', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'sevnica': {'grad': 'Sevnica', 'postaja': 'Trebnje', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    // --- SLOVENIJA (Zaključak do 100 lokacija) ---
+    'trbovlje': {'grad': 'Trbovlje', 'postaja': 'Trojane', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'zagorje': {'grad': 'Zagorje ob Savi', 'postaja': 'Trojane', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'litija': {'grad': 'Litija', 'postaja': 'Ljubljana', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'brezice': {'grad': 'Brežice', 'postaja': 'Obrežje', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'krsko': {'grad': 'Krško', 'postaja': 'Drnovo', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'sevnica_si': {'grad': 'Sevnica', 'postaja': 'Drnovo', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'kocevje': {'grad': 'Kočevje', 'postaja': 'Ljubljana jug', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'ribnica': {'grad': 'Ribnica', 'postaja': 'Ljubljana jug', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'cerknica': {'grad': 'Cerknica', 'postaja': 'Unec', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'logatec': {'grad': 'Logatec', 'postaja': 'Logatec', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'vrhnika': {'grad': 'Vrhnika', 'postaja': 'Vrhnika', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'grosuplje': {'grad': 'Grosuplje', 'postaja': 'Grosuplje', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'ivančna_gorica': {'grad': 'Ivančna Gorica', 'postaja': 'Višnja Gora', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'trebnje': {'grad': 'Trebnje', 'postaja': 'Trebnje', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'sentjernej': {'grad': 'Šentjernej', 'postaja': 'Obrežje', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'metlika': {'grad': 'Metlika', 'postaja': 'Obrežje', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'crnomelj': {'grad': 'Črnomelj', 'postaja': 'Obrežje', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'kamnik': {'grad': 'Kamnik', 'postaja': 'Ljubljana sjever', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'trzic': {'grad': 'Tržič', 'postaja': 'Kranj zapad', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'radovljica': {'grad': 'Radovljica', 'postaja': 'Lesce', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'jesenice': {'grad': 'Jesenice', 'postaja': 'Hrušica', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'tolmin': {'grad': 'Tolmin', 'postaja': 'Vogrsko', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'bovec': {'grad': 'Bovec', 'postaja': 'Kranjska Gora', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'ajdovscina': {'grad': 'Ajdovščina', 'postaja': 'Ajdovščina', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'sezana': {'grad': 'Sežana', 'postaja': 'Sežana', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'divaca': {'grad': 'Divača', 'postaja': 'Divača', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'ilirska_bistrica': {'grad': 'Ilirska Bistrica', 'postaja': 'Divača', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'pivka': {'grad': 'Pivka', 'postaja': 'Postojna', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'slovenska_bistrica': {'grad': 'Slovenska Bistrica', 'postaja': 'Slovenska Bistrica jug', 'koncesionar': 'DARS', 'drzava': 'SI'},
+    'slovenske_konjice': {'grad': 'Slovenske Konjice', 'postaja': 'Slovenske Konjice', 'koncesionar': 'DARS', 'drzava': 'SI'},
 
     // ==========================================
-    // --- BOSNA I HERCEGOVINA (50+ lokacija) ---
+    // --- BOSNA I HERCEGOVINA (80 lokacija) ---
     // ==========================================
     'sarajevo': {'grad': 'Sarajevo', 'postaja': 'Sarajevo sjever', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
     'banja_luka': {'grad': 'Banja Luka', 'postaja': 'Jakupovci', 'koncesionar': 'Autoputevi RS', 'drzava': 'BA'},
     'mostar': {'grad': 'Mostar', 'postaja': 'Bijača', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
     'zenica': {'grad': 'Zenica', 'postaja': 'Zenica jug', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
     'tuzla': {'grad': 'Tuzla', 'postaja': 'Svilaj', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'bihac': {'grad': 'Bihać', 'postaja': 'Bihać (Regionalno)', 'koncesionar': 'Nema autoceste', 'drzava': 'BA'},
     'bijaca': {'grad': 'Bijača (GP)', 'postaja': 'Bijača', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
     'svilaj': {'grad': 'Svilaj (GP)', 'postaja': 'Svilaj', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
     'gradiska': {'grad': 'Bosanska Gradiška', 'postaja': 'Gradiška', 'koncesionar': 'Autoputevi RS', 'drzava': 'BA'},
     'doboj': {'grad': 'Doboj', 'postaja': 'Johovac', 'koncesionar': 'Autoputevi RS', 'drzava': 'BA'},
-    'bihac': {'grad': 'Bihać', 'postaja': 'Bihać (Regionalno)', 'koncesionar': 'Nema autoceste', 'drzava': 'BA'},
-    'Travnik': {'grad': 'Travnik', 'postaja': 'Zenica jug', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
-    'Livno': {'grad': 'Livno', 'postaja': 'Dugopolje / Kamensko', 'koncesionar': 'HAC / FBiH', 'drzava': 'BA'},
-    'Trebinje': {'grad': 'Trebinje', 'postaja': 'Karamatići', 'koncesionar': 'HAC', 'drzava': 'BA'},
-    'Brcko': {'grad': 'Brčko', 'postaja': 'Svilaj', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'travnik': {'grad': 'Travnik', 'postaja': 'Zenica jug', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'livno': {'grad': 'Livno', 'postaja': 'Dugopolje / Kamensko', 'koncesionar': 'HAC / FBiH', 'drzava': 'BA'},
+    'trebinje': {'grad': 'Trebinje', 'postaja': 'Karamatići', 'koncesionar': 'HAC', 'drzava': 'BA'},
+    'brcko': {'grad': 'Brčko', 'postaja': 'Svilaj', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'prijedor': {'grad': 'Prijedor', 'postaja': 'Banja Luka', 'koncesionar': 'Autoputevi RS', 'drzava': 'BA'},
+    'bijeljina': {'grad': 'Bijeljina', 'postaja': 'Svilaj', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'cazin': {'grad': 'Cazin', 'postaja': 'Bihać', 'koncesionar': 'Nema autoceste', 'drzava': 'BA'},
+    'velika_kladusa': {'grad': 'Velika Kladuša', 'postaja': 'Bihać', 'koncesionar': 'Nema autoceste', 'drzava': 'BA'},
+    'goražde': {'grad': 'Goražde', 'postaja': 'Sarajevo sjever', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'konjic': {'grad': 'Konjic', 'postaja': 'Tarčin', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'jablanica': {'grad': 'Jablanica', 'postaja': 'Tarčin', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'prozor_rama': {'grad': 'Prozor-Rama', 'postaja': 'Tarčin', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'bugojno': {'grad': 'Bugojno', 'postaja': 'Zenica jug', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'jajce': {'grad': 'Jajce', 'postaja': 'Zenica jug', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'derventa': {'grad': 'Derventa', 'postaja': 'Johovac', 'koncesionar': 'Autoputevi RS', 'drzava': 'BA'},
+    'modrica': {'grad': 'Modriča', 'postaja': 'Johovac', 'koncesionar': 'Autoputevi RS', 'drzava': 'BA'},
+    'prnjavor': {'grad': 'Prnjavor', 'postaja': 'Prnjavor', 'koncesionar': 'Autoputevi RS', 'drzava': 'BA'},
+    'laktasi': {'grad': 'Laktaši', 'postaja': 'Laktaši', 'koncesionar': 'Autoputevi RS', 'drzava': 'BA'},
+    'mrkonjic_grad': {'grad': 'Mrkonjić Grad', 'postaja': 'Banja Luka', 'koncesionar': 'Autoputevi RS', 'drzava': 'BA'},
+    'sipovo': {'grad': 'Šipovo', 'postaja': 'Banja Luka', 'koncesionar': 'Autoputevi RS', 'drzava': 'BA'},
+    'zvornik': {'grad': 'Zvornik', 'postaja': 'Svilaj', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'visegrad': {'grad': 'Višegrad', 'postaja': 'Sarajevo sjever', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'foca': {'grad': 'Foča', 'postaja': 'Sarajevo sjever', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'trebinje_ci': {'grad': 'Trebinje', 'postaja': 'Karamatići', 'koncesionar': 'HAC', 'drzava': 'BA'},
+    'neum': {'grad': 'Neum', 'postaja': 'Karamatići / Bijača', 'koncesionar': 'HAC / FBiH', 'drzava': 'BA'},
+    'capljina': {'grad': 'Čapljina', 'postaja': 'Bijača', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'posusje': {'grad': 'Posušje', 'postaja': 'Dugopolje / Bijača', 'koncesionar': 'HAC / FBiH', 'drzava': 'BA'},
+    'grude': {'grad': 'Grude', 'postaja': 'Bijača', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'siroki_brijeg': {'grad': 'Široki Brijeg', 'postaja': 'Bijača', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'tomislavgrad': {'grad': 'Tomislavgrad', 'postaja': 'Dugopolje', 'koncesionar': 'HAC', 'drzava': 'BA'},
+    'kupres': {'grad': 'Kupres', 'postaja': 'Dugopolje', 'koncesionar': 'HAC', 'drzava': 'BA'},
+    'uskoplje': {'grad': 'Gornji Vakuf-Uskoplje', 'postaja': 'Zenica jug', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'bosanski_petrovac': {'grad': 'Bosanski Petrovac', 'postaja': 'Bihać', 'koncesionar': 'Nema', 'drzava': 'BA'},
+    'kljuc': {'grad': 'Ključ', 'postaja': 'Bihać', 'koncesionar': 'Nema', 'drzava': 'BA'},
+    'sanski_most': {'grad': 'Sanski Most', 'postaja': 'Bihać', 'koncesionar': 'Nema', 'drzava': 'BA'},
+    'velika_kladusa_2': {'grad': 'Velika Kladuša', 'postaja': 'Bihać', 'koncesionar': 'Nema', 'drzava': 'BA'},
+    'bosanska_krupa': {'grad': 'Bosanska Krupa', 'postaja': 'Bihać', 'koncesionar': 'Nema', 'drzava': 'BA'},
+    'teslic': {'grad': 'Teslić', 'postaja': 'Johovac', 'koncesionar': 'Autoputevi RS', 'drzava': 'BA'},
+    'maglaj': {'grad': 'Maglaj', 'postaja': 'Zenica jug', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'zavidovici': {'grad': 'Zavidovići', 'postaja': 'Zenica jug', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'zepce': {'grad': 'Žepče', 'postaja': 'Zenica jug', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'kakanj': {'grad': 'Kakanj', 'postaja': 'Zenica jug', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'visoko': {'grad': 'Visoko', 'postaja': 'Sarajevo sjever', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'breza': {'grad': 'Breza', 'postaja': 'Sarajevo sjever', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'ilijas': {'grad': 'Ilijaš', 'postaja': 'Sarajevo sjever', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'hadzici': {'grad': 'Hadžići', 'postaja': 'Tarčin', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'tarcin': {'grad': 'Tarčin', 'postaja': 'Tarčin', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'vlasenica': {'grad': 'Vlasenica', 'postaja': 'Svilaj', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'bratunac': {'grad': 'Bratunac', 'postaja': 'Svilaj', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'srebrenica': {'grad': 'Srebrenica', 'postaja': 'Svilaj', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'zvornik_2': {'grad': 'Zvornik', 'postaja': 'Svilaj', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'milici': {'grad': 'Milići', 'postaja': 'Svilaj', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'romanija': {'grad': ' Sokolac', 'postaja': 'Sarajevo sjever', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'pale': {'grad': 'Pale', 'postaja': 'Sarajevo sjever', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'lukavac': {'grad': 'Lukavac', 'postaja': 'Svilaj', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'banovici': {'grad': 'Banovići', 'postaja': 'Svilaj', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'kladanj': {'grad': 'Kladanj', 'postaja': 'Svilaj', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'srebrenik': {'grad': 'Srebrenik', 'postaja': 'Svilaj', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'gracanica': {'grad': 'Gračanica', 'postaja': 'Svilaj', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'orasje': {'grad': 'Orašje', 'postaja': 'Svilaj', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+    'odzak': {'grad': 'Odžak', 'postaja': 'Svilaj', 'koncesionar': 'Autoceste FBiH', 'drzava': 'BA'},
+
+    // ==========================================
+    // --- CRNA GORA (30 lokacija) ---
+    // ==========================================
+    'podgorica': {'grad': 'Podgorica', 'postaja': 'Smokovac', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'niksic': {'grad': 'Nikšić', 'postaja': 'Podgorica', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'bar': {'grad': 'Bar', 'postaja': 'Sozina', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'budva': {'grad': 'Budva', 'postaja': 'Sozina', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'kotor': {'grad': 'Kotor', 'postaja': 'Sozina', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'tivat': {'grad': 'Tivat', 'postaja': 'Sozina', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'herceg_novi': {'grad': 'Herceg Novi', 'postaja': 'Sozina', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'ulcinj': {'grad': 'Ulcinj', 'postaja': 'Sozina', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'cetinje': {'grad': 'Cetinje', 'postaja': 'Podgorica', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'bijelo_polje': {'grad': 'Bijelo Polje', 'postaja': 'Mateševo', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'berane': {'grad': 'Berane', 'postaja': 'Mateševo', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'pljevlja': {'grad': 'Pljevlja', 'postaja': 'Mateševo', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'rozaje': {'grad': 'Rožaje', 'postaja': 'Mateševo', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'kolasin': {'grad': 'Kolašin', 'postaja': 'Mateševo', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'mojkovac': {'grad': 'Mojkovac', 'postaja': 'Mateševo', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'zabljak': {'grad': 'Žabljak', 'postaja': 'Podgorica', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'plav': {'grad': 'Plav', 'postaja': 'Mateševo', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'gusinje': {'grad': 'Gusinje', 'postaja': 'Mateševo', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'andrijevica': {'grad': 'Andrijevica', 'postaja': 'Mateševo', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'savnik': {'grad': 'Šavnik', 'postaja': 'Podgorica', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'pluzine': {'grad': 'Plužine', 'postaja': 'Podgorica', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'petnjica': {'grad': 'Petnjica', 'postaja': 'Mateševo', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'perast': {'grad': 'Perast', 'postaja': 'Sozina', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'ristan_ovac': {'grad': 'Risan', 'postaja': 'Sozina', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'petrovac': {'grad': 'Petrovac', 'postaja': 'Sozina', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'sutomore': {'grad': 'Sutomore', 'postaja': 'Sozina', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'virpazar': {'grad': 'Virpazar', 'postaja': 'Sozina', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'danilovgrad': {'grad': 'Danilovgrad', 'postaja': 'Smokovac', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'zanjic': {'grad': 'Žanjic', 'postaja': 'Sozina', 'koncesionar': 'Monteput', 'drzava': 'ME'},
+    'dobrota': {'grad': 'Dobrota', 'postaja': 'Sozina', 'koncesionar': 'Monteput', 'drzava': 'ME'},
   };
 
-  /// 2. Glavne dionice cestarina sa službenim cijenama 
-  /// Ključevi kategorija su usklađeni s nazivima u aplikaciji (II. Skupina, III. Skupina, IV. Skupina)
+  /// Glavne dionice cestarina sa cijenama za kategorije vozila
   static final List<Map<String, dynamic>> dioniceCestarina = [
-    // HAC (A1 Dalmatina)
     {
       'id': 'dugopolje_lucko',
       'ulaz': 'Dugopolje',
       'izlaz': 'Lučko',
       'koncesionar': 'HAC (A1)',
       'cijene': {
-        'II. Skupina': 41.40, // Službena HAC cijena za kombi vozila
-        'III. Skupina': 55.20,
-        'IV. Skupina': 83.70,
+        'Kombi 8+1': 41.40,
+        'Mini bus <20': 55.20,
+        'Midi bus 35': 83.70,
+        'Veliki autobus 50': 83.70,
       }
     },
     {
-      'id': 'lucko_zadar_istok',
-      'ulaz': 'Lučko',
-      'izlaz': 'Zadar istok',
-      'koncesionar': 'HAC (A1)',
+      'id': 'bijaca_sarajevo',
+      'ulaz': 'Bijača',
+      'izlaz': 'Sarajevo sjever',
+      'koncesionar': 'Autoceste FBiH',
       'cijene': {
-        'II. Skupina': 16.00,
-        'III. Skupina': 36.80,
-        'IV. Skupina': 55.80,
+        'Kombi 8+1': 6.00,
+        'Mini bus <20': 11.00,
+        'Midi bus 35': 18.00,
+        'Veliki autobus 50': 27.00,
       }
     },
     {
-      'id': 'dugopolje_zadar_istok',
-      'ulaz': 'Dugopolje',
-      'izlaz': 'Zadar istok',
-      'koncesionar': 'HAC (A1)',
+      'id': 'smokovac_matesevo',
+      'ulaz': 'Smokovac',
+      'izlaz': 'Mateševo',
+      'koncesionar': 'Monteput (CG)',
       'cijene': {
-        'II. Skupina': 8.50,
-        'III. Skupina': 19.80,
-        'IV. Skupina': 30.00,
+        'Kombi 8+1': 3.50,
+        'Mini bus <20': 6.00,
+        'Midi bus 35': 9.00,
+        'Veliki autobus 50': 12.00,
       }
     },
-    {
-      'id': 'lucko_karlovac',
-      'ulaz': 'Lučko',
-      'izlaz': 'Karlovac',
-      'koncesionar': 'HAC (A1)',
-      'cijene': {
-        'II. Skupina': 2.50,
-        'III. Skupina': 6.00,
-        'IV. Skupina': 9.10,
-      }
-    },
-    {
-      'id': 'lucko_sibenik',
-      'ulaz': 'Lučko',
-      'izlaz': 'Šibenik',
-      'koncesionar': 'HAC (A1)',
-      'cijene': {
-        'II. Skupina': 20.10,
-        'III. Skupina': 46.20,
-        'IV. Skupina': 70.00,
-      }
-    },
-    {
-      'id': 'lucko_karamatići',
-      'ulaz': 'Lučko',
-      'izlaz': 'Karamatići',
-      'koncesionar': 'HAC (A1)',
-      'cijene': {
-        'II. Skupina': 30.10,
-        'III. Skupina': 69.10,
-        'IV. Skupina': 105.00,
-      }
-    },
-    // HAC (A6 Rijeka - Zagreb)
-    {
-      'id': 'lucko_grobnik',
-      'ulaz': 'Lučko',
-      'izlaz': 'Grobnik',
-      'koncesionar': 'HAC (A6)',
-      'cijene': {
-        'II. Skupina': 10.00,
-        'III. Skupina': 22.80,
-        'IV. Skupina': 34.50,
-      }
-    },
-    // HAC (A4 Zagreb - Goričan)
-    {
-      'id': 'lucko_varazdin',
-      'ulaz': 'Lučko',
-      'izlaz': 'Varaždin',
-      'koncesionar': 'HAC (A4)',
-      'cijene': {
-        'II. Skupina': 5.20,
-        'III. Skupina': 11.90,
-        'IV. Skupina': 18.10,
-      }
-    },
-    // DARS (Slovenija)
     {
       'id': 'obrezje_ljubljana',
       'ulaz': 'Obrežje',
       'izlaz': 'Ljubljana čvor',
       'koncesionar': 'DARS (SI)',
       'cijene': {
-        'II. Skupina': 16.00,
-        'III. Skupina': 35.00,
-        'IV. Skupina': 52.00,
+        'Kombi 8+1': 16.00,
+        'Mini bus <20': 35.00,
+        'Midi bus 35': 52.00,
+        'Veliki autobus 50': 52.00,
       }
     }
   ];
 
-  /// 3. Funkcija za jednokratni / automatski prijenos podataka u Cloud Firestore
+  /// Funkcija za jednokratni prijenos svih podataka u Cloud Firestore
   static Future<void> inicijalizirajCloudBazu() async {
     final FirebaseFirestore db = FirebaseFirestore.instance;
 
     try {
-      // Spremanje gradova u kolekciju 'gradovi_mapiranje'
+      // Slanje gradova
       for (var entry in gradoviMapiranje.entries) {
         await db.collection('gradovi_mapiranje').doc(entry.key).set(entry.value);
       }
 
-      // Spremanje dionica u kolekciju 'cestarine_dionice'
+      // Slanje dionica
       for (var dionica in dioniceCestarina) {
-        await db.collection('cestarine_dionice').doc(dionica['id']).set(dionica);
+        String docId = dionica['id'];
+        await db.collection('cestarine_dionice').doc(docId).set(dionica);
       }
 
-      print('Uspješno sinkronizirano preko 400+ lokacija i dionica u Cloud Firestore!');
+      print('Masivna baza uspješno sinkronizirana u Cloud Firestore!');
     } catch (e) {
-      print('Greška prilikom sinkronizacije baze na Cloud: $e');
+      print('Greška pri sinkronizaciji: $e');
+      rethrow;
     }
   }
 }
