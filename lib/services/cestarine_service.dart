@@ -1,6 +1,5 @@
 // lib/services/cestarine_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../data/baza_cestarina_data.dart';
 
 class CestarineService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -17,31 +16,12 @@ class CestarineService {
         .replaceAll('đ', 'd');
   }
 
-  /// 1. Globalna inicijalizacija baze cestarina (dostupno svima)
-  Future<void> inicijalizirajGlobalnuBazu() async {
-    // Spremanje u globalne kolekcije na vrhu baze Firestore-a
-    for (var entry in BazaCestarinaData.gradoviMapiranje.entries) {
-      await _db
-          .collection('globalne_cestarine_gradovi')
-          .doc(entry.key)
-          .set(entry.value, SetOptions(merge: true));
-    }
-
-    for (var dionica in BazaCestarinaData.dioniceCestarina) {
-      await _db
-          .collection('globalne_cestarine_dionice')
-          .doc(dionica['id'])
-          .set(dionica, SetOptions(merge: true));
-    }
-  }
-
-  /// 2. Dohvat naplatne postaje za grad iz globalne baze
+  /// 1. Dohvat naplatne postaje za grad ISKLJUČIVO iz globalne Cloud baze
   Future<Map<String, String>?> dohvatiPostajuZaGrad(String gradNaziv) async {
     if (gradNaziv.trim().isEmpty) return null;
 
     final gradKey = _normalizirajKljuc(gradNaziv);
 
-    // 1. Provjera u globalnoj kolekciji na Firestoreu
     try {
       final docSnapshot = await _db
           .collection('globalne_cestarine_gradovi')
@@ -55,30 +35,14 @@ class CestarineService {
           'koncesionar': data['koncesionar'] ?? '',
         };
       }
-    } catch (_) {}
-
-    // 2. Lokalni rezervni (fallback) dohvat iz BazaCestarinaData
-    if (BazaCestarinaData.gradoviMapiranje.containsKey(gradKey)) {
-      final data = BazaCestarinaData.gradoviMapiranje[gradKey]!;
-      return {
-        'postaja': data['postaja'] ?? '',
-        'koncesionar': data['koncesionar'] ?? '',
-      };
-    }
-
-    for (var entry in BazaCestarinaData.gradoviMapiranje.entries) {
-      if (entry.value['grad']!.toLowerCase().contains(gradNaziv.trim().toLowerCase())) {
-        return {
-          'postaja': entry.value['postaja'] ?? '',
-          'koncesionar': entry.value['koncesionar'] ?? '',
-        };
-      }
+    } catch (e) {
+      print('Greška pri dohvaćanju gradova s Clouda: $e');
     }
 
     return null;
   }
 
-  /// 3. Izračun cijene dionice iz globalne baze cestarina
+  /// 2. Izračun cijene dionice ISKLJUČIVO iz globalne Cloud baze cestarina
   Future<double> dohvatiCijenuDionice({
     required String ulaz,
     required String izlaz,
@@ -98,8 +62,8 @@ class CestarineService {
       katKljuc = 'Veliki autobus 50';
     }
 
-    // 1. Pretraga u globalnim dionicama na Firestoreu
     try {
+      // Pretraga A -> B
       final query1 = await _db
           .collection('globalne_cestarine_dionice')
           .where('ulaz', isEqualTo: ulaz)
@@ -114,6 +78,7 @@ class CestarineService {
         }
       }
 
+      // Pretraga B -> A (obrnuti smjer)
       final query2 = await _db
           .collection('globalne_cestarine_dionice')
           .where('ulaz', isEqualTo: izlaz)
@@ -127,27 +92,14 @@ class CestarineService {
           return (cijene[katKljuc] as num).toDouble();
         }
       }
-    } catch (_) {}
-
-    // 2. Lokalni rezervni (fallback) dohvat
-    for (var dionica in BazaCestarinaData.dioniceCestarina) {
-      String u = dionica['ulaz'].toString().toLowerCase();
-      String i = dionica['izlaz'].toString().toLowerCase();
-      String ulazLower = ulaz.toLowerCase();
-      String izlazLower = izlaz.toLowerCase();
-
-      if ((u == ulazLower && i == izlazLower) || (u == izlazLower && i == ulazLower)) {
-        Map<String, dynamic> cijene = dionica['cijene'];
-        if (cijene.containsKey(katKljuc)) {
-          return (cijene[katKljuc] as num).toDouble();
-        }
-      }
+    } catch (e) {
+      print('Greška pri dohvaćanju cijene dionice s Clouda: $e');
     }
 
     return 0.0;
   }
 
-  /// 4. Glavna funkcija za izračun ukupne cestarine (uz podršku za međustajališta)
+  /// 3. Glavna funkcija za izračun ukupne cestarine
   Future<double> izracunajUkupnuCestarinu({
     required String polaziste,
     required String odrediste,
