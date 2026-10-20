@@ -270,7 +270,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     } catch (_) {}
   }
 
-Future<void> _izracunajRutuIKilometre() async {
+  Future<void> _izracunajRutuIKilometre() async {
     List<String> tocke = [];
     if (_polazisteController.text.trim().isNotEmpty) tocke.add(_polazisteController.text.trim());
     if (_odrediste1Controller.text.trim().isNotEmpty) tocke.add(_odrediste1Controller.text.trim());
@@ -331,12 +331,10 @@ Future<void> _izracunajRutuIKilometre() async {
       List<String> dinamickiGradovi = List.from(tocke);
       List<Map<String, dynamic>> dionice = [];
 
-      // Dohvaćamo točnu kategoriju cestarine iz odabranog vozila u voznom parku
-      String katVozila = _odabranoVoziloMap?['kategorijaCestarine'] ?? 
-                          _odabranoVoziloMap?['kategorija'] ?? 
+      String katVozila = _odabranoVoziloMap?['kategorijaCestarine'] ??
+                          _odabranoVoziloMap?['kategorija'] ??
                           'II. Skupina';
 
-      // Detekcija rute Split -> Krapina (Tranzit preko Zagreba i dvije dionice: A1 i A2)
       if ((pLower.contains('split') && kLower.contains('krapina')) ||
           (pLower.contains('krapina') && pLower.contains('split'))) {
         
@@ -349,14 +347,12 @@ Future<void> _izracunajRutuIKilometre() async {
         ];
 
         if (_koristiAutocestu) {
-          // Dinamički dohvat cijene za A1 (Split -> Zagreb) iz Firestore baze za odabranu skupinu vozila
           double cijenaA1 = await _cestarineService.izracunajUkupnuCestarinu(
             polaziste: 'Split',
             odrediste: 'Zagreb',
             kategorijaVozila: katVozila,
           );
 
-          // Dinamički dohvat cijene za A2 (Zaprešić -> Krapina) iz Firestore baze za odabranu skupinu vozila
           double cijenaA2 = await _cestarineService.izracunajUkupnuCestarinu(
             polaziste: 'Zaprešić',
             odrediste: 'Krapina',
@@ -379,145 +375,6 @@ Future<void> _izracunajRutuIKilometre() async {
         }
       } else {
         if (_koristiAutocestu) {
-          double izracunataCestarina = await _cestarineService.izracunajUkupnuCestarinu(
-            polaziste: _polazisteController.text,
-            odrediste: _konacnoOdredisteController.text,
-            medustajaliste: _odrediste1Controller.text.isNotEmpty ? _odrediste1Controller.text : null,
-            kategorijaVozila: katVozila,
-          );
-
-          dionice.add({
-            'naziv': 'Autoput 1 (Primarna dionica)',
-            'opis': '${_polazisteController.text} -> ${_konacnoOdredisteController.text}',
-            'cijena': izracunataCestarina,
-            'ukljuceno': true,
-          });
-        }
-      }
-
-      double sumaDionica = 0.0;
-      for (var d in dionice) {
-        if (d['ukljuceno'] == true) {
-          sumaDionica += (d['cijena'] as num).toDouble();
-        }
-      }
-
-      setState(() {
-        _bazaKmJednosmjerno = kmJedan;
-        _kmController.text = (_bazaKmJednosmjerno * (_povratnoPutovanje ? 2.0 : 1.0)).toStringAsFixed(0);
-        _gradoviNaRuti = dinamickiGradovi;
-        _dioniceAutocesta = dionice;
-
-        double cestarinaUkupno = sumaDionica * (_povratnoPutovanje ? 2.0 : 1.0);
-        _cestarinaController.text = cestarinaUkupno.toStringAsFixed(2);
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Izračunato: ${kmJedan.toStringAsFixed(1)} km, Cestarina: ${_cestarinaController.text} €'),
-        backgroundColor: Colors.green,
-      ));
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Greška pri izračunu rute: $e'), backgroundColor: Colors.red),
-      );
-    } finally {
-      setState(() => _isLoadingRoute = false);
-    }
-  }
-    try {
-      Future<Map<String, double>?> getCoords(String q) async {
-        final res = await http.get(
-          Uri.parse('https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(q)}&format=json&limit=1'),
-          headers: {'User-Agent': 'PrijevozKalkulatorApp'},
-        );
-        if (res.statusCode == 200) {
-          List data = json.decode(res.body);
-          if (data.isNotEmpty) {
-            return {'lat': double.parse(data[0]['lat']), 'lon': double.parse(data[0]['lon'])};
-          }
-        }
-        return null;
-      }
-
-      List<Map<String, double>> koordinate = [];
-      for (String t in tocke) {
-        var c = await getCoords(t);
-        if (c != null) {
-          koordinate.add(c);
-        } else {
-          throw Exception('Lokacija "$t" nije pronađena.');
-        }
-      }
-
-      double ukupnoMetara = 0;
-      for (int i = 0; i < koordinate.length - 1; i++) {
-        final res = await http.get(Uri.parse(
-            'https://router.project-osrm.org/route/v1/driving/${koordinate[i]['lon']},${koordinate[i]['lat']};${koordinate[i + 1]['lon']},${koordinate[i + 1]['lat']}?overview=false'));
-        if (res.statusCode == 200) {
-          var data = json.decode(res.body);
-          if (data['code'] == 'Ok') {
-            ukupnoMetara += data['routes'][0]['distance'];
-          }
-        }
-      }
-
-      double kmJedan = ukupnoMetara / 1000.0;
-
-      String pLower = _polazisteController.text.trim().toLowerCase();
-      String kLower = _konacnoOdredisteController.text.trim().toLowerCase();
-
-      List<String> dinamickiGradovi = List.from(tocke);
-      List<Map<String, dynamic>> dionice = [];
-
-      // Detekcija rute Dalmacija -> Zagorje (Tranzit kroz Zagreb)
-      if ((pLower.contains('split') && kLower.contains('krapina')) ||
-          (pLower.contains('krapina') && pLower.contains('split'))) {
-        
-        dinamickiGradovi = [
-          _polazisteController.text,
-          if (_odrediste1Controller.text.isNotEmpty) _odrediste1Controller.text,
-          'Zagreb',
-          if (_odrediste2Controller.text.isNotEmpty) _odrediste2Controller.text,
-          _konacnoOdredisteController.text,
-        ];
-
-        if (_koristiAutocestu) {
-          String katVozila = _odabranoVoziloMap?['kategorija'] ??
-              _odabranoVoziloMap?['kategorijaCestarine'] ??
-              'Veliki autobus 50';
-
-          double cijenaA1 = await _cestarineService.izracunajUkupnuCestarinu(
-            polaziste: 'Split',
-            odrediste: 'Zagreb',
-            kategorijaVozila: katVozila,
-          );
-
-          double cijenaA2 = await _cestarineService.izracunajUkupnuCestarinu(
-            polaziste: 'Zaprešić',
-            odrediste: 'Krapina',
-            kategorijaVozila: katVozila,
-          );
-
-          dionice.add({
-            'naziv': 'Autoput 1 (HAC A1 - Dugopolje -> Lučko)',
-            'opis': 'Split -> Zagreb',
-            'cijena': cijenaA1 > 0 ? cijenaA1 : 24.00,
-            'ukljuceno': true,
-          });
-
-          dionice.add({
-            'naziv': 'Autoput 2 (AZM A2 - Zaprešić -> Krapina)',
-            'opis': 'Zagreb -> Krapina',
-            'cijena': cijenaA2 > 0 ? cijenaA2 : 6.50,
-            'ukljuceno': true,
-          });
-        }
-      } else {
-        if (_koristiAutocestu) {
-          String katVozila = _odabranoVoziloMap?['kategorija'] ??
-              _odabranoVoziloMap?['kategorijaCestarine'] ??
-              'Veliki autobus 50';
-
           double izracunataCestarina = await _cestarineService.izracunajUkupnuCestarinu(
             polaziste: _polazisteController.text,
             odrediste: _konacnoOdredisteController.text,
