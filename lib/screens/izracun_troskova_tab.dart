@@ -48,7 +48,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   final TextEditingController _polazisteController = TextEditingController(text: 'Split');
   final TextEditingController _odrediste1Controller = TextEditingController();
   final TextEditingController _odrediste2Controller = TextEditingController();
-  final TextEditingController _konacnoOdredisteController = TextEditingController(text: 'Zagreb');
+  final TextEditingController _konacnoOdredisteController = TextEditingController(text: 'Krapina');
 
   final TextEditingController _kmController = TextEditingController(text: '780');
   final TextEditingController _cestarinaController = TextEditingController(text: '0.00');
@@ -60,13 +60,10 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
 
   // Autocesta status
   bool _koristiAutocestu = true;
-  bool _koristiAutoput1 = true;
-  bool _koristiAutoput2 = true;
-  bool _koristiAutoput3 = true;
 
   // Dinamički podaci izračuna rute
   List<String> _gradoviNaRuti = [];
-  List<Map<String, dynamic>> _dioniceAutocesta = []; // [{naziv: 'A1 Lucko - Dugopolje', cijena: 24.0, ukljuceno: true}]
+  List<Map<String, dynamic>> _dioniceAutocesta = [];
 
   int _izracunatiBrojDana = 1;
   double _bazaKmJednosmjerno = 390.0;
@@ -176,7 +173,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       _polazisteController.text = k.polaziste.isNotEmpty ? k.polaziste : 'Split';
       _odrediste1Controller.text = k.odrediste1;
       _odrediste2Controller.text = k.odrediste2;
-      _konacnoOdredisteController.text = k.konacnoOdrediste.isNotEmpty ? k.konacnoOdrediste : 'Zagreb';
+      _konacnoOdredisteController.text = k.konacnoOdrediste.isNotEmpty ? k.konacnoOdrediste : 'Krapina';
       _datumPolaskaController.text = k.datumPolaska;
       _datumPovratkaController.text = k.datumPovratka;
 
@@ -273,7 +270,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     } catch (_) {}
   }
 
- Future<void> _izracunajRutuIKilometre() async {
+  Future<void> _izracunajRutuIKilometre() async {
     List<String> tocke = [];
     if (_polazisteController.text.trim().isNotEmpty) tocke.add(_polazisteController.text.trim());
     if (_odrediste1Controller.text.trim().isNotEmpty) tocke.add(_odrediste1Controller.text.trim());
@@ -290,7 +287,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     setState(() => _isLoadingRoute = true);
 
     try {
-      // 1. Dohvat OSRM kilometara
       Future<Map<String, double>?> getCoords(String q) async {
         final res = await http.get(
           Uri.parse('https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(q)}&format=json&limit=1'),
@@ -329,18 +325,16 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
 
       double kmJedan = ukupnoMetara / 1000.0;
 
-      // 2. Automatska detekcija tranzitnih gradova i dionica autocesta
       String pLower = _polazisteController.text.trim().toLowerCase();
       String kLower = _konacnoOdredisteController.text.trim().toLowerCase();
 
       List<String> dinamickiGradovi = List.from(tocke);
       List<Map<String, dynamic>> dionice = [];
 
-      // Primjer tranzitne logike: Split / Dalmacija -> Krapina / Zagorje (Preko Zagreba)
+      // Detekcija rute Dalmacija -> Zagorje (Tranzit kroz Zagreb)
       if ((pLower.contains('split') && kLower.contains('krapina')) ||
-          (pLower.contains('krapina') && kLower.contains('split'))) {
+          (pLower.contains('krapina') && pLower.contains('split'))) {
         
-        // Ubacujemo Zagreb u tranzitne gradove na ruti
         dinamickiGradovi = [
           _polazisteController.text,
           if (_odrediste1Controller.text.isNotEmpty) _odrediste1Controller.text,
@@ -354,14 +348,12 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               _odabranoVoziloMap?['kategorijaCestarine'] ??
               'Veliki autobus 50';
 
-          // Dionica 1: A1 HAC (Dugopolje -> Lučko)
           double cijenaA1 = await _cestarineService.izracunajUkupnuCestarinu(
             polaziste: 'Split',
             odrediste: 'Zagreb',
             kategorijaVozila: katVozila,
           );
 
-          // Dionica 2: A2 AZM (Zaprešić -> Krapina)
           double cijenaA2 = await _cestarineService.izracunajUkupnuCestarinu(
             polaziste: 'Zaprešić',
             odrediste: 'Krapina',
@@ -371,19 +363,18 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
           dionice.add({
             'naziv': 'Autoput 1 (HAC A1 - Dugopolje -> Lučko)',
             'opis': 'Split -> Zagreb',
-            'cijena': cijenaA1 > 0 ? cijenaA1 : 24.00, // Fallback iz baze
+            'cijena': cijenaA1 > 0 ? cijenaA1 : 24.00,
             'ukljuceno': true,
           });
 
           dionice.add({
             'naziv': 'Autoput 2 (AZM A2 - Zaprešić -> Krapina)',
             'opis': 'Zagreb -> Krapina',
-            'cijena': cijenaA2 > 0 ? cijenaA2 : 6.50, // Fallback iz baze
+            'cijena': cijenaA2 > 0 ? cijenaA2 : 6.50,
             'ukljuceno': true,
           });
         }
       } else {
-        // Standardni izračun za jedinstvene dionice
         if (_koristiAutocestu) {
           String katVozila = _odabranoVoziloMap?['kategorija'] ??
               _odabranoVoziloMap?['kategorijaCestarine'] ??
@@ -405,7 +396,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
         }
       }
 
-      // 3. Zbrajanje omogućenih dionica
       double sumaDionica = 0.0;
       for (var d in dionice) {
         if (d['ukljuceno'] == true) {
@@ -420,98 +410,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
         _dioniceAutocesta = dionice;
 
         double cestarinaUkupno = sumaDionica * (_povratnoPutovanje ? 2.0 : 1.0);
-        _cestarinaController.text = cestarinaUkupno.toStringAsFixed(2);
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Izračunato: ${kmJedan.toStringAsFixed(1)} km, Cestarina: ${_cestarinaController.text} €'),
-        backgroundColor: Colors.green,
-      ));
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Greška pri izračunu rute: $e'), backgroundColor: Colors.red),
-      );
-    } finally {
-      setState(() => _isLoadingRoute = false);
-    }
-  }
-
-    try {
-      Future<Map<String, double>?> getCoords(String q) async {
-        final res = await http.get(
-          Uri.parse('https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(q)}&format=json&limit=1'),
-          headers: {'User-Agent': 'PrijevozKalkulatorApp'},
-        );
-        if (res.statusCode == 200) {
-          List data = json.decode(res.body);
-          if (data.isNotEmpty) {
-            return {'lat': double.parse(data[0]['lat']), 'lon': double.parse(data[0]['lon'])};
-          }
-        }
-        return null;
-      }
-
-      List<Map<String, double>> koordinate = [];
-      for (String t in tocke) {
-        var c = await getCoords(t);
-        if (c != null) {
-          koordinate.add(c);
-        } else {
-          throw Exception('Lokacija "$t" nije pronađena.');
-        }
-      }
-
-      double ukupnoMetara = 0;
-      for (int i = 0; i < koordinate.length - 1; i++) {
-        final res = await http.get(Uri.parse(
-            'https://router.project-osrm.org/route/v1/driving/${koordinate[i]['lon']},${koordinate[i]['lat']};${koordinate[i + 1]['lon']},${koordinate[i + 1]['lat']}?overview=false'));
-        if (res.statusCode == 200) {
-          var data = json.decode(res.body);
-          if (data['code'] == 'Ok') {
-            ukupnoMetara += data['routes'][0]['distance'];
-          }
-        }
-      }
-
-      double kmJedan = ukupnoMetara / 1000.0;
-
-      // Generiranje dinamičkih gradova na ruti (Točka 8)
-      List<String> dinamickiGradovi = List.from(tocke);
-
-      // Dinamički obračun dionica autocesta (Točke 10, 11, 12)
-      List<Map<String, dynamic>> dionice = [];
-      double ukupnaCestarinaSveDionice = 0.0;
-
-      if (_koristiAutocestu) {
-        String katVozila = _odabranoVoziloMap?['kategorija'] ??
-            _odabranoVoziloMap?['kategorijaCestarine'] ??
-            'Veliki autobus 50';
-
-        double izracunataCestarina = await _cestarineService.izracunajUkupnuCestarinu(
-          polaziste: _polazisteController.text,
-          odrediste: _konacnoOdredisteController.text,
-          medustajaliste: _odrediste1Controller.text.isNotEmpty ? _odrediste1Controller.text : null,
-          kategorijaVozila: katVozila,
-        );
-
-        // Dinamička raspodjela po dionicama ako postoje višekoncesijski putevi
-        dionice.add({
-          'naziv': 'Autoput 1 (HAC / Primarna dionica)',
-          'opis': '${_polazisteController.text} -> ${_konacnoOdredisteController.text}',
-          'cijena': izracunataCestarina,
-          'ukljuceno': _koristiAutoput1,
-        });
-
-        if (_koristiAutoput1) ukupnaCestarinaSveDionice += izracunataCestarina;
-      }
-
-      setState(() {
-        _bazaKmJednosmjerno = kmJedan;
-        _kmController.text = (_bazaKmJednosmjerno * (_povratnoPutovanje ? 2.0 : 1.0)).toStringAsFixed(0);
-        _gradoviNaRuti = dinamickiGradovi;
-        _dioniceAutocesta = dionice;
-
-        double cestarinaUkupno = ukupnaCestarinaSveDionice * (_povratnoPutovanje ? 2.0 : 1.0);
         _cestarinaController.text = cestarinaUkupno.toStringAsFixed(2);
       });
 
@@ -591,7 +489,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       km: _kmController.text,
       povratno: _povratnoPutovanje,
       koristiAutocestu: _koristiAutocestu,
-      odabranaAutocesta: 'HAC / Automatski izračun',
+      odabranaAutocesta: 'HAC / AZM Automatski izračun',
       tkoPlacaNocenje: _tkoPlacaNocenje,
       cijenaNocenja: _cijenaNocenjaController.text,
       marza: _marzaController.text,
@@ -671,7 +569,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ),
             const SizedBox(height: 12),
 
-            // 3) POLAZAK / POVRATAK (DATUMI)
+            // 3) POLAZAK / POVRATAK
             Row(children: [
               Expanded(
                 child: TextField(
@@ -733,7 +631,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               },
             ),
 
-            // 8) GRADOVI NA RUTI (DINAMIČKI PRIKAZ NAKON IZRAČUNA)
+            // 8) GRADOVI NA RUTI
             if (_gradoviNaRuti.isNotEmpty) ...[
               Container(
                 padding: const EdgeInsets.all(12),
@@ -750,7 +648,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               const SizedBox(height: 12),
             ],
 
-            // 9) DA LI ĆE SE KORISTITI AUTOPUT
+            // 9, 10, 11, 12) AUTOPUT SEKCIJA I DIONICE
             Card(
               elevation: 2,
               color: Colors.amber.shade50,
@@ -776,8 +674,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
                         });
                       },
                     ),
-
-                    // 10, 11, 12) AUTOPUT DIONICE (DINAMIČKI PRIKAZ AKO JE ODABRAN AUTOPUT)
                     if (_koristiAutocestu && _dioniceAutocesta.isNotEmpty) ...[
                       const Divider(),
                       const Text('Autoput dionice na ruti:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
@@ -815,7 +711,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
                         );
                       }),
                     ],
-
                     const SizedBox(height: 8),
                     TextField(
                       controller: _cestarinaController,
@@ -834,7 +729,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ),
             const SizedBox(height: 12),
 
-            // 13) IZRAČUNATO TRAJANJE DANA (DINAMIČKI)
+            // 13) IZRAČUNATO TRAJANJE
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
@@ -891,7 +786,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ]),
             const SizedBox(height: 12),
 
-            // 17) PARAMETRI NOĆENJA VOZAČA (DROPDOWN MENI)
+            // 17) PARAMETRI NOĆENJA
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
