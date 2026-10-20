@@ -1,4 +1,3 @@
-// lib/services/baza_cestarina_data.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BazaCestarinaData {
@@ -15,7 +14,6 @@ class BazaCestarinaData {
     final Map<String, Map<String, dynamic>> mapa = {};
 
     // --- HRVATSKA (800 lokacija) ---
-    // Dalmacija -> Dugopolje / Prgomet / Šestanovac / Zadar / Šibenik / Vrgorac
     _dodajSkupinu(mapa, 'HR', 'dugopolje', [
       'Split', 'Solin', 'Kaštela', 'Trogir', 'Omiš', 'Sinj', 'Muć', 'Klis', 'Dugopolje', 'Podstrana',
       'Supetar', 'Hvar', 'Vis', 'Komiža', 'Milna', 'Sutivan', 'Bol', 'Nerežišća', 'Postira', 'Pučišća',
@@ -23,7 +21,7 @@ class BazaCestarinaData {
     ]);
     _dodajSkupinu(mapa, 'HR', 'sibenik', [
       'Šibenik', 'Vodice', 'Skradin', 'Drniš', 'Knin', 'Primošten', 'Rogoznica', 'Murter', 'Tisno', 'Pirovac',
-      'Tribunj', 'Kistanje', 'Ružić', 'Promina', 'Biskupija', 'Civljane', 'Unesić', 'Biskupija'
+      'Tribunj', 'Kistanje', 'Ružić', 'Promina', 'Biskupija', 'Civljane', 'Unesić'
     ]);
     _dodajSkupinu(mapa, 'HR', 'zadar_istok', [
       'Zadar', 'Biograd na Moru', 'Benkovac', 'Obrovac', 'Pag', 'Nin', 'Pakoštane', 'Sukošan', 'Bibinje', 'Posedarje',
@@ -104,13 +102,10 @@ class BazaCestarinaData {
       'Bar', 'Ulcinj', 'Budva', 'Kotor', 'Tivat', 'Herceg Novi', 'Petrovac', 'Sutomore'
     ]);
 
-    // Automatsko generiranje preostalih mjesta i općina do punih kvota
     _dopuniDoKvote(mapa);
-
     return mapa;
   }
 
-  // Pomoćne metode
   static void _dodajSkupinu(Map<String, Map<String, dynamic>> mapa, String drzava, String ulaz, List<String> gradovi) {
     for (var g in gradovi) {
       String kljuc = _normalizirajKljuc(g);
@@ -138,22 +133,18 @@ class BazaCestarinaData {
   }
 
   static void _dopuniDoKvote(Map<String, Map<String, dynamic>> mapa) {
-    // Generiranje preostalih naselja do 800 HR, 300 SI, 500 BiH, 300 CG
     int brojacHR = mapa.values.where((e) => e['drzava'] == 'HR').length;
     for (int i = brojacHR + 1; i <= 800; i++) {
       mapa['hr_opcina_$i'] = {'naziv': 'HR Općina $i', 'drzava': 'HR', 'najblizi_ulaz': i % 2 == 0 ? 'dugopolje' : 'lucko', 'is_multi_highway': false};
     }
-
     int brojacSI = mapa.values.where((e) => e['drzava'] == 'SI').length;
     for (int i = brojacSI + 1; i <= 300; i++) {
       mapa['si_opcina_$i'] = {'naziv': 'SI Općina $i', 'drzava': 'SI', 'najblizi_ulaz': 'ljubljana_jug', 'is_multi_highway': false};
     }
-
     int brojacBIH = mapa.values.where((e) => e['drzava'] == 'BIH').length;
     for (int i = brojacBIH + 1; i <= 500; i++) {
       mapa['bih_opcina_$i'] = {'naziv': 'BiH Općina $i', 'drzava': 'BIH', 'najblizi_ulaz': 'sarajevo_sjever', 'is_multi_highway': false};
     }
-
     int brojacCG = mapa.values.where((e) => e['drzava'] == 'CG').length;
     for (int i = brojacCG + 1; i <= 300; i++) {
       mapa['cg_opcina_$i'] = {'naziv': 'CG Općina $i', 'drzava': 'CG', 'najblizi_ulaz': 'smokovac', 'is_multi_highway': false};
@@ -171,119 +162,112 @@ class BazaCestarinaData {
   }
 
   // =========================================================================
-  // 2. DIONICE I CESTARINE ZA SVE KATEGORIJE VOZILA (1, 2, 3 i 4)
+  // 2. DIONICE I CESTARINE - NAZIVI 100% USKLAĐENI SA SLIKOM IZ APLIKACIJE
   // =========================================================================
   static final Map<String, Map<String, dynamic>> cestarineDionice = {
-    // HAC (A1, A6) - uključujući čvor Bosiljevo
     'lucko_bosiljevo': {
       'koncesionar': 'HAC',
       'naziv': 'A1: Lučko - Bosiljevo',
-      'skupina1': 8.50,
-      'skupina2': 13.50,
-      'skupina3': 20.00,
-      'skupina4': 33.50,
+      'I. Skupina (Osobna vozila / motocikli)': 8.50,
+      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 13.50,
+      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 20.00,
+      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 33.50,
     },
     'bosiljevo_split': {
       'koncesionar': 'HAC',
       'naziv': 'A1: Bosiljevo - Split (Dugopolje)',
-      'skupina1': 15.50,
-      'skupina2': 25.00,
-      'skupina3': 37.50,
-      'skupina4': 62.50,
+      'I. Skupina (Osobna vozila / motocikli)': 15.50,
+      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 25.00,
+      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 37.50,
+      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 62.50,
     },
     'bosiljevo_rijeka': {
       'koncesionar': 'HAC',
       'naziv': 'A6: Bosiljevo - Rijeka (Grobnik)',
-      'skupina1': 9.20,
-      'skupina2': 14.80,
-      'skupina3': 22.00,
-      'skupina4': 37.00,
+      'I. Skupina (Osobna vozila / motocikli)': 9.20,
+      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 14.80,
+      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 22.00,
+      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 37.00,
     },
     'dugopolje_sibenik': {
       'koncesionar': 'HAC',
       'naziv': 'A1: Dugopolje - Šibenik',
-      'skupina1': 4.70,
-      'skupina2': 8.40,
-      'skupina3': 12.50,
-      'skupina4': 20.50,
+      'I. Skupina (Osobna vozila / motocikli)': 4.70,
+      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 8.40,
+      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 12.50,
+      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 20.50,
     },
     'lucko_dugopolje': {
       'koncesionar': 'HAC',
       'naziv': 'A1: Lučko - Dugopolje',
-      'skupina1': 24.00,
-      'skupina2': 38.50,
-      'skupina3': 57.50,
-      'skupina4': 96.00,
+      'I. Skupina (Osobna vozila / motocikli)': 24.00,
+      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 38.50,
+      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 57.50,
+      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 96.00,
     },
     'lucko_sibenik': {
       'koncesionar': 'HAC',
       'naziv': 'A1: Lučko - Šibenik',
-      'skupina1': 19.50,
-      'skupina2': 31.00,
-      'skupina3': 46.50,
-      'skupina4': 77.00,
+      'I. Skupina (Osobna vozila / motocikli)': 19.50,
+      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 31.00,
+      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 46.50,
+      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 77.00,
     },
     'lucko_zadar_istok': {
       'koncesionar': 'HAC',
       'naziv': 'A1: Lučko - Zadar istok',
-      'skupina1': 16.00,
-      'skupina2': 25.50,
-      'skupina3': 38.00,
-      'skupina4': 63.50,
+      'I. Skupina (Osobna vozila / motocikli)': 16.00,
+      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 25.50,
+      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 38.00,
+      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 63.50,
     },
-
-    // Autocesta Zagreb - Macelj (AZM)
     'zapresic_zabok': {
       'koncesionar': 'AZM',
       'naziv': 'A2: Zaprešić - Zabok',
-      'skupina1': 1.50,
-      'skupina2': 2.80,
-      'skupina3': 4.20,
-      'skupina4': 7.00,
+      'I. Skupina (Osobna vozila / motocikli)': 1.50,
+      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 2.80,
+      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 4.20,
+      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 7.00,
     },
-
-    // Slovenija (DARS)
     'gruskovje_maribor': {
       'koncesionar': 'DARS',
       'naziv': 'A4: Gruškovje - Maribor',
-      'skupina1': 4.50,
-      'skupina2': 7.90,
-      'skupina3': 12.00,
-      'skupina4': 19.00,
+      'I. Skupina (Osobna vozila / motocikli)': 4.50,
+      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 7.90,
+      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 12.00,
+      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 19.00,
     },
     'obrezje_ljubljana': {
       'koncesionar': 'DARS',
       'naziv': 'A2: Obrežje - Ljubljana',
-      'skupina1': 6.20,
-      'skupina2': 11.10,
-      'skupina3': 17.50,
-      'skupina4': 28.00,
+      'I. Skupina (Osobna vozila / motocikli)': 6.20,
+      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 11.10,
+      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 17.50,
+      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 28.00,
     },
-
-    // BiH & Crna Gora
     'bijaca_sarajevo': {
       'koncesionar': 'Autoceste FBiH',
       'naziv': 'A1: Bijača - Sarajevo',
-      'skupina1': 7.50,
-      'skupina2': 13.00,
-      'skupina3': 19.50,
-      'skupina4': 32.00,
+      'I. Skupina (Osobna vozila / motocikli)': 7.50,
+      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 13.00,
+      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 19.50,
+      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 32.00,
     },
     'smokovac_matesevo': {
       'koncesionar': 'Monteput',
       'naziv': 'A1: Smokovac - Mateševo',
-      'skupina1': 3.50,
-      'skupina2': 6.00,
-      'skupina3': 9.50,
-      'skupina4': 15.00,
+      'I. Skupina (Osobna vozila / motocikli)': 3.50,
+      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 6.00,
+      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 9.50,
+      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 15.00,
     },
     'tunel_sozina': {
       'koncesionar': 'Monteput',
       'naziv': 'Tunel Sozina',
-      'skupina1': 2.50,
-      'skupina2': 5.00,
-      'skupina3': 10.00,
-      'skupina4': 18.00,
+      'I. Skupina (Osobna vozila / motocikli)': 2.50,
+      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 5.00,
+      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 10.00,
+      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 18.00,
     },
   };
 
@@ -293,7 +277,6 @@ class BazaCestarinaData {
   static Future<void> osvjeziBazuNaCloudu() async {
     final sveLokacije = generirajSveGradove();
 
-    // Batch upis gradova u kolekciju gradovi_mapiranje (max 500 po komadu)
     WriteBatch batch = _db.batch();
     int brojac = 0;
 
@@ -309,7 +292,6 @@ class BazaCestarinaData {
     }
     await batch.commit();
 
-    // Batch upis dionica u kolekciju cestarine_dionice
     WriteBatch batchDionice = _db.batch();
     for (var entry in cestarineDionice.entries) {
       DocumentReference ref = _db.collection('cestarine_dionice').doc(entry.key);
