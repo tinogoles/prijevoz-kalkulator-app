@@ -143,7 +143,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             return data;
           }).toList();
 
-          // Ako uređujemo kalkulaciju, pokušavamo pronaći točno vozilo iz liste
           if (widget.kalkulacijaZaUredivanje != null && widget.kalkulacijaZaUredivanje!.vozilo.isNotEmpty) {
             final sklVozilo = widget.kalkulacijaZaUredivanje!.vozilo.toLowerCase();
             _odabranoVoziloMap = _dostupnaVozila.firstWhere(
@@ -206,7 +205,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       _cijenaGorivaController.text = k.cijenaGoriva.isNotEmpty ? k.cijenaGoriva : '1.96';
       _dnevnicaController.text = k.dnevnica.isNotEmpty ? k.dnevnica : '100';
 
-      // Usklađivanje vozila s listom
       if (_dostupnaVozila.isNotEmpty && k.vozilo.isNotEmpty) {
         final sklVozilo = k.vozilo.toLowerCase();
         _odabranoVoziloMap = _dostupnaVozila.firstWhere(
@@ -307,7 +305,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       }
       double kmJedan = ukupnoMetara / 1000.0;
 
-      // Dinamički izračun cestarine prema našoj bazi i odabranom vozilu
       double izracunataCestarina = 0.0;
       if (_koristiAutocestu) {
         String nazivVozilaKat = _odabranoVoziloMap?['naziv'] ?? 'Veliki autobus 50';
@@ -367,10 +364,14 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
         ? '${_odabranoVoziloMap!['naziv']} (${_odabranoVoziloMap!['kapacitet']})' 
         : 'Vozilo';
 
+    // Sigurno dohvaćanje PDV statusa aktivnog klijenta
+    bool klijentPdvStatus = widget.aktivniKlijent?.uSustavuPdv ?? false;
+
     KalkulacijaModel kalk = KalkulacijaModel(
       id: _trenutniIdUredjivanja ?? DateTime.now().millisecondsSinceEpoch.toString(),
       nazivKalkulacije: _nazivKalkulacijeController.text,
       klijentNaziv: widget.aktivniKlijent?.naziv ?? 'Klijent',
+      klijentUSustavuPdv: klijentPdvStatus, // Prenosi se stvarni status klijenta u kalkulaciju
       datumPolaska: _datumPolaskaController.text,
       datumPovratka: _datumPovratkaController.text,
       vozilo: nazivVozilaPrikaz,
