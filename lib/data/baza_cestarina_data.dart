@@ -3,6 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BazaCestarinaData {
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
+  // Alias za kompatibilnost s postojećim pozivom u postavkama
+  static Future<void> inicijalizirajCloudBazu() async {
+    await osvjeziBazuNaCloudu();
+  }
 
   // =========================================================================
   // 1. GENERATOR SVIH 1900+ LOKACIJA PO DRŽAVAMA I REGIJAMA
