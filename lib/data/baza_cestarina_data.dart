@@ -1,7 +1,9 @@
+// lib/services/baza_cestarina_data.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BazaCestarinaData {
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
+
   // Alias za kompatibilnost s postojećim pozivom u postavkama
   static Future<void> inicijalizirajCloudBazu() async {
     await osvjeziBazuNaCloudu();
@@ -162,112 +164,112 @@ class BazaCestarinaData {
   }
 
   // =========================================================================
-  // 2. DIONICE I CESTARINE - NAZIVI 100% USKLAĐENI SA SLIKOM IZ APLIKACIJE
+  // 2. DIONICE I CESTARINE - NAZIVI 100% USKLAĐENI S VOZNIM PARKOM
   // =========================================================================
   static final Map<String, Map<String, dynamic>> cestarineDionice = {
     'lucko_bosiljevo': {
       'koncesionar': 'HAC',
       'naziv': 'A1: Lučko - Bosiljevo',
       'I. Skupina (Osobna vozila / motocikli)': 8.50,
-      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 13.50,
-      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 20.00,
-      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 33.50,
+      'II. Skupina (Vozila do 3.5t / kombi)': 13.50,
+      'III. Skupina (Vozila preko 3.5t / midi bus)': 20.00,
+      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 33.50,
     },
     'bosiljevo_split': {
       'koncesionar': 'HAC',
       'naziv': 'A1: Bosiljevo - Split (Dugopolje)',
       'I. Skupina (Osobna vozila / motocikli)': 15.50,
-      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 25.00,
-      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 37.50,
-      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 62.50,
+      'II. Skupina (Vozila do 3.5t / kombi)': 25.00,
+      'III. Skupina (Vozila preko 3.5t / midi bus)': 37.50,
+      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 62.50,
     },
     'bosiljevo_rijeka': {
       'koncesionar': 'HAC',
       'naziv': 'A6: Bosiljevo - Rijeka (Grobnik)',
       'I. Skupina (Osobna vozila / motocikli)': 9.20,
-      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 14.80,
-      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 22.00,
-      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 37.00,
+      'II. Skupina (Vozila do 3.5t / kombi)': 14.80,
+      'III. Skupina (Vozila preko 3.5t / midi bus)': 22.00,
+      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 37.00,
     },
     'dugopolje_sibenik': {
       'koncesionar': 'HAC',
       'naziv': 'A1: Dugopolje - Šibenik',
       'I. Skupina (Osobna vozila / motocikli)': 4.70,
-      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 8.40,
-      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 12.50,
-      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 20.50,
+      'II. Skupina (Vozila do 3.5t / kombi)': 8.40,
+      'III. Skupina (Vozila preko 3.5t / midi bus)': 12.50,
+      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 20.50,
     },
     'lucko_dugopolje': {
       'koncesionar': 'HAC',
       'naziv': 'A1: Lučko - Dugopolje',
       'I. Skupina (Osobna vozila / motocikli)': 24.00,
-      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 38.50,
-      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 57.50,
-      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 96.00,
+      'II. Skupina (Vozila do 3.5t / kombi)': 38.50,
+      'III. Skupina (Vozila preko 3.5t / midi bus)': 57.50,
+      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 96.00,
     },
     'lucko_sibenik': {
       'koncesionar': 'HAC',
       'naziv': 'A1: Lučko - Šibenik',
       'I. Skupina (Osobna vozila / motocikli)': 19.50,
-      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 31.00,
-      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 46.50,
-      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 77.00,
+      'II. Skupina (Vozila do 3.5t / kombi)': 31.00,
+      'III. Skupina (Vozila preko 3.5t / midi bus)': 46.50,
+      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 77.00,
     },
     'lucko_zadar_istok': {
       'koncesionar': 'HAC',
       'naziv': 'A1: Lučko - Zadar istok',
       'I. Skupina (Osobna vozila / motocikli)': 16.00,
-      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 25.50,
-      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 38.00,
-      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 63.50,
+      'II. Skupina (Vozila do 3.5t / kombi)': 25.50,
+      'III. Skupina (Vozila preko 3.5t / midi bus)': 38.00,
+      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 63.50,
     },
     'zapresic_zabok': {
       'koncesionar': 'AZM',
       'naziv': 'A2: Zaprešić - Zabok',
       'I. Skupina (Osobna vozila / motocikli)': 1.50,
-      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 2.80,
-      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 4.20,
-      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 7.00,
+      'II. Skupina (Vozila do 3.5t / kombi)': 2.80,
+      'III. Skupina (Vozila preko 3.5t / midi bus)': 4.20,
+      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 7.00,
     },
     'gruskovje_maribor': {
       'koncesionar': 'DARS',
       'naziv': 'A4: Gruškovje - Maribor',
       'I. Skupina (Osobna vozila / motocikli)': 4.50,
-      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 7.90,
-      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 12.00,
-      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 19.00,
+      'II. Skupina (Vozila do 3.5t / kombi)': 7.90,
+      'III. Skupina (Vozila preko 3.5t / midi bus)': 12.00,
+      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 19.00,
     },
     'obrezje_ljubljana': {
       'koncesionar': 'DARS',
       'naziv': 'A2: Obrežje - Ljubljana',
       'I. Skupina (Osobna vozila / motocikli)': 6.20,
-      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 11.10,
-      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 17.50,
-      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 28.00,
+      'II. Skupina (Vozila do 3.5t / kombi)': 11.10,
+      'III. Skupina (Vozila preko 3.5t / midi bus)': 17.50,
+      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 28.00,
     },
     'bijaca_sarajevo': {
       'koncesionar': 'Autoceste FBiH',
       'naziv': 'A1: Bijača - Sarajevo',
       'I. Skupina (Osobna vozila / motocikli)': 7.50,
-      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 13.00,
-      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 19.50,
-      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 32.00,
+      'II. Skupina (Vozila do 3.5t / kombi)': 13.00,
+      'III. Skupina (Vozila preko 3.5t / midi bus)': 19.50,
+      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 32.00,
     },
     'smokovac_matesevo': {
       'koncesionar': 'Monteput',
       'naziv': 'A1: Smokovac - Mateševo',
       'I. Skupina (Osobna vozila / motocikli)': 3.50,
-      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 6.00,
-      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 9.50,
-      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 15.00,
+      'II. Skupina (Vozila do 3.5t / kombi)': 6.00,
+      'III. Skupina (Vozila preko 3.5t / midi bus)': 9.50,
+      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 15.00,
     },
     'tunel_sozina': {
       'koncesionar': 'Monteput',
       'naziv': 'Tunel Sozina',
       'I. Skupina (Osobna vozila / motocikli)': 2.50,
-      'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)': 5.00,
-      'III. Skupina (Vozila > 3.5t, 2-3 osovine / midi bus)': 10.00,
-      'IV. Skupina (Vozila > 3.5t, 4+ osovina / veliki autobus)': 18.00,
+      'II. Skupina (Vozila do 3.5t / kombi)': 5.00,
+      'III. Skupina (Vozila preko 3.5t / midi bus)': 10.00,
+      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 18.00,
     },
   };
 
@@ -295,7 +297,7 @@ class BazaCestarinaData {
     WriteBatch batchDionice = _db.batch();
     for (var entry in cestarineDionice.entries) {
       DocumentReference ref = _db.collection('cestarine_dionice').doc(entry.key);
-      batchDionice.set(ref, entry.value); // bez SetOptions(merge: true)
+      batchDionice.set(ref, entry.value); // bez SetOptions(merge: true) - pregazit će i obrisati stara polja
     }
     await batchDionice.commit();
   }
