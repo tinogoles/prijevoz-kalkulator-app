@@ -35,7 +35,7 @@ class _PostavkeTabState extends State<PostavkeTab> {
   bool _isLoading = true;
 
   User? get currentUser => FirebaseAuth.instance.currentUser;
-  String get userKey => currentUser?.email ?? currentUser?.uid ?? 'zadani_korisnik';
+  String get _userId => currentUser?.uid ?? '';
 
   final KlijentiService _klijentiService = KlijentiService();
 
@@ -66,18 +66,34 @@ class _PostavkeTabState extends State<PostavkeTab> {
   }
 
   Future<void> _ucitajSvePodatke() async {
+    if (_userId.isEmpty) {
+      setState(() => _isLoading = false);
+      return;
+    }
     setState(() => _isLoading = true);
     try {
-      // Učitavanje postavki prijevoznika
+      // Učitavanje postavki prijevoznika s nove putanje users/{userId}/postavke/glavne
       final doc = await FirebaseFirestore.instance
-          .collection('korisnici')
-          .doc(userKey)
+          .collection('users')
+          .doc(_userId)
           .collection('postavke')
-          .doc('prijevoznik')
+          .doc('glavne')
           .get();
 
       if (doc.exists && doc.data() != null) {
-        final p = PrijevoznikModel.fromJson(doc.data()!);
+        final data = doc.data()!;
+        final p = PrijevoznikModel(
+          naziv: data['nazivPrijevoznika'] ?? data['naziv'] ?? '',
+          vlasnik: data['vlasnik'] ?? '',
+          adresa: data['adresa'] ?? '',
+          grad: data['grad'] ?? '',
+          oib: data['oib'] ?? '',
+          email: data['email'] ?? '',
+          telefon: data['telefon'] ?? '',
+          banka: data['banka'] ?? '',
+          iban: data['iban'] ?? '',
+          uSustavuPdv: data['uSustavuPdv'] ?? true,
+        );
         _postaviPolja(p);
       } else if (widget.prijevoznik != null) {
         _postaviPolja(widget.prijevoznik!);
@@ -106,6 +122,8 @@ class _PostavkeTabState extends State<PostavkeTab> {
   }
 
   Future<void> _spremiPodatkePrijevoznika() async {
+    if (_userId.isEmpty) return;
+
     final noviPrijevoznik = PrijevoznikModel(
       naziv: _nazivTvrtkeController.text.trim(),
       vlasnik: _vlasnikController.text.trim(),
@@ -120,12 +138,26 @@ class _PostavkeTabState extends State<PostavkeTab> {
     );
 
     try {
+      // Spremanje isključivo na novu putanju users/{userId}/postavke/glavne
       await FirebaseFirestore.instance
-          .collection('korisnici')
-          .doc(userKey)
+          .collection('users')
+          .doc(_userId)
           .collection('postavke')
-          .doc('prijevoznik')
-          .set(noviPrijevoznik.toJson(), SetOptions(merge: true));
+          .doc('glavne')
+          .set({
+            'naziv': noviPrijevoznik.naziv,
+            'nazivPrijevoznika': noviPrijevoznik.naziv,
+            'vlasnik': noviPrijevoznik.vlasnik,
+            'adresa': noviPrijevoznik.adresa,
+            'grad': noviPrijevoznik.grad,
+            'oib': noviPrijevoznik.oib,
+            'email': noviPrijevoznik.email,
+            'telefon': noviPrijevoznik.telefon,
+            'banka': noviPrijevoznik.banka,
+            'iban': noviPrijevoznik.iban,
+            'uSustavuPdv': noviPrijevoznik.uSustavuPdv,
+            'userId': _userId,
+          }, SetOptions(merge: true));
 
       if (widget.onSpremiPrijevoznika != null) {
         widget.onSpremiPrijevoznika!(noviPrijevoznik);
@@ -162,7 +194,7 @@ class _PostavkeTabState extends State<PostavkeTab> {
     final _bankaCtrl = TextEditingController(text: klijent?['banka'] ?? '');
     final _ibanCtrl = TextEditingController(text: klijent?['iban'] ?? '');
 
-    bool _uSustavuPdvAKlijent = klijent?['uSustavuPdvA'] ?? true;
+    bool _uSustavuPdvAKlijent = klijent?['uSustavuPdvA'] ?? klijent?['uSustavuPdv'] ?? true;
 
     showDialog(
       context: context,
@@ -222,6 +254,7 @@ class _PostavkeTabState extends State<PostavkeTab> {
                       'telefon': _telefonCtrl.text.trim(),
                       'banka': _bankaCtrl.text.trim(),
                       'iban': _ibanCtrl.text.trim(),
+                      'uSustavuPdv': _uSustavuPdvAKlijent,
                       'uSustavuPdvA': _uSustavuPdvAKlijent,
                     };
 
@@ -289,6 +322,7 @@ class _PostavkeTabState extends State<PostavkeTab> {
                             separatorBuilder: (context, index) => const Divider(),
                             itemBuilder: (context, index) {
                               final klijent = listaKlijenata[index];
+                              bool pdvStat = klijent['uSustavuPdv'] ?? klijent['uSustavuPdvA'] ?? false;
                               return Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 4.0),
                                 child: Column(
@@ -312,7 +346,7 @@ class _PostavkeTabState extends State<PostavkeTab> {
                                           Text('Adresa: ${klijent['adresa']}, ${klijent['grad']} | OIB: ${klijent['oib']}'),
                                           Text('E-mail: ${klijent['email']} | Tel: ${klijent['telefon']}'),
                                           Text('Banka: ${klijent['banka']} | IBAN: ${klijent['iban']}'),
-                                          Text('PDV status: ${klijent['uSustavuPdvA'] == true ? "U sustavu PDV-a" : "Nije u sustavu PDV-a"}'),
+                                          Text('PDV status: ${pdvStat ? "U sustavu PDV-a" : "Nije u sustavu PDV-a"}'),
                                         ],
                                       ),
                                     ),
