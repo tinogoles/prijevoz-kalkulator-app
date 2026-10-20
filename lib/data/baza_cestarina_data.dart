@@ -295,7 +295,7 @@ class BazaCestarinaData {
     WriteBatch batchDionice = _db.batch();
     for (var entry in cestarineDionice.entries) {
       DocumentReference ref = _db.collection('cestarine_dionice').doc(entry.key);
-      batchDionice.set(ref, entry.value, SetOptions(merge: true));
+      batchDionice.set(ref, entry.value); // bez SetOptions(merge: true)
     }
     await batchDionice.commit();
   }
