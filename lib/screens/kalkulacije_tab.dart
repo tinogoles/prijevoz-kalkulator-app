@@ -64,21 +64,24 @@ class KalkulacijeTab extends StatelessWidget {
               itemBuilder: (ctx, idx) {
                 var k = kalkulacije[idx];
 
-                // Fleksibilno pronalaženje klijenta po ID-u ili nazivu
+                // Sigurno i fleksibilno traženje klijenta iz liste spremljenih klijenata
                 KlijentModel? pronadjeniKlijent;
                 try {
                   pronadjeniKlijent = klijenti.firstWhere(
-                    (kl) => (kl.id.isNotEmpty && kl.id == k.klijentId) ||
-                            kl.naziv.trim().toLowerCase() == k.klijentNaziv.trim().toLowerCase() ||
-                            kl.naziv.trim().toLowerCase().contains(k.klijentNaziv.trim().toLowerCase()) ||
-                            k.klijentNaziv.trim().toLowerCase().contains(kl.naziv.trim().toLowerCase()),
+                    (kl) {
+                      String searchName = k.klijentNaziv.trim().toLowerCase();
+                      String klName = kl.naziv.trim().toLowerCase();
+                      return klName == searchName ||
+                             (searchName.isNotEmpty && klName.contains(searchName)) ||
+                             (klName.isNotEmpty && searchName.contains(klName));
+                    },
                   );
                 } catch (_) {
                   pronadjeniKlijent = null;
                 }
 
-                // Određivanje PDV statusa klijenta s fallbackom na podatke iz same kalkulacije
-                bool klijentPdv = pronadjeniKlijent?.uSustavuPdv ?? k.klijentUSustavuPdv ?? false;
+                // Status PDV-a klijenta s Clouda
+                bool klijentPdv = pronadjeniKlijent?.uSustavuPdv ?? false;
 
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -94,8 +97,10 @@ class KalkulacijeTab extends StatelessWidget {
                           style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
                         ),
                         const SizedBox(height: 4),
-                        Text('Klijent: ${k.klijentNaziv} ${klijentPdv ? "(U sustavu PDV-a)" : "(Nije u sustavu PDV-a)"}', 
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text(
+                          'Klijent: ${k.klijentNaziv} ${klijentPdv ? "(U sustavu PDV-a)" : "(Nije u sustavu PDV-a)"}', 
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         Text('Ruta: ${k.ruta}'),
                         Text('Termin: ${k.datumPolaska} - ${k.datumPovratka}'),
                         const SizedBox(height: 6),
