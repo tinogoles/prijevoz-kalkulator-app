@@ -331,10 +331,9 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       List<String> dinamickiGradovi = List.from(tocke);
       List<Map<String, dynamic>> dionice = [];
 
-      // Spajamo kategoriju iz vozila sa onime što CestarineService očekuje
-      String katVozila = _odabranoVoziloMap?['kategorijaCestarine'] ??
-                          _odabranoVoziloMap?['kategorija'] ??
-                          'Kombi 8+1';
+      // Dohvaćamo točnu kategoriju vozila direktno iz odabranog vozila
+      String katVozila = _odabranoVoziloMap?['kategorija'] ??
+                          'II. Skupina (Vozila do 3.5t visoka >1.9m / kombi)';
 
       if ((pLower.contains('split') && kLower.contains('krapina')) ||
           (pLower.contains('krapina') && pLower.contains('split'))) {
@@ -382,7 +381,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             medustajaliste: _odrediste1Controller.text.isNotEmpty ? _odrediste1Controller.text : null,
             kategorijaVozila: katVozila,
           );
-
           dionice.add({
             'naziv': 'Autoput 1 (Primarna dionica)',
             'opis': '${_polazisteController.text} -> ${_konacnoOdredisteController.text}',
@@ -783,66 +781,31 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             const SizedBox(height: 12),
 
             // 17) PARAMETRI NOĆENJA
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DropdownButtonFormField<String>(
-                  value: _tkoPlacaNocenje,
-                  decoration: const InputDecoration(
-                    labelText: '17) Parametri noćenja vozača; Plaćanje noćenja',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: _opcijeNocenja.map((o) => DropdownMenuItem(value: o, child: Text(o))).toList(),
-                  onChanged: (val) {
-                    if (val != null) setState(() => _tkoPlacaNocenje = val);
-                  },
-                ),
-                if (_tkoPlacaNocenje == 'Prijevoznik plaća') ...[
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _cijenaNocenjaController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Cijena noćenja po noći (€, bruto)',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.hotel),
-                    ),
-                  ),
-                ],
-              ],
+            DropdownButtonFormField<String>(
+              value: _tkoPlacaNocenje,
+              decoration: const InputDecoration(
+                labelText: '17) Parametri noćenja vozača; Plaćanje noćenja',
+                border: OutlineInputBorder(),
+              ),
+              items: _opcijeNocenja.map((o) => DropdownMenuItem(value: o, child: Text(o))).toList(),
+              onChanged: (val) {
+                if (val != null) setState(() => _tkoPlacaNocenje = val);
+              },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 24),
 
-            // 18) MARŽA (%)
-            TextField(
-              controller: _marzaController,
-              decoration: const InputDecoration(labelText: '18) Marža (%)', border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 20),
-
-            // 19) GUMB: IZRAČUNAJ KILOMETRE / CESTARINU
+            // GUMM ZA IZRAČUN I SPREMANJE
             ElevatedButton.icon(
               onPressed: _isLoadingRoute ? null : _izracunajRutuIKilometre,
-              icon: const Icon(Icons.route),
-              label: Text(_isLoadingRoute ? 'Računam...' : '19) Izračunaj kilometre / cestarinu'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0284C7),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
+              icon: _isLoadingRoute ? const CircularProgressIndicator(color: Colors.white) : const Icon(Icons.route),
+              label: Text(_isLoadingRoute ? 'Izračunavam rutu i cestarinu...' : 'Izračunaj rutu, km i cestarinu'),
+              style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(16)),
             ),
             const SizedBox(height: 12),
-
-            // 20) GUMB: IZRADI I SPREMI KALKULACIJU
-            ElevatedButton.icon(
+            ElevatedButton(
               onPressed: _spremi,
-              icon: const Icon(Icons.calculate),
-              label: Text(_trenutniIdUredjivanja == null ? '20) Izradi i spremi kalkulaciju' : '20) Ažuriraj kalkulaciju'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF16A34A),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, padding: const EdgeInsets.all(16)),
+              child: const Text('Spremi kalkulaciju', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
