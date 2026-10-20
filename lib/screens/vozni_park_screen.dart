@@ -1,3 +1,4 @@
+// lib/screens/vozni_park_screen.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -29,7 +30,13 @@ class _VozniParkScreenState extends State<VozniParkScreen> {
   }
 
   void _dohvatiVozilaIzFirestore() {
-    if (_userId.isEmpty) return;
+    if (_userId.isEmpty) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    debugPrint('Slušam vozni park za korisnika UID: $_userId');
+
     FirebaseFirestore.instance
         .collection('users')
         .doc(_userId)
@@ -37,6 +44,7 @@ class _VozniParkScreenState extends State<VozniParkScreen> {
         .snapshots()
         .listen((snapshot) {
       if (mounted) {
+        debugPrint('Dohvaćeno vozila iz Firestorea: ${snapshot.docs.length}');
         setState(() {
           _vozila = snapshot.docs.map((d) {
             var data = d.data();
@@ -46,6 +54,9 @@ class _VozniParkScreenState extends State<VozniParkScreen> {
           _isLoading = false;
         });
       }
+    }, onError: (e) {
+      debugPrint('Greška pri slušanju voznog parka: $e');
+      if (mounted) setState(() => _isLoading = false);
     });
   }
 
@@ -163,12 +174,20 @@ class _VozniParkScreenState extends State<VozniParkScreen> {
                     };
 
                     if (_userId.isNotEmpty) {
-                      await FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(_userId)
-                          .collection('vozni_park')
-                          .doc(docId)
-                          .set(novoVozilo);
+                      debugPrint('Pokušavam spremiti vozilo na: users/$_userId/vozni_park/$docId');
+                      try {
+                        await FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(_userId)
+                            .collection('vozni_park')
+                            .doc(docId)
+                            .set(novoVozilo);
+                        debugPrint('Vozilo uspješno spremljeno u Firestore!');
+                      } catch (e) {
+                        debugPrint('GREŠKA pri spremanju vozila: $e');
+                      }
+                    } else {
+                      debugPrint('GREŠKA: _userId je prazan!');
                     }
 
                     if (mounted) Navigator.pop(context);
@@ -185,12 +204,18 @@ class _VozniParkScreenState extends State<VozniParkScreen> {
 
   void _obrisiVozilo(String id) async {
     if (_userId.isNotEmpty) {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(_userId)
-          .collection('vozni_park')
-          .doc(id)
-          .delete();
+      debugPrint('Brišem vozilo: users/$_userId/vozni_park/$id');
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(_userId)
+            .collection('vozni_park')
+            .doc(id)
+            .delete();
+        debugPrint('Vozilo obrisano iz Firestorea.');
+      } catch (e) {
+        debugPrint('GREŠKA pri brisanju vozila: $e');
+      }
     }
   }
 
