@@ -1,4 +1,3 @@
-// lib/services/cestarine_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CestarineService {
@@ -16,7 +15,7 @@ class CestarineService {
         .replaceAll('đ', 'd');
   }
 
-  /// 1. Dohvat naplatne postaje za grad ISKLJUČIVO iz globalne Cloud baze
+  /// 1. Dohvat naplatne postaje za grad iz baze cestarine_gradovi
   Future<Map<String, String>?> dohvatiPostajuZaGrad(String gradNaziv) async {
     if (gradNaziv.trim().isEmpty) return null;
 
@@ -24,7 +23,7 @@ class CestarineService {
 
     try {
       final docSnapshot = await _db
-          .collection('globalne_cestarine_gradovi')
+          .collection('cestarine_gradovi') // Ispravljen naziv kolekcije prema bazi
           .doc(gradKey)
           .get();
 
@@ -42,7 +41,7 @@ class CestarineService {
     return null;
   }
 
-  /// 2. Izračun cijene dionice ISKLJUČIVO iz globalne Cloud baze cestarina
+  /// 2. Izračun cijene dionice iz baze cestarine_dionice
   Future<double> dohvatiCijenuDionice({
     required String ulaz,
     required String izlaz,
@@ -50,47 +49,77 @@ class CestarineService {
   }) async {
     if (ulaz.isEmpty || izlaz.isEmpty) return 0.0;
 
-    String katKljuc = 'Veliki autobus 50';
     String kLower = kategorijaVozila.toLowerCase();
-    if (kLower.contains('kombi') || kLower.contains('8+1')) {
-      katKljuc = 'Kombi 8+1';
-    } else if (kLower.contains('mini') || kLower.contains('<20')) {
-      katKljuc = 'Mini bus <20';
-    } else if (kLower.contains('midi') || kLower.contains('35')) {
-      katKljuc = 'Midi bus 35';
-    } else if (kLower.contains('veliki') || kLower.contains('50') || kLower.contains('autobus')) {
-      katKljuc = 'Veliki autobus 50';
+    
+    // Određujemo koji ključevi odgovaraju odabranoj kategoriji vozila u bazi
+    List<String> moguciKljucevi = [];
+
+    if (kLower.contains('iv.') || kLower.contains('veliki autobus') || kLower.contains('skupina 4') || kLower.contains('4+')) {
+      moguciKljucevi = ['skupina4', 'Veliki autobus 50', 'IV. Skupina'];
+    } else if (kLower.contains('iii.') || kLower.contains('midi bus') || kLower.contains('skupina 3') || kLower.contains('2-3')) {
+      moguciKljucevi = ['skupina3', 'Midi bus 35', 'III. Skupina'];
+    } else if (kLower.contains('ii.') || kLower.contains('kombi') || kLower.contains('skupina 2') || kLower.contains('do 3.5t')) {
+      moguciKljucevi = ['skupina2', 'Kombi 8+1', 'Mini bus <20', 'II. Skupina'];
+    } else if (kLower.contains('i.') || kLower.contains('osobna') || kLower.contains('skupina 1')) {
+      moguciKljucevi = ['skupina1', 'I. Skupina', 'Osobna vozila'];
+    } else {
+      moguciKljucevi = [kategorijaVozila, 'skupina2', 'Kombi 8+1'];
     }
 
     try {
-      // Pretraga A -> B
+      double? pronadjiCijenuUDokumentu(Map<String, dynamic> docData) {
+        // 1. Provjera izravnih polja na root razini dokumenta (npr. skupina1, skupina2...)[cite: 12]
+        for (String kljuc in moguciKljucevi) {
+          if (docData.containsKey(kljuc) && docData[kljuc] != null) {
+            return (docData[kljuc] as num).toDouble();
+          }
+        }
+
+        // 2. Provjera unutar mape 'cijene' (npr. "Kombi 8+1", "Midi bus 35"...)[cite: 12]
+        final cijeneMap = docData['cijene'] as Map<String, dynamic>?;
+        if (cijeneMap != null) {
+          for (String kljuc in moguciKljucevi) {
+            if (cijeneMap.containsKey(kljuc) && cijeneMap[kljuc] != null) {
+              return (cijeneMap[kljuc] as num).toDouble();
+            }
+          }
+          // Fleksibilno traženje po djelomičnom nazivu
+          for (var entry in cijeneMap.entries) {
+            String dbKeyLower = entry.key.toLowerCase();
+            for (String trazeni in moguciKljucevi) {
+              if (dbKeyLower.contains(trazeni.toLowerCase()) || trazeni.toLowerCase().contains(dbKeyLower)) {
+                return (entry.value as num).toDouble();
+              }
+            }
+          }
+        }
+        return null;
+      }
+
+      // Pretraga A -> B u ispravnoj kolekciji cestarine_dionice[cite: 12]
       final query1 = await _db
-          .collection('globalne_cestarine_dionice')
+          .collection('cestarine_dionice')
           .where('ulaz', isEqualTo: ulaz)
           .where('izlaz', isEqualTo: izlaz)
           .limit(1)
           .get();
 
       if (query1.docs.isNotEmpty) {
-        final cijene = query1.docs.first.data()['cijene'] as Map<String, dynamic>?;
-        if (cijene != null && cijene.containsKey(katKljuc)) {
-          return (cijene[katKljuc] as num).toDouble();
-        }
+        double? cijena = pronadjiCijenuUDokumentu(query1.docs.first.data());
+        if (cijena != null) return cijena;
       }
 
       // Pretraga B -> A (obrnuti smjer)
       final query2 = await _db
-          .collection('globalne_cestarine_dionice')
+          .collection('cestarine_dionice')
           .where('ulaz', isEqualTo: izlaz)
           .where('izlaz', isEqualTo: ulaz)
           .limit(1)
           .get();
 
       if (query2.docs.isNotEmpty) {
-        final cijene = query2.docs.first.data()['cijene'] as Map<String, dynamic>?;
-        if (cijene != null && cijene.containsKey(katKljuc)) {
-          return (cijene[katKljuc] as num).toDouble();
-        }
+        double? cijena = pronadjiCijenuUDokumentu(query2.docs.first.data());
+        if (cijena != null) return cijena;
       }
     } catch (e) {
       print('Greška pri dohvaćanju cijene dionice s Clouda: $e');
