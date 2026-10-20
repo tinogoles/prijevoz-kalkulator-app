@@ -780,7 +780,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ]),
             const SizedBox(height: 12),
 
-            // 17) PARAMETRI NOĆENJA
+       // 17) PARAMETRI NOĆENJA
             DropdownButtonFormField<String>(
               value: _tkoPlacaNocenje,
               decoration: const InputDecoration(
@@ -792,9 +792,33 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
                 if (val != null) setState(() => _tkoPlacaNocenje = val);
               },
             ),
+            const SizedBox(height: 12),
+
+            // CIJENA NOĆENJA PO NOĆI
+            TextField(
+              controller: _cijenaNocenjaController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Cijena noćenja po noći (€, bruto)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.hotel),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // 18) MARŽA
+            TextField(
+              controller: _marzaController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: '18) Marža (%)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.percent),
+              ),
+            ),
             const SizedBox(height: 24),
 
-            // GUMM ZA IZRAČUN I SPREMANJE
+            // GUMB ZA IZRAČUN I SPREMANJE
             ElevatedButton.icon(
               onPressed: _isLoadingRoute ? null : _izracunajRutuIKilometre,
               icon: _isLoadingRoute ? const CircularProgressIndicator(color: Colors.white) : const Icon(Icons.route),
