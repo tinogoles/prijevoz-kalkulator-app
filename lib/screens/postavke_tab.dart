@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/prijevoznik_model.dart';
 import '../services/klijenti_service.dart';
-import 'package:prijevoz_kalkulator/data/baza_cestarine_data.dart'; // <--- DODAN IMPORT ZA BAZU CESTARINA
+import 'package:prijevoz_kalkulator/data/baza_cestarina_data.dart'; // <--- DODAN IMPORT ZA BAZU CESTARINA
 import 'vozni_park_screen.dart';
 
 class PostavkeTab extends StatefulWidget {
