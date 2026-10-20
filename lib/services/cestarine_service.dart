@@ -22,7 +22,6 @@ class CestarineService {
     final gradKey = _normalizirajKljuc(gradNaziv);
 
     try {
-      // ISPRAVLJENO: Slušamo točnu kolekciju 'gradovi_mapiranje' iz BazaCestarinaData
       final docSnapshot = await _db
           .collection('gradovi_mapiranje')
           .doc(gradKey)
@@ -31,7 +30,6 @@ class CestarineService {
       if (docSnapshot.exists && docSnapshot.data() != null) {
         final data = docSnapshot.data()!;
         
-        // Izvlačimo najbliži ulaz ili odgovarajući podatak o postaji
         String postajaVal = data['najblizi_ulaz'] ?? data['izlaz_a2'] ?? '';
         
         return {
@@ -46,7 +44,7 @@ class CestarineService {
     return null;
   }
 
-  /// 2. Izračun cijene dionice iz baze cestarine_dionice
+  /// 2. Izračun cijene dionice direktno preko ID-ja i fleksibilnog pretraživanja
   Future<double> dohvatiCijenuDionice({
     required String ulaz,
     required String izlaz,
@@ -54,9 +52,10 @@ class CestarineService {
   }) async {
     if (ulaz.isEmpty || izlaz.isEmpty) return 0.0;
 
+    String ulazKey = _normalizirajKljuc(ulaz);
+    String izlazKey = _normalizirajKljuc(izlaz);
+
     String kLower = kategorijaVozila.toLowerCase();
-    
-    // Direktno mapiramo kategoriju vozila na točne ključeve u bazi (skupina1 - skupina4)
     String dbKljuc = 'skupina2'; // Default
 
     if (kLower.contains('iv.') || kLower.contains('4+')) {
@@ -69,57 +68,42 @@ class CestarineService {
       dbKljuc = 'skupina1';
     }
 
-    print('CESTARISE_SERVICE: Tražim dionicu Ulaz: "$ulaz", Izlaz: "$izlaz" za ključ: "$dbKljuc" (iz kategorije: "$kategorijaVozila")');
+    print('CESTARISE_SERVICE: Tražim dionicu Ulaz: "$ulazKey", Izlaz: "$izlazKey" za ključ: "$dbKljuc"');
 
     try {
       double? pronadjiCijenuUDokumentu(Map<String, dynamic> docData) {
-        print('Pronađen dokument u bazi. Polja u dokumentu: ${docData.keys.toList()}');
-        
-        // 1. Provjera izravnog polja na root razini (npr. skupina1, skupina2...)
         if (docData.containsKey(dbKljuc) && docData[dbKljuc] != null) {
-          double val = (docData[dbKljuc] as num).toDouble();
-          print('Pronađena cijena direktno po ključu $dbKljuc: $val');
-          return val;
+          return (docData[dbKljuc] as num).toDouble();
         }
-
-        // 2. Provjera unutar mape 'cijene' ako postoji
         final cijeneMap = docData['cijene'] as Map<String, dynamic>?;
-        if (cijeneMap != null) {
-          if (cijeneMap.containsKey(dbKljuc) && cijeneMap[dbKljuc] != null) {
-            double val = (cijeneMap[dbKljuc] as num).toDouble();
-            print('Pronađena cijena unutar mape cijene po ključu $dbKljuc: $val');
-            return val;
-          }
+        if (cijeneMap != null && cijeneMap[dbKljuc] != null) {
+          return (cijeneMap[dbKljuc] as num).toDouble();
         }
-        
-        print('Ključ $dbKljuc nije pronađen u ovom dokumentu.');
         return null;
       }
 
-      // Pretraga A -> B u kolekciji cestarine_dionice
-      final query1 = await _db
-          .collection('cestarine_dionice')
-          .where('ulaz', isEqualTo: ulaz)
-          .where('izlaz', isEqualTo: izlaz)
-          .limit(1)
-          .get();
-
-      if (query1.docs.isNotEmpty) {
-        double? cijena = pronadjiCijenuUDokumentu(query1.docs.first.data());
-        if (cijena != null && cijena > 0) return cijena;
+      // 1. Pokušaj točnog dohvata po ID-ju: ulaz_izlaz
+      var doc1 = await _db.collection('cestarine_dionice').doc('${ulazKey}_$izlazKey').get();
+      if (doc1.exists && doc1.data() != null) {
+        double? val = pronadjiCijenuUDokumentu(doc1.data()!);
+        if (val != null && val > 0) return val;
       }
 
-      // Pretraga B -> A (obrnuti smjer)
-      final query2 = await _db
-          .collection('cestarine_dionice')
-          .where('ulaz', isEqualTo: izlaz)
-          .where('izlaz', isEqualTo: ulaz)
-          .limit(1)
-          .get();
+      // 2. Pokušaj obrnutog dohvata po ID-ju: izlaz_ulaz
+      var doc2 = await _db.collection('cestarine_dionice').doc('${izlazKey}_$ulazKey').get();
+      if (doc2.exists && doc2.data() != null) {
+        double? val = pronadjiCijenuUDokumentu(doc2.data()!);
+        if (val != null && val > 0) return val;
+      }
 
-      if (query2.docs.isNotEmpty) {
-        double? cijena = pronadjiCijenuUDokumentu(query2.docs.first.data());
-        if (cijena != null && cijena > 0) return cijena;
+      // 3. Fleksibilna pretraga preko svih dokumenata (za slučajeve sa sufiksima poput zadar_istok)
+      final allDocs = await _db.collection('cestarine_dionice').get();
+      for (var d in allDocs.docs) {
+        String docId = d.id.toLowerCase();
+        if (docId.contains(ulazKey.split('_')[0]) && docId.contains(izlazKey.split('_')[0])) {
+          double? val = pronadjiCijenuUDokumentu(d.data());
+          if (val != null && val > 0) return val;
+        }
       }
     } catch (e) {
       print('Greška pri dohvaćanju cijene dionice s Clouda: $e');
@@ -129,15 +113,13 @@ class CestarineService {
     return 0.0;
   }
 
-  /// 3. Glavna funkcija za izračun ukupne cestarine
+  /// 3. Glavna funkcija za izračun ukupne cestarine (sa automatskim tranzitom preko Bosiljeva)
   Future<double> izracunajUkupnuCestarinu({
     required String polaziste,
     required String odrediste,
     String? medustajaliste,
     required String kategorijaVozila,
   }) async {
-    double ukupno = 0.0;
-
     final postajaPolaziste = await dohvatiPostajuZaGrad(polaziste);
     final postajaOdrediste = await dohvatiPostajuZaGrad(odrediste);
 
@@ -149,33 +131,41 @@ class CestarineService {
     final String ulaznaPostaja = postajaPolaziste['postaja'] ?? '';
     final String izlaznaPostaja = postajaOdrediste['postaja'] ?? '';
 
+    // Ako imamo međuodredište
     if (medustajaliste != null && medustajaliste.trim().isNotEmpty) {
       final postajaMedustajaliste = await dohvatiPostajuZaGrad(medustajaliste);
       final String meduPostaja = postajaMedustajaliste?['postaja'] ?? '';
 
       if (meduPostaja.isNotEmpty) {
-        ukupno += await dohvatiCijenuDionice(
-          ulaz: ulaznaPostaja,
-          izlaz: meduPostaja,
-          kategorijaVozila: kategorijaVozila,
-        );
-
-        ukupno += await dohvatiCijenuDionice(
-          ulaz: meduPostaja,
-          izlaz: izlaznaPostaja,
-          kategorijaVozila: kategorijaVozila,
-        );
-
-        return ukupno;
+        double c1 = await dohvatiCijenuDionice(ulaz: ulaznaPostaja, izlaz: meduPostaja, kategorijaVozila: kategorijaVozila);
+        double c2 = await dohvatiCijenuDionice(ulaz: meduPostaja, izlaz: izlaznaPostaja, kategorijaVozila: kategorijaVozila);
+        return c1 + c2;
       }
     }
 
-    ukupno = await dohvatiCijenuDionice(
+    // 1. Pokušaj direktnog izračuna dionice
+    double direktnaCijena = await dohvatiCijenuDionice(
       ulaz: ulaznaPostaja,
       izlaz: izlaznaPostaja,
       kategorijaVozila: kategorijaVozila,
     );
 
-    return ukupno;
+    if (direktnaCijena > 0) {
+      return direktnaCijena;
+    }
+
+    // 2. Automatski tranzit preko Bosiljeva (za relacije koje idu preko Zagreba/Lučkog prema Rijeci, Splitu, Zadru...)
+    if (ulaznaPostaja == 'lucko' || izlaznaPostaja == 'lucko') {
+      String udaljenaPostaja = (ulaznaPostaja == 'lucko') ? izlaznaPostaja : ulaznaPostaja;
+
+      double c1 = await dohvatiCijenuDionice(ulaz: 'lucko', izlaz: 'bosiljevo', kategorijaVozila: kategorijaVozila);
+      double c2 = await dohvatiCijenuDionice(ulaz: 'bosiljevo', izlaz: udaljenaPostaja, kategorijaVozila: kategorijaVozila);
+
+      if (c1 > 0 && c2 > 0) {
+        return c1 + c2;
+      }
+    }
+
+    return 0.0;
   }
 }
