@@ -23,7 +23,7 @@ class CestarineService {
 
     try {
       final docSnapshot = await _db
-          .collection('cestarine_gradovi') // Ispravljen naziv kolekcije prema bazi
+          .collection('cestarine_gradovi')
           .doc(gradKey)
           .get();
 
@@ -51,52 +51,47 @@ class CestarineService {
 
     String kLower = kategorijaVozila.toLowerCase();
     
-    // Određujemo koji ključevi odgovaraju odabranoj kategoriji vozila u bazi
-    List<String> moguciKljucevi = [];
+    // Direktno mapiramo kategoriju vozila na točne ključeve u bazi (skupina1 - skupina4)
+    String dbKljuc = 'skupina2'; // Default
 
-    if (kLower.contains('iv.') || kLower.contains('veliki autobus') || kLower.contains('skupina 4') || kLower.contains('4+')) {
-      moguciKljucevi = ['skupina4', 'Veliki autobus 50', 'IV. Skupina'];
-    } else if (kLower.contains('iii.') || kLower.contains('midi bus') || kLower.contains('skupina 3') || kLower.contains('2-3')) {
-      moguciKljucevi = ['skupina3', 'Midi bus 35', 'III. Skupina'];
-    } else if (kLower.contains('ii.') || kLower.contains('kombi') || kLower.contains('skupina 2') || kLower.contains('do 3.5t')) {
-      moguciKljucevi = ['skupina2', 'Kombi 8+1', 'Mini bus <20', 'II. Skupina'];
-    } else if (kLower.contains('i.') || kLower.contains('osobna') || kLower.contains('skupina 1')) {
-      moguciKljucevi = ['skupina1', 'I. Skupina', 'Osobna vozila'];
-    } else {
-      moguciKljucevi = [kategorijaVozila, 'skupina2', 'Kombi 8+1'];
+    if (kLower.contains('iv.') || kLower.contains('4+')) {
+      dbKljuc = 'skupina4';
+    } else if (kLower.contains('iii.') || kLower.contains('2-3')) {
+      dbKljuc = 'skupina3';
+    } else if (kLower.contains('ii.') || kLower.contains('kombi') || kLower.contains('do 3.5t')) {
+      dbKljuc = 'skupina2';
+    } else if (kLower.contains('i.') || kLower.contains('osobna')) {
+      dbKljuc = 'skupina1';
     }
+
+    print('CESTARISE_SERVICE: Tražim dionicu Ulaz: "$ulaz", Izlaz: "$izlaz" za ključ: "$dbKljuc" (iz kategorije: "$kategorijaVozila")');
 
     try {
       double? pronadjiCijenuUDokumentu(Map<String, dynamic> docData) {
-        // 1. Provjera izravnih polja na root razini dokumenta (npr. skupina1, skupina2...)[cite: 12]
-        for (String kljuc in moguciKljucevi) {
-          if (docData.containsKey(kljuc) && docData[kljuc] != null) {
-            return (docData[kljuc] as num).toDouble();
-          }
+        print('Pronađen dokument u bazi. Polja u dokumentu: ${docData.keys.toList()}');
+        
+        // 1. Provjera izravnog polja na root razini (npr. skupina2)[cite: 11]
+        if (docData.containsKey(dbKljuc) && docData[dbKljuc] != null) {
+          double val = (docData[dbKljuc] as num).toDouble();
+          print('Pronađena cijena direktno po ključu $dbKljuc: $val');
+          return val;
         }
 
-        // 2. Provjera unutar mape 'cijene' (npr. "Kombi 8+1", "Midi bus 35"...)[cite: 12]
+        // 2. Provjera unutar mape 'cijene' ako postoji
         final cijeneMap = docData['cijene'] as Map<String, dynamic>?;
         if (cijeneMap != null) {
-          for (String kljuc in moguciKljucevi) {
-            if (cijeneMap.containsKey(kljuc) && cijeneMap[kljuc] != null) {
-              return (cijeneMap[kljuc] as num).toDouble();
-            }
-          }
-          // Fleksibilno traženje po djelomičnom nazivu
-          for (var entry in cijeneMap.entries) {
-            String dbKeyLower = entry.key.toLowerCase();
-            for (String trazeni in moguciKljucevi) {
-              if (dbKeyLower.contains(trazeni.toLowerCase()) || trazeni.toLowerCase().contains(dbKeyLower)) {
-                return (entry.value as num).toDouble();
-              }
-            }
+          if (cijeneMap.containsKey(dbKljuc) && cijeneMap[dbKljuc] != null) {
+            double val = (cijeneMap[dbKljuc] as num).toDouble();
+            print('Pronađena cijena unutar mape cijene po ključu $dbKljuc: $val');
+            return val;
           }
         }
+        
+        print('Ključ $dbKljuc nije pronađen u ovom dokumentu.');
         return null;
       }
 
-      // Pretraga A -> B u ispravnoj kolekciji cestarine_dionice[cite: 12]
+      // Pretraga A -> B u kolekciji cestarine_dionice
       final query1 = await _db
           .collection('cestarine_dionice')
           .where('ulaz', isEqualTo: ulaz)
@@ -106,7 +101,7 @@ class CestarineService {
 
       if (query1.docs.isNotEmpty) {
         double? cijena = pronadjiCijenuUDokumentu(query1.docs.first.data());
-        if (cijena != null) return cijena;
+        if (cijena != null && cijena > 0) return cijena;
       }
 
       // Pretraga B -> A (obrnuti smjer)
@@ -119,12 +114,13 @@ class CestarineService {
 
       if (query2.docs.isNotEmpty) {
         double? cijena = pronadjiCijenuUDokumentu(query2.docs.first.data());
-        if (cijena != null) return cijena;
+        if (cijena != null && cijena > 0) return cijena;
       }
     } catch (e) {
       print('Greška pri dohvaćanju cijene dionice s Clouda: $e');
     }
 
+    print('Nije pronađena cijena za dionicu $ulaz -> $izlaz');
     return 0.0;
   }
 
@@ -141,6 +137,7 @@ class CestarineService {
     final postajaOdrediste = await dohvatiPostajuZaGrad(odrediste);
 
     if (postajaPolaziste == null || postajaOdrediste == null) {
+      print('Postaje nisu pronađene za gradove: $polaziste -> $odrediste');
       return 0.0;
     }
 
