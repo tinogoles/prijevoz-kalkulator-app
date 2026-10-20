@@ -4,6 +4,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 class PdfGenerator {
+  /// Univerzalna metoda za vađenje vrijednosti bez obzira radi li se o Map-i ili Dart modelu
   static String _getVal(dynamic obj, String field) {
     if (obj == null) return '';
     try {
@@ -23,22 +24,35 @@ class PdfGenerator {
         if (field == 'iban') return (obj['iban'] ?? obj['ibanZiro'] ?? '').toString();
         return (obj[field] ?? '').toString();
       }
-      
+
+      // Kada se prosljeđuju instancirani Dart modeli (PrijevoznikModel, KlijentModel, itd.)
       switch (field) {
-        case 'naziv': 
-          return (obj.naziv ?? obj.nazivTvrtke ?? '').toString();
-        case 'vlasnik': 
-          return (obj.vlasnik ?? obj.odgovornaOsoba ?? '').toString();
-        case 'adresa': return (obj.adresa ?? '').toString();
-        case 'grad': return (obj.grad ?? '').toString();
-        case 'oib': return (obj.oib ?? '').toString();
-        case 'email': return (obj.email ?? '').toString();
-        case 'telefon': return (obj.telefon ?? obj.mobitel ?? '').toString();
-        case 'banka': return (obj.banka ?? '').toString();
-        case 'iban': return (obj.iban ?? '').toString();
-        case 'uSustavuPdv': 
-          return (obj.uSustavuPdv ?? obj.uSustavuPdvA ?? false).toString();
-        default: return '';
+        case 'naziv':
+          try { return (obj.naziv ?? '').toString(); } catch (_) {
+            try { return (obj.nazivTvrtke ?? '').toString(); } catch (_) { return ''; }
+          }
+        case 'vlasnik':
+          try { return (obj.vlasnik ?? '').toString(); } catch (_) {
+            try { return (obj.odgovornaOsoba ?? '').toString(); } catch (_) { return ''; }
+          }
+        case 'adresa':
+          try { return (obj.adresa ?? '').toString(); } catch (_) { return ''; }
+        case 'grad':
+          try { return (obj.grad ?? '').toString(); } catch (_) { return ''; }
+        case 'oib':
+          try { return (obj.oib ?? '').toString(); } catch (_) { return ''; }
+        case 'email':
+          try { return (obj.email ?? '').toString(); } catch (_) { return ''; }
+        case 'telefon':
+          try { return (obj.telefon ?? obj.mobitel ?? '').toString(); } catch (_) { return ''; }
+        case 'banka':
+          try { return (obj.banka ?? '').toString(); } catch (_) { return ''; }
+        case 'iban':
+          try { return (obj.iban ?? '').toString(); } catch (_) { return ''; }
+        case 'uSustavuPdv':
+          try { return (obj.uSustavuPdv ?? false).toString(); } catch (_) { return 'false'; }
+        default:
+          return '';
       }
     } catch (_) {
       return '';
@@ -46,11 +60,16 @@ class PdfGenerator {
   }
 
   // Dinamička metoda za internu kalkulaciju troškova
-  static Future<void> printajInternuKalkulaciju(dynamic kalkulacija, dynamic prijevoznik, {bool klijentUsetPdv = false, dynamic klijentObjekt}) async {
+  static Future<void> printajInternuKalkulaciju(
+    dynamic kalkulacija, 
+    dynamic prijevoznik, {
+    bool klijentUsetPdv = false, 
+    dynamic klijentObjekt
+  }) async {
     final font = await PdfGoogleFonts.robotoRegular();
     final fontBold = await PdfGoogleFonts.robotoBold();
 
-    // Provjera PDV statusa klijenta iz objekta ako postoji
+    // Ažuriranje PDV statusa klijenta iz objekta ako postoji
     if (klijentObjekt != null) {
       if (klijentObjekt is Map) {
         klijentUsetPdv = klijentObjekt['uSustavuPdv'] ?? klijentObjekt['uSustavuPdvA'] ?? klijentObjekt['u_sustavu_pdva'] ?? klijentUsetPdv;
@@ -69,7 +88,9 @@ class PdfGenerator {
     String kNaziv = _getVal(klijentObjekt, 'naziv');
     if (kNaziv.isEmpty) kNaziv = kalkulacija.klijentNaziv;
 
-    String idSkel = kalkulacija.id.length >= 5 ? kalkulacija.id.substring(kalkulacija.id.length - 5) : (kalkulacija.id.isNotEmpty ? kalkulacija.id : '07743');
+    String idSkel = kalkulacija.id.length >= 5 
+        ? kalkulacija.id.substring(kalkulacija.id.length - 5) 
+        : (kalkulacija.id.isNotEmpty ? kalkulacija.id : '07743');
 
     double km = double.tryParse(kalkulacija.km?.toString() ?? '0') ?? 0.0;
     double cestarinaBruto = double.tryParse(kalkulacija.cestarina?.toString() ?? '0') ?? 0.0;
@@ -97,7 +118,7 @@ class PdfGenerator {
     int brojNocenja = brojDana > 1 ? brojDana - 1 : 0;
     double trosakDnevnice = dnevnicaPoDanu * brojDana;
     
-    // Ispravna razrada neto i PDV-a za noćenje
+    // Ispravan izračun neto i PDV-a za noćenje
     double nocenjeBrutoTotal = (kalkulacija.tkoPlacaNocenje == 'Prijevoznik plaća' ? (cijenaNocenjaVal * brojNocenja) : 0.0);
     double trosakNocenjaNeto = nocenjeBrutoTotal > 0 ? (nocenjeBrutoTotal / 1.25) : 0.0;
     double trosakNocenjaPdv = nocenjeBrutoTotal - trosakNocenjaNeto;
@@ -131,7 +152,7 @@ class PdfGenerator {
               pw.Divider(thickness: 1, color: PdfColors.black),
               pw.SizedBox(height: 8),
 
-              pw.Text('Prijevoznik: "${pNaziv.isNotEmpty ? pNaziv : 'Čagalj prijevoz'}"${pOib.isNotEmpty ? " (OIB: $pOib)" : ""}', style: pw.TextStyle(font: font, fontSize: 10)),
+              pw.Text('Prijevoznik: "${pNaziv.isNotEmpty ? pNaziv : 'Moj Obrt'}"${pOib.isNotEmpty ? " (OIB: $pOib)" : ""}', style: pw.TextStyle(font: font, fontSize: 10)),
               pw.Text('Klijent: $kNaziv (PDV sustav: ${klijentUsetPdv ? "DA" : "NE"})', style: pw.TextStyle(font: font, fontSize: 10)),
               pw.Text('Ruta: ${kalkulacija.ruta} | Termin: ${kalkulacija.datumPolaska} - ${kalkulacija.datumPovratka}', style: pw.TextStyle(font: font, fontSize: 10)),
               pw.SizedBox(height: 14),
@@ -259,12 +280,19 @@ class PdfGenerator {
     });
   }
 
-  static Future<void> printajPonuduPdf(dynamic kalkulacija, dynamic prijevoznik, {bool klijentUsetPdv = false, dynamic klijentObjekt}) async {
+  static Future<void> printajPonuduPdf(
+    dynamic kalkulacija, 
+    dynamic prijevoznik, {
+    bool klijentUsetPdv = false, 
+    dynamic klijentObjekt
+  }) async {
     final font = await PdfGoogleFonts.robotoRegular();
     final fontBold = await PdfGoogleFonts.robotoBold();
 
     String godina = DateTime.now().year.toString();
-    String idSkel = kalkulacija.id.length >= 2 ? kalkulacija.id.substring(kalkulacija.id.length - 2) : '43';
+    String idSkel = kalkulacija.id.length >= 2 
+        ? kalkulacija.id.substring(kalkulacija.id.length - 2) 
+        : '43';
     String brojPonude = '$idSkel/$godina';
 
     double ukupniIznosPonude = double.tryParse(kalkulacija.ukupnaCijena?.toString() ?? '0') ?? kalkulacija.ukupnaCijena;
@@ -413,7 +441,7 @@ class PdfGenerator {
               pw.Divider(thickness: 0.5, color: PdfColors.grey400),
               pw.SizedBox(height: 10),
 
-              // REKAPITULACIJA CIJENE S PDV-om
+              // REKAPITULACIJA CIJENE S PDV-OM
               pw.Align(
                 alignment: pw.Alignment.centerRight,
                 child: pw.Column(
@@ -435,7 +463,7 @@ class PdfGenerator {
               ),
               pw.SizedBox(height: 25),
 
-              // NAPOMENA O PLAĆANJU
+              // NAPOMENA O PLAĆANJU I IBAN
               if (pIban.isNotEmpty)
                 pw.Text('Plaćanje izvršiti na IBAN: $pIban${pBanka.isNotEmpty ? ", otvoren u banci: $pBanka" : ""}', style: pw.TextStyle(font: fontBold, fontSize: 9))
               else
