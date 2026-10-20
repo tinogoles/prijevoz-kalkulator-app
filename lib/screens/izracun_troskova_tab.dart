@@ -335,6 +335,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
                           'II. Skupina (Vozila do 3.5t / kombi)';
 
       if (_koristiAutocestu) {
+        // 1) Ako ruta ide iz Splita u Krapinu (ili obratno) -> dijeli se na HAC A1 i AZM A2
         if ((pLower.contains('split') && kLower.contains('krapina')) ||
             (pLower.contains('krapina') && pLower.contains('split'))) {
           
@@ -359,19 +360,25 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
           );
 
           dionice.add({
-            'naziv': 'Autoput 1 (HAC A1 - Split -> Zagreb)',
+            'naziv': 'HAC A1 (Split -> Zagreb)',
             'opis': 'Split -> Zagreb',
             'cijena': cijenaA1,
             'ukljuceno': true,
           });
 
           dionice.add({
-            'naziv': 'Autoput 2 (AZM A2 - Zagreb -> Krapina)',
+            'naziv': 'AZM A2 (Zagreb -> Krapina)',
             'opis': 'Zagreb -> Krapina',
             'cijena': cijenaA2,
             'ukljuceno': true,
           });
-        } else {
+        } 
+        // 2) Za sve ostale rute automatski dohvaćamo koncesionara iz baze za ispravan naziv
+        else {
+          var postajaP = await _cestarineService.dohvatiPostajuZaGrad(_polazisteController.text.trim());
+          String koncesionar = postajaP?['koncesionar'] ?? 'HAC';
+          String nazivDionice = '$koncesionar Autocesta (${_polazisteController.text.trim()} -> ${_konacnoOdredisteController.text.trim()})';
+
           double izracunataCestarina = await _cestarineService.izracunajUkupnuCestarinu(
             polaziste: _polazisteController.text.trim(),
             odrediste: _konacnoOdredisteController.text.trim(),
@@ -380,7 +387,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
           );
 
           dionice.add({
-            'naziv': 'Autoput (Glavna dionica)',
+            'naziv': nazivDionice,
             'opis': '${_polazisteController.text.trim()} -> ${_konacnoOdredisteController.text.trim()}',
             'cijena': izracunataCestarina,
             'ukljuceno': true,
