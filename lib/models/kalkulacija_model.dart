@@ -3,6 +3,7 @@ class KalkulacijaModel {
   final String id;
   final String nazivKalkulacije;
   final String klijentNaziv;
+  final bool klijentUSustavuPdv; // Dodano radi očuvanja PDV statusa klijenta
   final String datumPolaska;
   final String datumPovratka;
   final String vozilo;
@@ -27,6 +28,7 @@ class KalkulacijaModel {
     required this.id,
     required this.nazivKalkulacije,
     required this.klijentNaziv,
+    this.klijentUSustavuPdv = false,
     required this.datumPolaska,
     required this.datumPovratka,
     required this.vozilo,
@@ -52,6 +54,7 @@ class KalkulacijaModel {
     'id': id,
     'nazivKalkulacije': nazivKalkulacije,
     'klijentNaziv': klijentNaziv,
+    'klijentUSustavuPdv': klijentUSustavuPdv,
     'datumPolaska': datumPolaska,
     'datumPovratka': datumPovratka,
     'vozilo': vozilo,
@@ -73,8 +76,7 @@ class KalkulacijaModel {
     'dnevnica': dnevnica,
   };
 
- factory KalkulacijaModel.fromJson(Map<String, dynamic> json) {
-    // Fleksibilno čitanje kilometara
+  factory KalkulacijaModel.fromJson(Map<String, dynamic> json) {
     String procitaniKm = (json['km'] ?? json['kilometri'] ?? json['brojKm'] ?? '0').toString();
     if (procitaniKm == '0' || procitaniKm.isEmpty) {
       String r = json['ruta']?.toString() ?? '';
@@ -83,10 +85,18 @@ class KalkulacijaModel {
       if (match != null) procitaniKm = match.group(1) ?? '0';
     }
 
+    bool pdvVal = false;
+    if (json['klijentUSustavuPdv'] is bool) {
+      pdvVal = json['klijentUSustavuPdv'];
+    } else if (json['klijentUSustavuPdv'] != null) {
+      pdvVal = json['klijentUSustavuPdv'].toString().toLowerCase() == 'true';
+    }
+
     return KalkulacijaModel(
       id: json['id']?.toString() ?? '',
       nazivKalkulacije: json['nazivKalkulacije']?.toString() ?? json['naziv']?.toString() ?? '',
       klijentNaziv: json['klijentNaziv']?.toString() ?? json['klijent']?.toString() ?? '',
+      klijentUSustavuPdv: pdvVal,
       datumPolaska: json['datumPolaska']?.toString() ?? '',
       datumPovratka: json['datumPovratka']?.toString() ?? '',
       vozilo: json['vozilo']?.toString() ?? '',
