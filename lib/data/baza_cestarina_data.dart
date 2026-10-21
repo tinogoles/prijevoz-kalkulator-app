@@ -163,7 +163,7 @@ class BazaCestarinaData {
   static Map<String, Map<String, dynamic>> generirajSveDionice() {
     final Map<String, Map<String, dynamic>> dionice = {};
 
-    // Službene tarife i provjerene relacije
+    // Službene tarife i provjerene relacije (II. skupina i ostale)
     dionice['lucko_bosiljevo'] = {
       'koncesionar': 'HAC', 'naziv': 'A1: Lučko - Bosiljevo',
       'I. Skupina (Osobna vozila / motocikli)': 8.50,
@@ -212,6 +212,34 @@ class BazaCestarinaData {
       'II. Skupina (Vozila do 3.5t / kombi)': 14.80,
       'III. Skupina (Vozila preko 3.5t / midi bus)': 22.00,
       'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 37.00,
+    };
+    dionice['lucko_grobnik'] = {
+      'koncesionar': 'HAC', 'naziv': 'A1/A6: Lučko - Rijeka (Grobnik)',
+      'I. Skupina (Osobna vozila / motocikli)': 9.90,
+      'II. Skupina (Vozila do 3.5t / kombi)': 15.90,
+      'III. Skupina (Vozila preko 3.5t / midi bus)': 23.50,
+      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 39.50,
+    };
+    dionice['lucko_varazdin'] = {
+      'koncesionar': 'HAC', 'naziv': 'A4: Zagreb - Varaždin',
+      'I. Skupina (Osobna vozila / motocikli)': 6.50,
+      'II. Skupina (Vozila do 3.5t / kombi)': 10.50,
+      'III. Skupina (Vozila preko 3.5t / midi bus)': 16.00,
+      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 27.00,
+    };
+    dionice['lucko_slavonski_brod_zapad'] = {
+      'koncesionar': 'HAC', 'naziv': 'A3: Zagreb - Slavonski Brod',
+      'I. Skupina (Osobna vozila / motocikli)': 13.00,
+      'II. Skupina (Vozila do 3.5t / kombi)': 21.00,
+      'III. Skupina (Vozila preko 3.5t / midi bus)': 31.50,
+      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 53.00,
+    };
+    dionice['lucko_osijek'] = {
+      'koncesionar': 'HAC', 'naziv': 'A3/A5: Zagreb - Osijek',
+      'I. Skupina (Osobna vozila / motocikli)': 17.50,
+      'II. Skupina (Vozila do 3.5t / kombi)': 28.00,
+      'III. Skupina (Vozila preko 3.5t / midi bus)': 42.00,
+      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 70.00,
     };
     dionice['zapresic_krapina'] = {
       'koncesionar': 'AZM (A2)', 'naziv': 'A2: Zaprešić - Krapina',
