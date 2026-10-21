@@ -23,7 +23,7 @@ class BazaCestarinaData {
     ]);
     _dodajSkupinu(mapa, 'HR', 'sibenik', [
       'Šibenik', 'Vodice', 'Skradin', 'Drniš', 'Knin', 'Primošten', 'Rogoznica', 'Murter', 'Tisno', 'Pirovac',
-      'Tribunj', 'Kistanje', 'Ružić', 'Promina', 'Biskupija', 'Civljane', 'Unesić', 'Pirovac', 'Zaton'
+      'Tribunj', 'Kistanje', 'Ružić', 'Promina', 'Biskupija', 'Civljane', 'Unesić', 'Zaton'
     ]);
     _dodajSkupinu(mapa, 'HR', 'zadar_istok', [
       'Zadar', 'Biograd na Moru', 'Benkovac', 'Obrovac', 'Pag', 'Nin', 'Pakoštane', 'Sukošan', 'Bibinje', 'Posedarje',
@@ -96,7 +96,6 @@ class BazaCestarinaData {
       'Bar', 'Ulcinj', 'Budva', 'Kotor', 'Tivat', 'Herceg Novi', 'Petrovac', 'Sutomore'
     ]);
 
-    // Dopuna generičkim lokalnim naseljima do zadanih kvota
     _dopuniDoKvote(mapa);
     return mapa;
   }
@@ -310,7 +309,7 @@ class BazaCestarinaData {
     WriteBatch batchDionice = _db.batch();
     for (var entry in cestarineDionice.entries) {
       DocumentReference ref = _db.collection('cestarine_dionice').doc(entry.key);
-      batchDionice.set(ref, entry.value); // Zapisuje isključivo nova polja
+      batchDionice.set(ref, entry.value);
     }
     await batchDionice.commit();
   }
