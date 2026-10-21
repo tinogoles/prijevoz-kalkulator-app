@@ -9,6 +9,7 @@ import '../models/klijent_model.dart';
 import '../models/kalkulacija_model.dart';
 import '../services/cestarine_service.dart';
 import '../services/klijenti_service.dart';
+import 'mapa_rute_screen.dart';
 
 class IzracunTroskovaTab extends StatefulWidget {
   final PrijevoznikModel prijevoznik;
@@ -329,7 +330,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       List<Map<String, dynamic>> dionice = [];
 
       String katVozila = _odabranoVoziloMap?['kategorija'] ??
-                        'II. Skupina (Vozila do 3.5t / kombi)';
+                          'II. Skupina (Vozila do 3.5t / kombi)';
 
       if (_koristiAutocestu) {
         bool zahtijevaSkladisteniSplitaKrapina = 
@@ -818,6 +819,30 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(16)),
             ),
             const SizedBox(height: 12),
+
+            // NOVI GUMB ZA PRIKAZ RUTE NA MAPI:
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MapaRuteScreen(
+                      polaziste: _polazisteController.text.trim(),
+                      odrediste: _konacnoOdredisteController.text.trim(),
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.map),
+              label: const Text('Prikaži rutu na mapi'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.all(16),
+              ),
+            ),
+            const SizedBox(height: 12),
+
             ElevatedButton(
               onPressed: _spremi,
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, padding: const EdgeInsets.all(16)),
