@@ -9,7 +9,7 @@ class BazaCestarinaData {
   }
 
   // =========================================================================
-  // 1. STVARNI GRADOVI, OPĆINE I OTOČNA NASELJA (HR, SI, BIH, CG)
+  // 1. MAPIRANJE SVIH GRADOVA NA NJIHOV NAJBLIŽI ULAZ S AUTOCESTE
   // =========================================================================
   static Map<String, Map<String, dynamic>> generirajSveGradove() {
     final Map<String, Map<String, dynamic>> mapa = {};
@@ -41,7 +41,7 @@ class BazaCestarinaData {
     _dodajSkupinu(mapa, 'HR', 'lucko', [
       'Zagreb', 'Velika Gorica', 'Samobor', 'Sveta Nedelja', 'Jastrebarsko', 'Stupnik', 'Klinča Sela',
       'Pisarovina', 'Krašić', 'Žumberak', 'Rugvica', 'Dugo Selo', 'Ivanić-Grad', 'Zaprešić', 'Vrbovec',
-      'Sveti Ivan Zelina', 'Križevci', 'Koprivnica', 'Bjelovar', 'Virovitica', 'Čazma', 'Garešnica', 'Kutina', 'Novska'
+      'Sveti Ivan Zelina', 'Križevci', 'Koprivnica', 'Bjelovar', 'Virovitica', 'Čazma', 'Garešnica', 'Kutina', 'Novska', 'Sisak', 'Petrinja'
     ]);
     _dodajSkupinu(mapa, 'HR', 'karlovac', [
       'Karlovac', 'Duga Resa', 'Ogulin', 'Slunj', 'Ozalj', 'Vojnić', 'Krnjak', 'Lasinja', 'Žakanje', 'Netretić', 'Bosiljevo',
@@ -97,7 +97,7 @@ class BazaCestarinaData {
     ]);
     _dodajSkupinu(mapa, 'BIH', 'bijaca', [
       'Mostar', 'Ljubuški', 'Čapljina', 'Široki Brijeg', 'Grude', 'Posušje', 'Čitluk', 'Neum', 'Stolac', 'Trebinje',
-      'Gacko', 'Nevesinje', 'Bileća', 'Ravno', 'Berkovići'
+      'Gacko', 'Nevesinje', 'Bileća', 'Ravno', 'Berkovići', 'Međugorje'
     ]);
     _dodajSkupinu(mapa, 'BIH', 'mahovljani', [
       'Banja Luka', 'Laktaši', 'Gradiška', 'Prijedor', 'Prnjavor', 'Derventa', 'Doboj', 'Novi Grad', 'Kozarska Dubica', 'Bijeljina',
@@ -158,131 +158,46 @@ class BazaCestarinaData {
   }
 
   // =========================================================================
-  // 2. MATRICA TOČNIH SLUŽBENIH DIONICA (BEZ PROCJENA I FORMULA)
+  // 2. MATRICA TOČNIH SLUŽBENIH DIONICA IZMEĐU ČVORIŠTA
   // =========================================================================
   static Map<String, Map<String, dynamic>> generirajSveDionice() {
     final Map<String, Map<String, dynamic>> dionice = {};
 
-    // Službene tarife i provjerene relacije (II. skupina i ostale)
-    dionice['lucko_bosiljevo'] = {
-      'koncesionar': 'HAC', 'naziv': 'A1: Lučko - Bosiljevo',
-      'I. Skupina (Osobna vozila / motocikli)': 8.50,
-      'II. Skupina (Vozila do 3.5t / kombi)': 13.50,
-      'III. Skupina (Vozila preko 3.5t / midi bus)': 20.00,
-      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 33.50,
-    };
-    dionice['bosiljevo_split'] = {
-      'koncesionar': 'HAC', 'naziv': 'A1: Bosiljevo - Split (Dugopolje)',
-      'I. Skupina (Osobna vozila / motocikli)': 15.50,
-      'II. Skupina (Vozila do 3.5t / kombi)': 25.00,
-      'III. Skupina (Vozila preko 3.5t / midi bus)': 37.50,
-      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 62.50,
-    };
-    dionice['lucko_dugopolje'] = {
-      'koncesionar': 'HAC', 'naziv': 'A1: Lučko - Dugopolje',
-      'I. Skupina (Osobna vozila / motocikli)': 24.00,
-      'II. Skupina (Vozila do 3.5t / kombi)': 38.50,
-      'III. Skupina (Vozila preko 3.5t / midi bus)': 57.50,
-      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 96.00,
-    };
-    dionice['dugopolje_ploce'] = {
-      'koncesionar': 'HAC', 'naziv': 'A1: Dugopolje - Ploče',
-      'I. Skupina (Osobna vozila / motocikli)': 7.80,
-      'II. Skupina (Vozila do 3.5t / kombi)': 12.50,
-      'III. Skupina (Vozila preko 3.5t / midi bus)': 18.50,
-      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 31.00,
-    };
-    dionice['dugopolje_zadar_istok'] = {
-      'koncesionar': 'HAC', 'naziv': 'A1: Dugopolje - Zadar istok',
-      'I. Skupina (Osobna vozila / motocikli)': 8.78,
-      'II. Skupina (Vozila do 3.5t / kombi)': 14.20,
-      'III. Skupina (Vozila preko 3.5t / midi bus)': 21.00,
-      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 35.00,
-    };
-    dionice['dugopolje_sibenik'] = {
-      'koncesionar': 'HAC', 'naziv': 'A1: Dugopolje - Šibenik',
-      'I. Skupina (Osobna vozila / motocikli)': 4.70,
-      'II. Skupina (Vozila do 3.5t / kombi)': 8.40,
-      'III. Skupina (Vozila preko 3.5t / midi bus)': 12.50,
-      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 20.50,
-    };
-    dionice['bosiljevo_rijeka'] = {
-      'koncesionar': 'HAC', 'naziv': 'A6: Bosiljevo - Rijeka (Grobnik)',
-      'I. Skupina (Osobna vozila / motocikli)': 9.20,
-      'II. Skupina (Vozila do 3.5t / kombi)': 14.80,
-      'III. Skupina (Vozila preko 3.5t / midi bus)': 22.00,
-      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 37.00,
-    };
-    dionice['lucko_grobnik'] = {
-      'koncesionar': 'HAC', 'naziv': 'A1/A6: Lučko - Rijeka (Grobnik)',
-      'I. Skupina (Osobna vozila / motocikli)': 9.90,
-      'II. Skupina (Vozila do 3.5t / kombi)': 15.90,
-      'III. Skupina (Vozila preko 3.5t / midi bus)': 23.50,
-      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 39.50,
-    };
-    dionice['lucko_varazdin'] = {
-      'koncesionar': 'HAC', 'naziv': 'A4: Zagreb - Varaždin',
-      'I. Skupina (Osobna vozila / motocikli)': 6.50,
-      'II. Skupina (Vozila do 3.5t / kombi)': 10.50,
-      'III. Skupina (Vozila preko 3.5t / midi bus)': 16.00,
-      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 27.00,
-    };
-    dionice['lucko_slavonski_brod_zapad'] = {
-      'koncesionar': 'HAC', 'naziv': 'A3: Zagreb - Slavonski Brod',
-      'I. Skupina (Osobna vozila / motocikli)': 13.00,
-      'II. Skupina (Vozila do 3.5t / kombi)': 21.00,
-      'III. Skupina (Vozila preko 3.5t / midi bus)': 31.50,
-      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 53.00,
-    };
-    dionice['lucko_osijek'] = {
-      'koncesionar': 'HAC', 'naziv': 'A3/A5: Zagreb - Osijek',
-      'I. Skupina (Osobna vozila / motocikli)': 17.50,
-      'II. Skupina (Vozila do 3.5t / kombi)': 28.00,
-      'III. Skupina (Vozila preko 3.5t / midi bus)': 42.00,
-      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 70.00,
-    };
-    dionice['zapresic_krapina'] = {
-      'koncesionar': 'AZM (A2)', 'naziv': 'A2: Zaprešić - Krapina',
-      'I. Skupina (Osobna vozila / motocikli)': 2.50,
-      'II. Skupina (Vozila do 3.5t / kombi)': 4.00,
-      'III. Skupina (Vozila preko 3.5t / midi bus)': 10.00,
-      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 15.40,
-    };
-    dionice['gruskovje_maribor'] = {
-      'koncesionar': 'DARS', 'naziv': 'A4: Gruškovje - Maribor',
-      'I. Skupina (Osobna vozila / motocikli)': 4.50,
-      'II. Skupina (Vozila do 3.5t / kombi)': 7.90,
-      'III. Skupina (Vozila preko 3.5t / midi bus)': 12.00,
-      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 19.00,
-    };
-    dionice['obrezje_ljubljana'] = {
-      'koncesionar': 'DARS', 'naziv': 'A2: Obrežje - Ljubljana',
-      'I. Skupina (Osobna vozila / motocikli)': 6.20,
-      'II. Skupina (Vozila do 3.5t / kombi)': 11.10,
-      'III. Skupina (Vozila preko 3.5t / midi bus)': 17.50,
-      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 28.00,
-    };
-    dionice['bijaca_sarajevo'] = {
-      'koncesionar': 'Autoceste FBiH', 'naziv': 'A1: Bijača - Sarajevo',
-      'I. Skupina (Osobna vozila / motocikli)': 7.50,
-      'II. Skupina (Vozila do 3.5t / kombi)': 13.00,
-      'III. Skupina (Vozila preko 3.5t / midi bus)': 19.50,
-      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 32.00,
-    };
-    dionice['smokovac_matesevo'] = {
-      'koncesionar': 'Monteput', 'naziv': 'A1: Smokovac - Mateševo',
-      'I. Skupina (Osobna vozila / motocikli)': 3.50,
-      'II. Skupina (Vozila do 3.5t / kombi)': 6.00,
-      'III. Skupina (Vozila preko 3.5t / midi bus)': 9.50,
-      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 15.00,
-    };
-    dionice['tunel_sozina'] = {
-      'koncesionar': 'Monteput', 'naziv': 'Tunel Sozina',
-      'I. Skupina (Osobna vozila / motocikli)': 2.50,
-      'II. Skupina (Vozila do 3.5t / kombi)': 5.00,
-      'III. Skupina (Vozila preko 3.5t / midi bus)': 10.00,
-      'IV. Skupina (Vozila preko 3.5t / veliki autobus)': 18.00,
-    };
+    // Pomoćna funkcija za obostrano upisivanje (A->B i B->A) kako bi pretraga uvijek našla dionicu bez obzira na smjer
+    void dodajDionicu(String cvor1, String cvor2, String koncesionar, String naziv, double c1, double c2, double c3, double c4) {
+      final data = {
+        'koncesionar': koncesionar,
+        'naziv': naziv,
+        'I. Skupina (Osobna vozila / motocikli)': c1,
+        'II. Skupina (Vozila do 3.5t / kombi)': c2,
+        'III. Skupina (Vozila preko 3.5t / midi bus)': c3,
+        'IV. Skupina (Vozila preko 3.5t / veliki autobus)': c4,
+      };
+      dionice['${cvor1}_$cvor2'] = data;
+      dionice['${cvor2}_$cvor1'] = data;
+    }
+
+    // --- SLUŽBENE RELACIJE ---
+    dodajDionicu('lucko', 'bosiljevo', 'HAC', 'A1: Lučko - Bosiljevo', 8.50, 13.50, 20.00, 33.50);
+    dodajDionicu('bosiljevo', 'dugopolje', 'HAC', 'A1: Bosiljevo - Split (Dugopolje)', 15.50, 25.00, 37.50, 62.50);
+    dodajDionicu('lucko', 'dugopolje', 'HAC', 'A1: Lučko - Dugopolje', 24.00, 38.50, 57.50, 96.00);
+    dodajDionicu('dugopolje', 'ploce', 'HAC', 'A1: Dugopolje - Ploče', 7.80, 12.50, 18.50, 31.00);
+    dodajDionicu('dugopolje', 'zadar_istok', 'HAC', 'A1: Dugopolje - Zadar istok', 8.78, 14.20, 21.00, 35.00);
+    dodajDionicu('dugopolje', 'sibenik', 'HAC', 'A1: Dugopolje - Šibenik', 4.70, 8.40, 12.50, 20.50);
+    dodajDionicu('bosiljevo', 'grobnik', 'HAC', 'A6: Bosiljevo - Rijeka (Grobnik)', 9.20, 14.80, 22.00, 37.00);
+    dodajDionicu('lucko', 'grobnik', 'HAC', 'A1/A6: Lučko - Rijeka (Grobnik)', 9.90, 15.90, 23.50, 39.50);
+    dodajDionicu('lucko', 'varazdin', 'HAC', 'A4: Zagreb - Varaždin', 6.50, 10.50, 16.00, 27.00);
+    dodajDionicu('lucko', 'slavonski_brod_zapad', 'HAC', 'A3: Zagreb - Slavonski Brod', 13.00, 21.00, 31.50, 53.00);
+    dodajDionicu('lucko', 'osijek', 'HAC', 'A3/A5: Zagreb - Osijek', 17.50, 28.00, 42.00, 70.00);
+    dodajDionicu('lucko', 'karlovac', 'HAC', 'A1: Lučko - Karlovac', 2.20, 3.50, 5.50, 9.00);
+    
+    // Dodatne unutarnje i regionalne relacije da pokrijemo sve kombinacije
+    dodajDionicu('zapresic', 'krapina', 'AZM (A2)', 'A2: Zaprešić - Krapina', 2.50, 4.00, 10.00, 15.40);
+    dodajDionicu('gruskovje', 'maribor', 'DARS', 'A4: Gruškovje - Maribor', 4.50, 7.90, 12.00, 19.00);
+    dodajDionicu('obrezje', 'ljubljana_jug', 'DARS', 'A2: Obrežje - Ljubljana', 6.20, 11.10, 17.50, 28.00);
+    dodajDionicu('bijaca', 'sarajevo_sjever', 'Autoceste FBiH', 'A1: Bijača - Sarajevo', 7.50, 13.00, 19.50, 32.00);
+    dodajDionicu('smokovac', 'matesevo', 'Monteput', 'A1: Smokovac - Mateševo', 3.50, 6.00, 9.50, 15.00);
+    dodajDionicu('sozina', 'podgorica', 'Monteput', 'Tunel Sozina', 2.50, 5.00, 10.00, 18.00);
 
     return dionice;
   }
