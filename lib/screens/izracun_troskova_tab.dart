@@ -40,7 +40,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
 
   String get _userId => FirebaseAuth.instance.currentUser?.uid ?? '';
 
-  // Controllers
   final TextEditingController _nazivKalkulacijeController = TextEditingController(text: 'Izlet - Ruta');
   late TextEditingController _datumPolaskaController;
   late TextEditingController _datumPovratkaController;
@@ -58,10 +57,8 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   final TextEditingController _cijenaNocenjaController = TextEditingController(text: '60');
   final TextEditingController _marzaController = TextEditingController(text: '20');
 
-  // Autocesta status
   bool _koristiAutocestu = true;
 
-  // Dinamički podaci izračuna rute
   List<String> _gradoviNaRuti = [];
   List<Map<String, dynamic>> _dioniceAutocesta = [];
 
@@ -335,10 +332,18 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
                           'II. Skupina (Vozila do 3.5t / kombi)';
 
       if (_koristiAutocestu) {
-        // 1) Ako ruta ide iz Splita u Krapinu (ili obratno) -> dijeli se na HAC A1 i AZM A2
-        if ((pLower.contains('split') && kLower.contains('krapina')) ||
-            (pLower.contains('krapina') && kLower.contains('split'))) {
-          
+        bool zahtijevaSkladisteniSplitaKrapina = 
+            (pLower.contains('split') || pLower.contains('sibenik') || pLower.contains('zadar')) && 
+            (kLower.contains('krapina') || kLower.contains('macelj') || kLower.contains('zabok'));
+
+        bool zahtijevaObrnutuRutu = 
+            (kLower.contains('split') || kLower.contains('sibenik') || kLower.contains('zadar')) && 
+            (pLower.contains('krapina') || pLower.contains('macelj') || pLower.contains('zabok'));
+
+        if (zahtijevaSkladisteniSplitaKrapina || zahtijevaObrnutuRutu) {
+          String juzniGrad = zahtijevaSkladisteniSplitaKrapina ? _polazisteController.text : _konacnoOdredisteController.text;
+          String sjeverniGrad = zahtijevaSkladisteniSplitaKrapina ? _konacnoOdredisteController.text : _polazisteController.text;
+
           dinamickiGradovi = [
             _polazisteController.text,
             if (_odrediste1Controller.text.isNotEmpty) _odrediste1Controller.text,
@@ -348,33 +353,31 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
           ];
 
           double cijenaA1 = await _cestarineService.izracunajUkupnuCestarinu(
-            polaziste: 'Split',
+            polaziste: juzniGrad,
             odrediste: 'Zagreb',
             kategorijaVozila: katVozila,
           );
 
           double cijenaA2 = await _cestarineService.izracunajUkupnuCestarinu(
-            polaziste: 'Zagreb',
-            odrediste: 'Krapina',
+            polaziste: 'Zaprešić',
+            odrediste: sjeverniGrad,
             kategorijaVozila: katVozila,
           );
 
           dionice.add({
-            'naziv': 'HAC A1 (Split -> Zagreb)',
-            'opis': 'Split -> Zagreb',
+            'naziv': 'HAC A1 ($juzniGrad -> Zagreb)',
+            'opis': '$juzniGrad -> Zagreb',
             'cijena': cijenaA1,
             'ukljuceno': true,
           });
 
           dionice.add({
-            'naziv': 'AZM A2 (Zagreb -> Krapina)',
-            'opis': 'Zagreb -> Krapina',
+            'naziv': 'AZM A2 (Zagreb/Zaprešić -> $sjeverniGrad)',
+            'opis': 'Zaprešić -> $sjeverniGrad',
             'cijena': cijenaA2,
             'ukljuceno': true,
           });
-        } 
-        // 2) Za sve ostale rute automatski dohvaćamo koncesionara iz baze za ispravan naziv
-        else {
+        } else {
           var postajaP = await _cestarineService.dohvatiPostajuZaGrad(_polazisteController.text.trim());
           String koncesionar = postajaP?['koncesionar'] ?? 'HAC';
           String nazivDionice = '$koncesionar Autocesta (${_polazisteController.text.trim()} -> ${_konacnoOdredisteController.text.trim()})';
@@ -528,7 +531,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 1) KLIJENT
             DropdownButtonFormField<String>(
               value: aktivniKlijentId,
               isExpanded: true,
@@ -561,14 +563,12 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ),
             const SizedBox(height: 12),
 
-            // 2) NAZIV KALKULACIJE
             TextField(
               controller: _nazivKalkulacijeController,
               decoration: const InputDecoration(labelText: '2) Naziv kalkulacije', border: OutlineInputBorder()),
             ),
             const SizedBox(height: 12),
 
-            // 3) POLAZAK / POVRATAK
             Row(children: [
               Expanded(
                 child: TextField(
@@ -590,28 +590,24 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ]),
             const SizedBox(height: 12),
 
-            // 4) POLAZIŠTE
             TextField(
               controller: _polazisteController,
               decoration: const InputDecoration(labelText: '4) Polazište', border: OutlineInputBorder()),
             ),
             const SizedBox(height: 8),
 
-            // 5) MEĐUODREDIŠTE A
             TextField(
               controller: _odrediste1Controller,
               decoration: const InputDecoration(labelText: '5) Međuodredište A (opcionalno)', border: OutlineInputBorder()),
             ),
             const SizedBox(height: 8),
 
-            // 6) MEĐUODREDIŠTE B
             TextField(
               controller: _odrediste2Controller,
               decoration: const InputDecoration(labelText: '6) Međuodredište B (opcionalno)', border: OutlineInputBorder()),
             ),
             const SizedBox(height: 8),
 
-            // 7) KONAČNO ODREDIŠTE
             TextField(
               controller: _konacnoOdredisteController,
               decoration: const InputDecoration(labelText: '7) Konačno odredište', border: OutlineInputBorder()),
@@ -630,7 +626,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               },
             ),
 
-            // 8) GRADOVI NA RUTI
             if (_gradoviNaRuti.isNotEmpty) ...[
               Container(
                 padding: const EdgeInsets.all(12),
@@ -647,7 +642,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               const SizedBox(height: 12),
             ],
 
-            // 9, 10, 11, 12) AUTOPUT SEKCIJA I DIONICE
             Card(
               elevation: 2,
               color: Colors.amber.shade50,
@@ -728,7 +722,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ),
             const SizedBox(height: 12),
 
-            // 13) IZRAČUNATO TRAJANJE
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
@@ -745,7 +738,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ),
             const SizedBox(height: 12),
 
-            // 14) VOZILO IZ VOZNOG PARKA
             DropdownButtonFormField<String>(
               value: _odabranoVoziloMap?['id'],
               isExpanded: true,
@@ -767,7 +759,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ),
             const SizedBox(height: 12),
 
-            // 15, 16) GORIVO I DNEVNICA
             Row(children: [
               Expanded(
                 child: TextField(
@@ -785,7 +776,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ]),
             const SizedBox(height: 12),
 
-            // 17) PARAMETRI NOĆENJA
             DropdownButtonFormField<String>(
               value: _tkoPlacaNocenje,
               decoration: const InputDecoration(
@@ -799,7 +789,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ),
             const SizedBox(height: 12),
 
-            // CIJENA NOĆENJA PO NOĆI
             TextField(
               controller: _cijenaNocenjaController,
               keyboardType: TextInputType.number,
@@ -811,7 +800,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ),
             const SizedBox(height: 12),
 
-            // 18) MARŽA
             TextField(
               controller: _marzaController,
               keyboardType: TextInputType.number,
@@ -823,7 +811,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ),
             const SizedBox(height: 24),
 
-            // GUMB ZA IZRAČUN I SPREMANJE
             ElevatedButton.icon(
               onPressed: _isLoadingRoute ? null : _izracunajRutuIKilometre,
               icon: _isLoadingRoute ? const CircularProgressIndicator(color: Colors.white) : const Icon(Icons.route),
