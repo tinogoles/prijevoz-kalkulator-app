@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
+import 'package:latlong2/latlong.dart';
 import '../data/baza_cestarina_data.dart';
 
 class CestarineService {
@@ -123,6 +124,50 @@ class CestarineService {
     return null;
   }
 
+  // -------------------------------------------------------------------------
+  // 4. DOHVAT GEOMETRIJE RUTE ZA MAPU (OSRM GeoJSON)
+  // -------------------------------------------------------------------------
+  Future<List<LatLng>> dohvatiGeometrijuRute(String polaziste, String odrediste) async {
+    try {
+      final startRes = await http.get(
+        Uri.parse('https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(polaziste)}&format=json&limit=1'),
+        headers: {'User-Agent': 'PrijevozKalkulatorApp'},
+      );
+      final endRes = await http.get(
+        Uri.parse('https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(odrediste)}&format=json&limit=1'),
+        headers: {'User-Agent': 'PrijevozKalkulatorApp'},
+      );
+
+      if (startRes.statusCode == 200 && endRes.statusCode == 200) {
+        List startData = json.decode(startRes.body);
+        List endData = json.decode(endRes.body);
+
+        if (startData.isNotEmpty && endData.isNotEmpty) {
+          double startLat = double.parse(startData[0]['lat']);
+          double startLon = double.parse(startData[0]['lon']);
+          double endLat = double.parse(endData[0]['lat']);
+          double endLon = double.parse(endData[0]['lon']);
+
+          final url = Uri.parse(
+            'https://router.project-osrm.org/route/v1/driving/$startLon,$startLat;$endLon,$endLat?overview=full&geometries=geojson'
+          );
+          final response = await http.get(url, headers: {'User-Agent': 'PrijevozKalkulatorApp'});
+
+          if (response.statusCode == 200) {
+            var data = json.decode(response.body);
+            if (data['code'] == 'Ok' && data['routes'] != null && data['routes'].isNotEmpty) {
+              List coordinates = data['routes'][0]['geometry']['coordinates'];
+              return coordinates.map<LatLng>((coord) => LatLng(coord[1], coord[0])).toList();
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print('Greška pri dohvaćanju geometrije rute: $e');
+    }
+    return [];
+  }
+
   double? _izvuciCijenuIzDokumenta(Map<String, dynamic> data, String kategorijaVozila) {
     if (data.containsKey(kategorijaVozila) && data[kategorijaVozila] != null) {
       return (data[kategorijaVozila] as num).toDouble();
@@ -145,9 +190,9 @@ class CestarineService {
       } else if (katLower.contains('iii.') || katLower.contains('midi')) {
         if (kljuc.contains('iii.') || kljuc.contains('midi') || kljuc.contains('skupina3')) return val.toDouble();
       } else if (katLower.contains('iv.') || katLower.contains('veliki')) {
-        if (kljuc.contains('iv.') || katLower.contains('autobus') || katLower.contains('skupina4')) return val.toDouble();
+        if (kljuc.contains('iv.') || katLower.contains('autobus') || kljuc.contains('skupina4')) return val.toDouble();
       } else if (katLower.contains('i.') || katLower.contains('osobna')) {
-        if (kljuc.contains('i.') || kljuc.contains('osobna') || kljuc.contains('skupina1')) return val.toDouble();
+        if (kljuc.contains('i.') || katLower.contains('osobna') || kljuc.contains('skupina1')) return val.toDouble();
       }
     }
 
