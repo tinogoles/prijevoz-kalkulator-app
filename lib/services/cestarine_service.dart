@@ -145,9 +145,9 @@ class CestarineService {
       } else if (katLower.contains('iii.') || katLower.contains('midi')) {
         if (kljuc.contains('iii.') || kljuc.contains('midi') || kljuc.contains('skupina3')) return val.toDouble();
       } else if (katLower.contains('iv.') || katLower.contains('veliki')) {
-        if (kljuc.contains('iv.') || katLower.contains('autobus') || katLower.contains('skupina4')) return val.toDouble();
+        if (kljuc.contains('iv.') || katLower.contains('autobus') || kljuc.contains('skupina4')) return val.toDouble();
       } else if (katLower.contains('i.') || katLower.contains('osobna')) {
-        if (kljuc.contains('i.') || katLower.contains('osobna') || kljuc.contains('skupina1')) return val.toDouble();
+        if (kljuc.contains('i.') || katLower.contains('osobna') || katLower.contains('skupina1')) return val.toDouble();
       }
     }
 
@@ -176,7 +176,7 @@ class CestarineService {
     return null;
   }
 
-  // Glavna metoda obogaćena provjerom prekidača (toggle stanja po koncesionarima)
+  // Glavna metoda obogaćena provjerom prekidača i rezervnim fallback mehanizmom
   Future<double> izracunajUkupnuCestarinu({
     required String polaziste,
     required String odrediste,
@@ -232,6 +232,7 @@ class CestarineService {
       }
     }
 
+    // 1. KORAK: DIREKTNI UPIT (Primarni mehanizam)
     var direktniDoc = await dohvatiDokumentDionice(ulaz: ulaznaPostaja, izlaz: izlaznaPostaja);
     if (direktniDoc != null) {
       String koncesionar = direktniDoc['koncesionar'] ?? 'HAC';
@@ -242,12 +243,11 @@ class CestarineService {
       if (cijena != null && cijena > 0) return cijena;
     }
 
-    if (ulaznaPostaja == 'lucko' || izlaznaPostaja == 'lucko') {
-      String udaljena = (ulaznaPostaja == 'lucko') ? izlaznaPostaja : ulaznaPostaja;
-      
-      var doc1 = await dohvatiDokumentDionice(ulaz: 'lucko', izlaz: 'bosiljevo');
-      var doc2 = await dohvatiDokumentDionice(ulaz: 'bosiljevo', izlaz: udaljena);
-      
+    // 2. KORAK: REZERVNI FALLBACK MEHANIZAM (Preko glavnog čvora Lučko ako direktna dionica nedostaje)
+    if (ulaznaPostaja != 'lucko' && izlaznaPostaja != 'lucko') {
+      var doc1 = await dohvatiDokumentDionice(ulaz: ulaznaPostaja, izlaz: 'lucko');
+      var doc2 = await dohvatiDokumentDionice(ulaz: 'lucko', izlaz: izlaznaPostaja);
+
       double subTotal = 0.0;
       if (doc1 != null && provjeriKoncesionara(doc1['koncesionar'] ?? 'HAC')) {
         double? c1 = _izvuciCijenuIzDokumenta(doc1, kategorijaVozila);
@@ -255,6 +255,27 @@ class CestarineService {
       }
       if (doc2 != null && provjeriKoncesionara(doc2['koncesionar'] ?? 'HAC')) {
         double? c2 = _izvuciCijenuIzDokumenta(doc2, kategorijaVozila);
+        if (c2 != null) subTotal += c2;
+      }
+      if (subTotal > 0) return subTotal;
+    }
+
+    // Stari fallback za Lučko
+    if (ulaznaPostaja == 'lucko' || izlaznaPostaja == 'lucko') {
+      String udaljena = (ulaznaPostaja == 'lucko') ? izlaznaPostaja : ulaznaPostaja;
+      
+      var doc1 = await dohvatiDokumentDionice(ulaz: 'lucko', izlaz: 'bosiljevo');
+      var doc2 = await dohvejDokumentDioniceFallback(ulaz: 'bosiljevo', izlaz: udaljena); // ili standardni dohvat
+      
+      var doc3 = await dohvatiDokumentDionice(ulaz: 'bosiljevo', izlaz: udaljena);
+      
+      double subTotal = 0.0;
+      if (doc1 != null && provjeriKoncesionara(doc1['koncesionar'] ?? 'HAC')) {
+        double? c1 = _izvuciCijenuIzDokumenta(doc1, kategorijaVozila);
+        if (c1 != null) subTotal += c1;
+      }
+      if (doc3 != null && provjeriKoncesionara(doc3['koncesionar'] ?? 'HAC')) {
+        double? c2 = _izvuciCijenuIzDokumenta(doc3, kategorijaVozila);
         if (c2 != null) subTotal += c2;
       }
       if (subTotal > 0) return subTotal;
