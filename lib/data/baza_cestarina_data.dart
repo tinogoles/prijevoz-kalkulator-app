@@ -66,7 +66,7 @@ class BazaCestarinaData {
       }
     }
 
-    // --- SLAVONIJA I ISTOČNI KORIDOR (Uključujući Borovo Naselje i Vukovar) ---
+    // --- SLAVONIJA I ISTOČNI KORIDOR ---
     mapirajNaselja('HR', 'osijek', [
       'Osijek', 'Borovo Naselje', 'Vukovar', 'Vinkovci', 'Đakovo', 'Našice', 'Belišće', 'Valpovo', 
       'Donji Miholjac', 'Beli Manastir', 'Čepin', 'Bilje', 'Erdut', 'Županja', 'Ilok', 'Otok', 
@@ -74,7 +74,7 @@ class BazaCestarinaData {
       'Nijemci', 'Nuštar', 'Stari Jankovci', 'Tompojevci', 'Bogdanovci', 'Lovas'
     ]);
 
-    // --- SJEVEROZADNJA HRVATSKA / ZAGORJE (Ivanec, Klanjec, Kumrovec...) ---
+    // --- SJEVEROZADNJA HRVATSKA / ZAGORJE ---
     mapirajNaselja('HR', 'zapresic', [
       'Zaprešić', 'Klanjec', 'Kumrovec', 'Desinić', 'Veliko Trgovišće', 'Tuhelj', 'Kraljevec na Sutli', 'Bistra', 'Pušća'
     ]);
@@ -85,7 +85,7 @@ class BazaCestarinaData {
       'Lobor', 'Mihovljan', 'Radoboj', 'Gornja Stubica', 'Lepoglava'
     ]);
 
-    // --- LIKA I GORSKI KOTAR (Josipdol, Platak, Senj...) ---
+    // --- LIKA I GORSKI KOTAR ---
     mapirajNaselja('HR', 'josipdol', [
       'Josipdol', 'Plaški', 'Oštarije'
     ]);
@@ -99,7 +99,7 @@ class BazaCestarinaData {
       'Senj', 'Baške Oštarije', 'Otočac', 'Brinje', 'Perušić'
     ]);
 
-    // --- ISTRA (Pazin i okolica) ---
+    // --- ISTRA ---
     mapirajNaselja('HR', 'pazin', [
       'Pazin', 'Žminj', 'Kanfanar', 'Barban', 'Svetvinčenat', 'Karojba', 'Tinjan', 'Gračišće', 'Pićan'
     ]);
@@ -240,13 +240,29 @@ class BazaCestarinaData {
       dionice['${c2}_$c1'] = data;
     }
 
-    dodaj('lucko', 'josipdol', 'HAC', 'A1: Lučko - Josipdol', 6.50, 10.50, 15.50, 26.00);
-    dodaj('lucko', 'zuta_lokva', 'HAC', 'A1: Lučko - Žuta Lokva', 9.50, 15.00, 22.50, 37.50);
-    dodaj('lucko', 'grobnik', 'HAC / ARZ', 'A1/A6: Lučko - Rijeka (Grobnik)', 9.90, 15.90, 23.50, 39.50);
-    dodaj('lucko', 'dugopolje', 'HAC', 'A1: Lučko - Dugopolje', 24.00, 38.50, 57.50, 96.00);
-    dodaj('lucko', 'osijek', 'HAC', 'A3/A5: Zagreb - Osijek', 17.50, 28.00, 42.00, 70.00);
+    // --- HRVATSKA - HAC & AZM ---
+    dodaj('zapresic', 'krapina', 'AZM (A2)', 'A2: Zaprešić - Krapina', 2.50, 4.00, 10.00, 15.40);
+    dodaj('zapresic', 'macelj', 'AZM (A2)', 'A2: Zaprešić - Macelj', 6.40, 10.20, 16.80, 28.50);
+    dodaj('krapina', 'macelj', 'AZM (A2)', 'A2: Krapina - Macelj', 3.90, 6.20, 6.80, 13.10);
     dodaj('lucko', 'zapresic', 'AZM (A2)', 'A2: Zagreb - Zaprešić', 1.50, 2.50, 5.00, 8.00);
     dodaj('lucko', 'krapina', 'AZM (A2)', 'A2: Zagreb - Krapina', 2.50, 4.00, 10.00, 15.40);
+
+    dodaj('lucko', 'karlovac', 'HAC', 'A1: Lučko - Karlovac', 2.50, 4.30, 6.50, 10.80);
+    dodaj('lucko', 'bosiljevo', 'HAC', 'A1: Lučko - Bosiljevo', 4.40, 7.30, 11.20, 18.50);
+    dodaj('lucko', 'josipdol', 'HAC', 'A1: Lučko - Josipdol', 6.50, 10.50, 15.50, 26.00);
+    dodaj('lucko', 'zuta_lokva', 'HAC', 'A1: Lučko - Žuta Lokva', 9.50, 15.00, 22.50, 37.50);
+    dodaj('lucko', 'gospic', 'HAC', 'A1: Lučko - Gospić', 14.00, 22.00, 33.00, 55.00);
+    dodaj('lucko', 'posedarje', 'HAC', 'A1: Lučko - Posedarje', 17.50, 28.00, 42.00, 70.00);
+    dodaj('lucko', 'zadar_istok', 'HAC', 'A1: Lučko - Zadar Istok', 18.50, 29.50, 44.50, 74.00);
+    dodaj('lucko', 'sibenik', 'HAC', 'A1: Lučko - Šibenik', 21.00, 33.50, 50.50, 84.00);
+    dodaj('lucko', 'dugopolje', 'HAC', 'A1: Lučko - Dugopolje', 24.00, 38.50, 57.50, 96.00);
+    dodaj('lucko', 'sestanovac', 'HAC', 'A1: Lučko - Šestanovac', 26.00, 41.50, 62.00, 103.00);
+    dodaj('lucko', 'zagvozd', 'HAC', 'A1: Lučko - Zagvozd', 27.00, 43.00, 64.50, 107.50);
+    dodaj('lucko', 'ploce', 'HAC', 'A1: Lučko - Ploče', 30.10, 47.50, 71.00, 118.00);
+    dodaj('lucko', 'grobnik', 'HAC / ARZ', 'A1/A6: Lučko - Rijeka (Grobnik)', 9.90, 15.90, 23.50, 39.50);
+
+    dodaj('lucko', 'slavonski_brod_zapad', 'HAC', 'A3: Zagreb - Slavonski Brod', 12.00, 19.50, 29.00, 48.00);
+    dodaj('lucko', 'osijek', 'HAC', 'A3/A5: Zagreb - Osijek', 17.50, 28.00, 42.00, 70.00);
 
     dodaj('dugopolje', 'josipdol', 'HAC', 'A1: Dugopolje - Josipdol', 17.50, 28.00, 42.00, 70.00);
     dodaj('dugopolje', 'zuta_lokva', 'HAC', 'A1: Dugopolje - Žuta Lokva', 14.50, 23.00, 34.50, 58.00);
@@ -255,6 +271,27 @@ class BazaCestarinaData {
     dodaj('dugopolje', 'zapresic', 'A1/A2', 'Split - Zaprešić', 25.50, 41.00, 62.50, 104.00);
     dodaj('dugopolje', 'krapina', 'A1/A2', 'Split - Krapina', 26.50, 42.50, 67.50, 111.40);
     dodaj('dugopolje', 'pazin', 'A1/A8', 'Split - Pazin', 33.00, 53.00, 80.00, 132.00);
+    dodaj('zadar_istok', 'krapina', 'A1/A2', 'Zadar - Krapina', 21.00, 33.50, 54.50, 89.40);
+
+    // --- BINA-ISTRA ---
+    dodaj('pazin', 'pula', 'Bina-Istra', 'A8/A9: Pazin - Pula', 3.40, 5.50, 8.50, 14.00);
+    dodaj('pazin', 'grobnik', 'Bina-Istra', 'A8: Pazin - Tunel Učka/Rijeka', 4.50, 7.20, 11.50, 19.00);
+
+    // --- SLOVENIJA (DARS) ---
+    dodaj('obrezje', 'ljubljana_jug', 'DARS', 'A2 (SI): Obrežje - Ljubljana', 16.00, 16.00, 14.50, 24.00);
+    dodaj('maribor_jug', 'ljubljana_jug', 'DARS', 'A1 (SI): Maribor - Ljubljana', 16.00, 16.00, 18.00, 31.00);
+    dodaj('obrezje', 'maribor_jug', 'DARS', 'A2/A1 (SI): Obrežje - Maribor', 16.00, 16.00, 25.00, 42.00);
+
+    // --- BOSNA I HERCEGOVINA ---
+    dodaj('bijaca', 'sarajevo_sjever', 'Autoceste FBiH', 'A1 (BiH): Bijača - Sarajevo', 6.00, 10.00, 18.00, 30.00);
+    dodaj('sarajevo_sjever', 'zenica_jug', 'Autoceste FBiH', 'A1 (BiH): Sarajevo - Zenica', 3.50, 6.00, 11.00, 18.00);
+    dodaj('bijaca', 'zenica_jug', 'Autoceste FBiH', 'A1 (BiH): Bijača - Zenica', 9.50, 16.00, 29.00, 48.00);
+    dodaj('mahovljani', 'zenica_jug', 'Autoputevi RS / FBiH', 'Banja Luka - Zenica', 5.00, 9.00, 15.00, 25.00);
+
+    // --- CRNA GORA ---
+    dodaj('smokovac', 'matesevo', 'Monteput', 'Autoput Bar-Boljare: Smokovac - Mateševo', 3.50, 6.00, 10.50, 17.00);
+    dodaj('sozina', 'smokovac', 'Monteput', 'Tunel Sozina: Sutomore - Podgorica', 2.50, 5.00, 7.50, 12.00);
+    dodaj('sozina', 'matesevo', 'Monteput', 'Sozina + Autoput Smokovac-Mateševo', 6.00, 11.00, 18.00, 29.00);
 
     return dionice;
   }
