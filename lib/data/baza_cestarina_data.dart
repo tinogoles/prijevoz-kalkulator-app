@@ -9,17 +9,17 @@ class BazaCestarinaData {
   }
 
   // =========================================================================
-  // 1. STVARNI GRADOVI, OPĆINE I OTOČNA NASELJA (HR, SI, BIH, CG)
+  // 1. ISKLJUČIVO STVARNI GRADOVI, OPĆINE I OTOČNA NASELJA (HR, SI, BIH, CG)
   // =========================================================================
   static Map<String, Map<String, dynamic>> generirajSveGradove() {
     final Map<String, Map<String, dynamic>> mapa = {};
 
-    // --- HRVATSKA (Dalmacija - Dugopolje / Šibenik / Zadar / Sestanovac) ---
+    // --- HRVATSKA ---
     _dodajSkupinu(mapa, 'HR', 'dugopolje', [
       'Split', 'Solin', 'Kaštela', 'Trogir', 'Omiš', 'Sinj', 'Muć', 'Klis', 'Dugopolje', 'Podstrana',
       'Supetar', 'Hvar', 'Vis', 'Komiža', 'Milna', 'Sutivan', 'Bol', 'Nerežišća', 'Postira', 'Pučišća',
       'Selca', 'Jelsa', 'Sućuraj', 'Stari Grad', 'Otok', 'Dicmo', 'Hrvace', 'Vrlika', 'Marina', 'Seget',
-      'Okrug', 'Sumpetar', 'Dugi Rat', 'Duće', 'Tugare', 'Gata', 'Kostanje', 'Šestanovac', 'Supetar',
+      'Okrug', 'Sumpetar', 'Dugi Rat', 'Duće', 'Tugare', 'Gata', 'Kostanje', 'Šestanovac',
       'Vrboska', 'Sveta Nedjelja', 'Brbinj', 'Krk', 'Cres', 'Mali Lošinj', 'Veli Lošinj', 'Rab', 'Pag', 'Novalja'
     ]);
     _dodajSkupinu(mapa, 'HR', 'sibenik', [
@@ -29,14 +29,12 @@ class BazaCestarinaData {
     _dodajSkupinu(mapa, 'HR', 'zadar_istok', [
       'Zadar', 'Biograd na Moru', 'Benkovac', 'Obrovac', 'Pag', 'Nin', 'Pakoštane', 'Sukošan', 'Bibinje', 'Posedarje',
       'Polača', 'Poličnik', 'Stankovci', 'Sv. Filip i Jakov', 'Škabrnja', 'Vrsi', 'Zemunik Donji', 'Gračac', 'Novigrad',
-      'Vir', 'Kali', 'Preko', 'Ugljan', 'Tkon', 'Kali', 'Sali', 'Pagu', 'Starigrad', 'Jasenhice', 'Kulen Vakuf'
+      'Vir', 'Kali', 'Preko', 'Ugljan', 'Tkon', 'Sali', 'Starigrad', 'Jasenhice'
     ]);
     _dodajSkupinu(mapa, 'HR', 'sestanovac', [
       'Makarska', 'Baška Voda', 'Brela', 'Tučepi', 'Podgora', 'Gradac', 'Imotski', 'Cista Provo', 'Zagvozd', 'Runovići', 'Zmijavci',
-      'Proložac', 'Lokvičići', 'Zadvarje', 'Tučepi', 'Duba', 'Drvenik', 'Brist', 'Klek'
+      'Proložac', 'Lokvičići', 'Zadvarje', 'Drvenik', 'Brist'
     ]);
-
-    // Središnja Hrvatska & Zagreb -> Lučko / Karlovac / Bosiljevo
     _dodajSkupinu(mapa, 'HR', 'lucko', [
       'Zagreb', 'Velika Gorica', 'Samobor', 'Sveta Nedelja', 'Jastrebarsko', 'Stupnik', 'Klinča Sela',
       'Pisarovina', 'Krašić', 'Žumberak', 'Rugvica', 'Dugo Selo', 'Ivanić-Grad', 'Zaprešić', 'Vrbovec',
@@ -46,18 +44,14 @@ class BazaCestarinaData {
       'Karlovac', 'Duga Resa', 'Ogulin', 'Slunj', 'Ozalj', 'Vojnić', 'Krnjak', 'Lasinja', 'Žakanje', 'Netretić', 'Bosiljevo',
       'Rakovica', 'Cetingrad', 'Josipdol', 'Tounj', 'Barilović', 'Plaški'
     ]);
-
-    // Sjeverozapadna HR -> A2 / A4 + A1 tranzicija (is_multi_highway: true)
     _dodajMultiAutoput(mapa, 'HR', 'zapresic', 'zabok', 'lucko', [
       'Zabok', 'Krapina', 'Oroslavje', 'Donja Stubica', 'Marija Bistrica', 'Bedekovčina', 'Sveti Križ Začretje',
       'Pregrada', 'Hum na Sutli', 'Desinić', 'Kumrovec', 'Klanjec', 'Veliko Trgovišće', 'Tuhelj', 'Đurmanec', 'Zlatar', 'Zlatar Bistrica'
     ]);
     _dodajMultiAutoput(mapa, 'HR', 'varazdin', 'sveti_helena', 'lucko', [
       'Varaždin', 'Čakovec', 'Novi Marof', 'Ludbreg', 'Prelog', 'Mursko Središće', 'Lepoglava', 'Ivanec',
-      'Varaždinske Toplice', 'Nedelišće', 'Goričan', 'Koprivnica', 'Križevci', 'Prelog', 'Šenkovec', 'Cestica', 'Bednja'
+      'Varaždinske Toplice', 'Nedelišće', 'Goričan', 'Koprivnica', 'Križevci', 'Šenkovec', 'Cestica', 'Bednja'
     ]);
-
-    // Slavonija & Baranja
     _dodajSkupinu(mapa, 'HR', 'osijek', [
       'Osijek', 'Đakovo', 'Našice', 'Belišće', 'Valpovo', 'Donji Miholjac', 'Beli Manastir', 'Čepin', 'Bilje', 'Erdut', 'Vukovar', 'Vinkovci',
       'Županja', 'Ilok', 'Otok', 'Gradište', 'Cerna', 'Drenovci', 'Bošnjaci', 'Vrbanja', 'Trpinja', 'Borovo', 'Markušica'
@@ -66,11 +60,9 @@ class BazaCestarinaData {
       'Slavonski Brod', 'Nova Gradiška', 'Oriovac', 'Sibinj', 'Garčin', 'Vrpolje', 'Sikirevci', 'Gundinci', 'Požega', 'Pakrac',
       'Lipik', 'Kutjevo', 'Pleternica', 'Brestovac', 'Rešetari', 'Okučani', 'Stara Gradiška', 'Davor', 'Bukovlje'
     ]);
-
-    // Istra i Kvarner
     _dodajSkupinu(mapa, 'HR', 'grobnik', [
       'Rijeka', 'Opatija', 'Crikvenica', 'Novi Vinodolski', 'Krk', 'Bakar', 'Kastav', 'Viškovo', 'Čavle', 'Jelenje', 'Delnice',
-      'Fužine', 'Mrkopalj', 'Ravna Gora', 'Skrad', 'Vrbovsko', 'Brod Moravice', 'Baška', 'Malinska', 'Punat', 'Dobrinj', 'Krk', 'Cres', 'Rab', 'Lopar'
+      'Fužine', 'Mrkopalj', 'Ravna Gora', 'Skrad', 'Vrbovsko', 'Brod Moravice', 'Baška', 'Malinska', 'Punat', 'Dobrinj', 'Cres', 'Rab', 'Lopar'
     ]);
     _dodajSkupinu(mapa, 'HR', 'pula', [
       'Pula', 'Rovinj', 'Poreč', 'Umag', 'Pazin', 'Labin', 'Buje', 'Vodnjan', 'Buzet', 'Žminj', 'Medulin', 'Fažana',
@@ -80,7 +72,7 @@ class BazaCestarinaData {
     // --- SLOVENIJA ---
     _dodajSkupinu(mapa, 'SI', 'ljubljana_jug', [
       'Ljubljana', 'Kranj', 'Domžale', 'Kamnik', 'Škofja Loka', 'Vrhnika', 'Grosuplje', 'Kočevje', 'Ribnica', 'Bled', 'Bohinj', 'Postojna', 'Koper', 'Izola', 'Piran',
-      'Logatec', 'Idrija', 'Tolmin', 'Bovec', 'Kobarid', 'Nova Gorica', 'Ajdovščina', 'Sežana', 'Divača', 'Ilirska Bistrica', 'Pivka', 'Cerknica', 'Ribnica', 'Litija', 'Zagorje ob Savi', 'Trbovlje', 'Hrastnik', 'Laško', 'Radeče'
+      'Logatec', 'Idrija', 'Tolmin', 'Bovec', 'Kobarid', 'Nova Gorica', 'Ajdovščina', 'Sežana', 'Divača', 'Ilirska Bistrica', 'Pivka', 'Cerknica', 'Litija', 'Zagorje ob Savi', 'Trbovlje', 'Hrastnik', 'Laško', 'Radeče'
     ]);
     _dodajSkupinu(mapa, 'SI', 'maribor_jug', [
       'Maribor', 'Celje', 'Ptuj', 'Velenje', 'Slovenska Bistrica', 'Murska Sobota', 'Lendava', 'Rogaška Slatina', 'Žalec', 'Slovenske Konjice',
@@ -88,7 +80,7 @@ class BazaCestarinaData {
     ]);
     _dodajSkupinu(mapa, 'SI', 'obrezje', [
       'Brežice', 'Krško', 'Sevnica', 'Novo Mesto', 'Trebnje', 'Črnomelj', 'Metlika', 'Šentjernej',
-      'Žužemberk', 'Kočevje', 'Ribnica', 'Ivančna Gorica', 'Šmarje pri Jelšah', 'Podčetrtek', 'Kozje', 'Bistrica ob Sotli'
+      'Žužemberk', 'Ivančna Gorica', 'Šmarje pri Jelšah', 'Podčetrtek', 'Kozje', 'Bistrica ob Sotli'
     ]);
 
     // --- BOSNA I HERCEGOVINA ---
@@ -98,11 +90,11 @@ class BazaCestarinaData {
     ]);
     _dodajSkupinu(mapa, 'BIH', 'zenica_jug', [
       'Zenica', 'Travnik', 'Vitez', 'Novi Travnik', 'Novi Šeher', 'Žepče', 'Maglaj', 'Tešanj', 'Zavidovići', 'Bugojno', 'Jajce',
-      'Donji Vakuf', 'Gornji Vakuf-Uskoplje', 'Prozor-Rama', 'Livno', 'Duvno (Tomislavgrad)', 'Kupres', 'Glamoč', 'Bosansko Grahovo', 'Drvar', 'Ključ', 'Sanski Most', 'Bosanska Krupa', 'Cazin', 'Velika Kladuša', 'Bihać', 'Tuzla', 'Lukavac', 'Živinice', 'Banovići', 'Kalesija', 'Srebrenica', 'Bratunac', 'Zvornik', 'Šekovići', 'Vlasenica', 'Milići'
+      'Donji Vakuf', 'Gornji Vakuf-Uskoplje', 'Prozor-Rama', 'Livno', 'Tomislavgrad', 'Kupres', 'Glamoč', 'Bosansko Grahovo', 'Drvar', 'Ključ', 'Sanski Most', 'Bosanska Krupa', 'Cazin', 'Velika Kladuša', 'Bihać', 'Tuzla', 'Lukavac', 'Živinice', 'Banovići', 'Kalesija', 'Srebrenica', 'Bratunac', 'Zvornik', 'Šekovići', 'Vlasenica', 'Milići'
     ]);
     _dodajSkupinu(mapa, 'BIH', 'bijaca', [
       'Mostar', 'Ljubuški', 'Čapljina', 'Široki Brijeg', 'Grude', 'Posušje', 'Čitluk', 'Neum', 'Stolac', 'Trebinje',
-      'Gacko', 'Nevesinje', 'Bileća', 'Ljubeški', 'Čapljina', 'Ravno', 'Berkovići'
+      'Gacko', 'Nevesinje', 'Bileća', 'Ravno', 'Berkovići'
     ]);
     _dodajSkupinu(mapa, 'BIH', 'mahovljani', [
       'Banja Luka', 'Laktaši', 'Gradiška', 'Prijedor', 'Prnjavor', 'Derventa', 'Doboj', 'Novi Grad', 'Kozarska Dubica', 'Bijeljina',
@@ -112,15 +104,15 @@ class BazaCestarinaData {
     // --- CRNA GORA ---
     _dodajSkupinu(mapa, 'CG', 'smokovac', [
       'Podgorica', 'Danilovgrad', 'Tuzi', 'Cetinje', 'Nikšić', 'Spuž', 'Šavnik', 'Žabljak',
-      'Plužine', 'Gusinje', 'Kotor', 'Tivat'
+      'Plužine', 'Gusinje'
     ]);
     _dodajSkupinu(mapa, 'CG', 'matesevo', [
       'Kolašin', 'Mojkovac', 'Bijelo Polje', 'Berane', 'Rožaje', 'Plav', 'Andrijevica', 'Pljevlja',
-      'Petnjica', 'Gusinje'
+      'Petnjica'
     ]);
     _dodajSkupinu(mapa, 'CG', 'sozina', [
       'Bar', 'Ulcinj', 'Budva', 'Kotor', 'Tivat', 'Herceg Novi', 'Petrovac', 'Sutomore',
-      'Perast', 'Risan', 'Bečići', 'Prčanj', 'Dobrota', 'Igalo', 'Kričkovići'
+      'Perast', 'Risan', 'Bečići', 'Prčanj', 'Dobrota', 'Igalo'
     ]);
 
     return mapa;
