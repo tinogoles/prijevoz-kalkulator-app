@@ -125,9 +125,9 @@ class CestarineService {
   }
 
   // -------------------------------------------------------------------------
-  // 4. DOHVAT GEOMETRIJE RUTE ZA MAPU (OSRM GeoJSON)
+  // 4. DOHVAT GEOMETRIJE RUTE ZA MAPU (OSRM GeoJSON) - Podržava izbjegavanje autoceste
   // -------------------------------------------------------------------------
-  Future<List<LatLng>> dohvatiGeometrijuRute(String polaziste, String odrediste) async {
+  Future<List<LatLng>> dohvatiGeometrijuRute(String polaziste, String odrediste, {bool koristiAutocestu = true}) async {
     try {
       final startRes = await http.get(
         Uri.parse('https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(polaziste)}&format=json&limit=1'),
@@ -148,8 +148,11 @@ class CestarineService {
           double endLat = double.parse(endData[0]['lat']);
           double endLon = double.parse(endData[0]['lon']);
 
+          // Ako je isključena autocesta, dodajemo exclude=motorway u OSRM URL
+          String osrmModifier = koristiAutocestu ? '' : '&exclude=motorway';
+
           final url = Uri.parse(
-            'https://router.project-osrm.org/route/v1/driving/$startLon,$startLat;$endLon,$endLat?overview=full&geometries=geojson'
+            'https://router.project-osrm.org/route/v1/driving/$startLon,$startLat;$endLon,$endLat?overview=full&geometries=geojson$osrmModifier'
           );
           final response = await http.get(url, headers: {'User-Agent': 'PrijevozKalkulatorApp'});
 
@@ -192,7 +195,7 @@ class CestarineService {
       } else if (katLower.contains('iv.') || katLower.contains('veliki')) {
         if (kljuc.contains('iv.') || katLower.contains('autobus') || kljuc.contains('skupina4')) return val.toDouble();
       } else if (katLower.contains('i.') || katLower.contains('osobna')) {
-        if (kljuc.contains('i.') || katLower.contains('osobna') || kljuc.contains('skupina1')) return val.toDouble();
+        if (kljuc.contains('i.') || kljuc.contains('osobna') || kljuc.contains('skupina1')) return val.toDouble();
       }
     }
 
