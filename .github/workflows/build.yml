@@ -26,7 +26,7 @@ jobs:
         run: flutter build web --release --base-href "/prijevoz-kalkulator-app/"
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v3.1.0
         with:
           path: build/web
 
