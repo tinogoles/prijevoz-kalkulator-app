@@ -310,9 +310,12 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       }
 
       double ukupnoMetara = 0;
+      // Ako nije odabrana autocesta, dodajemo exclude=motorway u OSRM upit za izbjegavanje autocesta
+      String osrmModifier = _koristiAutocestu ? '' : '&exclude=motorway';
+
       for (int i = 0; i < koordinate.length - 1; i++) {
         final res = await http.get(Uri.parse(
-            'https://router.project-osrm.org/route/v1/driving/${koordinate[i]['lon']},${koordinate[i]['lat']};${koordinate[i + 1]['lon']},${koordinate[i + 1]['lat']}?overview=false'));
+            'https://router.project-osrm.org/route/v1/driving/${koordinate[i]['lon']},${koordinate[i]['lat']};${koordinate[i + 1]['lon']},${koordinate[i + 1]['lat']}?overview=false$osrmModifier'));
         if (res.statusCode == 200) {
           var data = json.decode(res.body);
           if (data['code'] == 'Ok') {
@@ -820,7 +823,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ),
             const SizedBox(height: 12),
 
-            // NOVI GUMB ZA PRIKAZ RUTE NA MAPI:
+            // GUMB ZA PRIKAZ RUTE NA MAPI (prosljeđuje i uvjet _koristiAutocestu)
             ElevatedButton.icon(
               onPressed: () {
                 Navigator.push(
@@ -829,6 +832,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
                     builder: (context) => MapaRuteScreen(
                       polaziste: _polazisteController.text.trim(),
                       odrediste: _konacnoOdredisteController.text.trim(),
+                      koristiAutocestu: _koristiAutocestu,
                     ),
                   ),
                 );
