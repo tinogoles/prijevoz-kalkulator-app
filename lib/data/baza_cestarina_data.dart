@@ -9,7 +9,7 @@ class BazaCestarinaData {
   }
 
   // =========================================================================
-  // 0. GPS KOORDINATE GLAVNIH ČVOROVA (Potrebno za hibridni algoritam)
+  // 0. GPS KOORDINATE GLAVNIH ČVOROVA (Koristi se za dinamički GPS fallback)
   // =========================================================================
   static final Map<String, Map<String, double>> cvoroviKoordinate = {
     'lucko': {'lat': 45.7481, 'lon': 15.8903},
@@ -35,7 +35,6 @@ class BazaCestarinaData {
     'slavonski_brod_zapad': {'lat': 45.1639, 'lon': 18.0147},
     'osijek': {'lat': 45.5511, 'lon': 18.6939},
     'karlovac': {'lat': 45.4929, 'lon': 15.5553},
-    'pazins_krak': {'lat': 45.2392, 'lon': 13.9358},
     'ljubljana_jug': {'lat': 46.0350, 'lon': 14.5100},
     'maribor_jug': {'lat': 46.5167, 'lon': 15.6500},
     'obrezje': {'lat': 45.8817, 'lon': 15.6933},
@@ -49,180 +48,7 @@ class BazaCestarinaData {
   };
 
   // =========================================================================
-  // 1. PROŠIRENO OPĆINSKO MAPIRANJE: Obuhvat svih naselja i regija
-  // =========================================================================
-  static Map<String, Map<String, dynamic>> generirajSveGradove() {
-    final Map<String, Map<String, dynamic>> mapa = {};
-
-    void mapirajNaselja(String drzava, String cvorUlaza, List<String> naselja) {
-      for (var n in naselja) {
-        String kljuc = _normalizirajKljuc(n);
-        mapa[kljuc] = {
-          'naziv': n,
-          'drzava': drzava,
-          'najblizi_ulaz': cvorUlaza,
-          'is_multi_highway': false,
-        };
-      }
-    }
-
-    // --- SLAVONIJA I ISTOČNI KORIDOR ---
-    mapirajNaselja('HR', 'osijek', [
-      'Osijek', 'Borovo Naselje', 'Vukovar', 'Vinkovci', 'Đakovo', 'Našice', 'Belišće', 'Valpovo', 
-      'Donji Miholjac', 'Beli Manastir', 'Čepin', 'Bilje', 'Erdut', 'Županja', 'Ilok', 'Otok', 
-      'Gradište', 'Cerna', 'Drenovci', 'Bošnjaci', 'Vrbanja', 'Trpinja', 'Borovo', 'Markušica', 
-      'Nijemci', 'Nuštar', 'Stari Jankovci', 'Tompojevci', 'Bogdanovci', 'Lovas'
-    ]);
-
-    // --- SJEVEROZADNJA HRVATSKA / ZAGORJE ---
-    mapirajNaselja('HR', 'zapresic', [
-      'Zaprešić', 'Klanjec', 'Kumrovec', 'Desinić', 'Veliko Trgovišće', 'Tuhelj', 'Kraljevec na Sutli', 'Bistra', 'Pušća'
-    ]);
-    
-    mapirajNaselja('HR', 'krapina', [
-      'Krapina', 'Ivanec', 'Zabok', 'Oroslavje', 'Donja Stubica', 'Marija Bistrica', 'Bedekovčina', 
-      'Sveti Križ Začretje', 'Pregrada', 'Hum na Sutli', 'Đurmanec', 'Zlatar', 'Zlatar Bistrica', 
-      'Lobor', 'Mihovljan', 'Radoboj', 'Gornja Stubica', 'Lepoglava'
-    ]);
-
-    // --- LIKA I GORSKI KOTAR ---
-    mapirajNaselja('HR', 'josipdol', [
-      'Josipdol', 'Plaški', 'Oštarije'
-    ]);
-
-    mapirajNaselja('HR', 'grobnik', [
-      'Rijeka', 'Platak', 'Opatija', 'Kastav', 'Viškovo', 'Čavle', 'Jelenje', 'Delnice', 'Fužine', 
-      'Mrkopalj', 'Ravna Gora', 'Skrad', 'Vrbovsko', 'Brod Moravice', 'Lokve'
-    ]);
-
-    mapirajNaselja('HR', 'zuta_lokva', [
-      'Senj', 'Baške Oštarije', 'Otočac', 'Brinje', 'Perušić'
-    ]);
-
-    // --- ISTRA ---
-    mapirajNaselja('HR', 'pazin', [
-      'Pazin', 'Žminj', 'Kanfanar', 'Barban', 'Svetvinčenat', 'Karojba', 'Tinjan', 'Gračišće', 'Pićan'
-    ]);
-
-    mapirajNaselja('HR', 'pula', [
-      'Pula', 'Rovinj', 'Poreč', 'Umag', 'Labin', 'Buje', 'Vodnjan', 'Buzet', 'Medulin', 'Fažana',
-      'Vrsar', 'Funtana', 'Tar', 'Novigrad', 'Motovun', 'Grožnjan', 'Bale', 'Ližnjan', 'Marčana', 'Višnjan', 'Vižinada'
-    ]);
-
-    // --- DALMACIJA ---
-    mapirajNaselja('HR', 'dugopolje', [
-      'Split', 'Solin', 'Kaštela', 'Trogir', 'Omiš', 'Sinj', 'Muć', 'Klis', 'Dugopolje', 'Podstrana',
-      'Supetar', 'Hvar', 'Vis', 'Komiža', 'Milna', 'Sutivan', 'Bol', 'Nerežišća', 'Postira', 'Pučišća',
-      'Selca', 'Jelsa', 'Sućuraj', 'Stari Grad', 'Otok', 'Dicmo', 'Hrvace', 'Vrlika', 'Marina', 'Seget',
-      'Okrug', 'Sumpetar', 'Dugi Rat', 'Duće', 'Tugare', 'Gata', 'Kostanje', 'Vrboska', 'Sveta Nedjelja'
-    ]);
-
-    mapirajNaselja('HR', 'sibenik', [
-      'Šibenik', 'Vodice', 'Skradin', 'Drniš', 'Knin', 'Primošten', 'Rogoznica', 'Murter', 'Tisno', 'Pirovac',
-      'Tribunj', 'Kistanje', 'Ružić', 'Promina', 'Biskupija', 'Civljane', 'Unešić', 'Zaton', 'Betina', 'Jezera'
-    ]);
-
-    mapirajNaselja('HR', 'zadar_istok', [
-      'Zadar', 'Biograd na Moru', 'Benkovac', 'Obrovac', 'Pag', 'Nin', 'Pakoštane', 'Sukošan', 'Bibinje', 'Posedarje',
-      'Polača', 'Poličnik', 'Stankovci', 'Sv. Filip i Jakov', 'Škabrnja', 'Vrsi', 'Zemunik Donji', 'Gračac', 'Novigrad',
-      'Vir', 'Kali', 'Preko', 'Ugljan', 'Tkon', 'Sali', 'Starigrad', 'Jasenice', 'Brbinj', 'Novalja'
-    ]);
-
-    mapirajNaselja('HR', 'sestanovac', [
-      'Makarska', 'Baška Voda', 'Brela', 'Tučepi', 'Podgora', 'Gradac', 'Imotski', 'Cista Provo', 'Zagvozd', 
-      'Runovići', 'Zmijavci', 'Proložac', 'Lokvičići', 'Zadvarje', 'Drvenik', 'Brist', 'Šestanovac'
-    ]);
-
-    mapirajNaselja('HR', 'ploce', [
-      'Ploče', 'Metković', 'Opuzen', 'Vrgorac', 'Dubrovnik', 'Korčula', 'Blato', 'Vela Luka', 'Orebić', 
-      'Ston', 'Kula Norinska', 'Zaostrog', 'Konavle', 'Župa Dubrovačka', 'Dubrovačko Primorje', 'Janina', 'Lumbarda', 'Mljet', 'Lastovo', 'Trpanj'
-    ]);
-
-    mapirajNaselja('HR', 'gospic', [
-      'Gospić', 'Udbina', 'Plitvička Jezera', 'Korenica', 'Vrhovine', 'Donji Lapac'
-    ]);
-
-    mapirajNaselja('HR', 'lucko', [
-      'Zagreb', 'Velika Gorica', 'Samobor', 'Sveta Nedelja', 'Jastrebarsko', 'Stupnik', 'Klinča Sela',
-      'Pisarovina', 'Krašić', 'Žumberak', 'Rugvica', 'Dugo Selo', 'Ivanić-Grad', 'Vrbovec',
-      'Sveti Ivan Zelina', 'Križevci', 'Koprivnica', 'Bjelovar', 'Virovitica', 'Čazma', 'Garešnica', 'Kutina', 'Novska', 'Sisak', 'Petrinja', 'Glina', 'Hrvatska Kostajnica', 'Topusko', 'Dvor', 'Sunja', 'Lekenik', 'Popovača'
-    ]);
-
-    mapirajNaselja('HR', 'karlovac', [
-      'Karlovac', 'Duga Resa', 'Ogulin', 'Slunj', 'Ozalj', 'Vojnić', 'Krnjak', 'Lasinja', 'Žakanje', 'Netretić', 'Bosiljevo',
-      'Rakovica', 'Cetingrad', 'Barilović', 'Generalski Stol', 'Kamanje', 'Ribnik'
-    ]);
-
-    mapirajNaselja('HR', 'slavonski_brod_zapad', [
-      'Slavonski Brod', 'Nova Gradiška', 'Oriovac', 'Sibinj', 'Garčin', 'Vrpolje', 'Sikirevci', 'Gundinci', 'Požega', 'Pakrac',
-      'Lipik', 'Kutjevo', 'Pleternica', 'Brestovac', 'Rešetari', 'Okučani', 'Stara Gradiška', 'Davor', 'Bukovlje', 'Cernik', 'Gornji Bogićevci', 'Dragalić'
-    ]);
-
-    // --- SLOVENIJA ---
-    mapirajNaselja('SI', 'ljubljana_jug', [
-      'Ljubljana', 'Kranj', 'Domžale', 'Kamnik', 'Škofja Loka', 'Vrhnika', 'Grosuplje', 'Kočevje', 'Ribnica', 'Bled', 'Bohinj', 'Postojna', 'Koper', 'Izola', 'Piran',
-      'Logatec', 'Idrija', 'Tolmin', 'Bovec', 'Kobarid', 'Nova Gorica', 'Ajdovščina', 'Sežana', 'Divača', 'Ilirska Bistrica', 'Pivka', 'Cerknica', 'Litija', 'Zagorje ob Savi', 'Trbovlje', 'Hrastnik', 'Laško', 'Radeče', 'Medvode', 'Mengeš', 'Radovljica', 'Jesenice', 'Kranjska Gora'
-    ]);
-
-    mapirajNaselja('SI', 'maribor_jug', [
-      'Maribor', 'Celje', 'Ptuj', 'Velenje', 'Slovenska Bistrica', 'Murska Sobota', 'Lendava', 'Rogaška Slatina', 'Žalec', 'Slovenske Konjice',
-      'Ravne na Koroškem', 'Slovenj Gradec', 'Dravograd', 'Radlje ob Dravi', 'Ruše', 'Lenart', 'Gornja Radgona', 'Ljutomer', 'Ormož', 'Kidričevo', 'Šentjur', 'Mozirje', 'Vransko', 'Prevalje', 'Mežica', 'Črna na Koroškem'
-    ]);
-
-    mapirajNaselja('SI', 'obrezje', [
-      'Brežice', 'Krško', 'Sevnica', 'Novo Mesto', 'Trebnje', 'Črnomelj', 'Metlika', 'Šentjernej',
-      'Žužemberk', 'Ivančna Gorica', 'Šmarje pri Jelšah', 'Podčetrtek', 'Kozje', 'Bistrica ob Sotli'
-    ]);
-
-    // --- BOSNA I HERCEGOVINA ---
-    mapirajNaselja('BIH', 'sarajevo_sjever', [
-      'Sarajevo', 'Visoko', 'Kakanj', 'Ilijaš', 'Vogošća', 'Hadžići', 'Konjic', 'Jablanica', 'Breza', 'Vareš', 'Pale', 'Sokolac',
-      'Olovo', 'Kladanj', 'Han Pijesak', 'Foča', 'Goražde', 'Čajniče', 'Rudo', 'Trnovo', 'Kiseljak', 'Fojnica', 'Kreševo', 'Busovača'
-    ]);
-
-    mapirajNaselja('BIH', 'zenica_jug', [
-      'Zenica', 'Travnik', 'Vitez', 'Novi Travnik', 'Novi Šeher', 'Žepče', 'Maglaj', 'Tešanj', 'Zavidovići', 'Bugojno', 'Jajce',
-      'Donji Vakuf', 'Gornji Vakuf-Uskoplje', 'Prozor-Rama', 'Livno', 'Tomislavgrad', 'Kupres', 'Glamoč', 'Bosansko Grahovo', 'Drvar', 'Ključ', 'Sanski Most', 'Bosanska Krupa', 'Cazin', 'Velika Kladuša', 'Bihać', 'Tuzla', 'Lukavac', 'Živinice', 'Banovići', 'Kalesija', 'Srebrenica', 'Bratunac', 'Zvornik', 'Šekovići', 'Vlasenica', 'Milići'
-    ]);
-
-    mapirajNaselja('BIH', 'bijaca', [
-      'Mostar', 'Ljubuški', 'Čapljina', 'Široki Brijeg', 'Grude', 'Posušje', 'Čitluk', 'Neum', 'Stolac', 'Trebinje',
-      'Gacko', 'Nevesinje', 'Bileća', 'Ravno', 'Berkovići', 'Međugorje'
-    ]);
-
-    mapirajNaselja('BIH', 'mahovljani', [
-      'Banja Luka', 'Laktaši', 'Gradiška', 'Prijedor', 'Prnjavor', 'Derventa', 'Doboj', 'Novi Grad', 'Kozarska Dubica', 'Bijeljina',
-      'Modriča', 'Bosanski Šamac', 'Orašje', 'Brčko', 'Gradačac', 'Srebrenik', 'Pelagićevo', 'Donji Žabar', 'Vukosavlje', 'Petrova', 'Čelinac', 'Kotor Varoš', 'Kneževo', 'Mrkonjić Grad', 'Šipovo', 'Ribnik', 'Teslić'
-    ]);
-
-    // --- CRNA GORA ---
-    mapirajNaselja('CG', 'smokovac', [
-      'Podgorica', 'Danilovgrad', 'Tuzi', 'Cetinje', 'Nikšić', 'Spuž', 'Šavnik', 'Žabljak', 'Plužine', 'Gusinje'
-    ]);
-
-    mapirajNaselja('CG', 'matesevo', [
-      'Kolašin', 'Mojkovac', 'Bijelo Polje', 'Berane', 'Rožaje', 'Plav', 'Andrijevica', 'Pljevlja', 'Petnjica'
-    ]);
-
-    mapirajNaselja('CG', 'sozina', [
-      'Bar', 'Ulcinj', 'Budva', 'Kotor', 'Tivat', 'Herceg Novi', 'Petrovac', 'Sutomore', 'Perast', 'Risan', 'Bečići', 'Prčanj', 'Dobrota', 'Igalo'
-    ]);
-
-    return mapa;
-  }
-
-  static String _normalizirajKljuc(String unos) {
-    return unos.toLowerCase()
-        .replaceAll(' ', '_')
-        .replaceAll('č', 'c')
-        .replaceAll('ć', 'c')
-        .replaceAll('š', 's')
-        .replaceAll('ž', 'z')
-        .replaceAll('đ', 'd');
-  }
-
-  // =========================================================================
-  // 2. MATRICA ČVORIŠTA SA CIJENAMA ZA SVE 4 KATEGORIJE
+  // 1. MATRICA ČVORIŠTA I CIJENA ZA SVE AUTOPUTOVE U REGIJI (HR, SI, BIH, CG)
   // =========================================================================
   static Map<String, Map<String, dynamic>> generirajSveDionice() {
     final Map<String, Map<String, dynamic>> dionice = {};
@@ -256,6 +82,7 @@ class BazaCestarinaData {
     dodaj('lucko', 'zadar_istok', 'HAC', 'A1: Lučko - Zadar Istok', 18.50, 29.50, 44.50, 74.00);
     dodaj('lucko', 'sibenik', 'HAC', 'A1: Lučko - Šibenik', 21.00, 33.50, 50.50, 84.00);
     dodaj('lucko', 'dugopolje', 'HAC', 'A1: Lučko - Dugopolje', 24.00, 38.50, 57.50, 96.00);
+    dodaj('lucko', 'blato_na_cetini', 'HAC', 'A1: Lučko - Blato na Cetini', 25.00, 40.00, 60.00, 100.00);
     dodaj('lucko', 'sestanovac', 'HAC', 'A1: Lučko - Šestanovac', 26.00, 41.50, 62.00, 103.00);
     dodaj('lucko', 'zagvozd', 'HAC', 'A1: Lučko - Zagvozd', 27.00, 43.00, 64.50, 107.50);
     dodaj('lucko', 'ploce', 'HAC', 'A1: Lučko - Ploče', 30.10, 47.50, 71.00, 118.00);
@@ -270,12 +97,12 @@ class BazaCestarinaData {
     dodaj('dugopolje', 'osijek', 'HAC', 'A1/A3/A5: Dugopolje - Osijek', 41.50, 66.50, 99.50, 166.00);
     dodaj('dugopolje', 'zapresic', 'A1/A2', 'Split - Zaprešić', 25.50, 41.00, 62.50, 104.00);
     dodaj('dugopolje', 'krapina', 'A1/A2', 'Split - Krapina', 26.50, 42.50, 67.50, 111.40);
-    dodaj('dugopolje', 'pazin', 'A1/A8', 'Split - Pazin', 33.00, 53.00, 80.00, 132.00);
     dodaj('zadar_istok', 'krapina', 'A1/A2', 'Zadar - Krapina', 21.00, 33.50, 54.50, 89.40);
 
     // --- BINA-ISTRA ---
     dodaj('pazin', 'pula', 'Bina-Istra', 'A8/A9: Pazin - Pula', 3.40, 5.50, 8.50, 14.00);
     dodaj('pazin', 'grobnik', 'Bina-Istra', 'A8: Pazin - Tunel Učka/Rijeka', 4.50, 7.20, 11.50, 19.00);
+    dodaj('dugopolje', 'pazin', 'A1/A8', 'Split - Pazin', 33.00, 53.00, 80.00, 132.00);
 
     // --- SLOVENIJA (DARS) ---
     dodaj('obrezje', 'ljubljana_jug', 'DARS', 'A2 (SI): Obrežje - Ljubljana', 16.00, 16.00, 14.50, 24.00);
@@ -297,25 +124,10 @@ class BazaCestarinaData {
   }
 
   // =========================================================================
-  // 3. CLOUD SYNC
+  // 2. CLOUD SYNC (Samo za dionice cestarina u Firestore)
   // =========================================================================
   static Future<void> osvjeziBazuNaCloudu() async {
-    final sveLokacije = generirajSveGradove();
     final sveDionice = generirajSveDionice();
-
-    WriteBatch batch = _db.batch();
-    int brojac = 0;
-
-    for (var entry in sveLokacije.entries) {
-      DocumentReference ref = _db.collection('gradovi_mapiranje').doc(entry.key);
-      batch.set(ref, entry.value, SetOptions(merge: true));
-      brojac++;
-      if (brojac % 400 == 0) {
-        await batch.commit();
-        batch = _db.batch();
-      }
-    }
-    await batch.commit();
 
     WriteBatch batchDionice = _db.batch();
     int brojacDionica = 0;
