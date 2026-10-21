@@ -1,5 +1,9 @@
 // lib/services/cestarine_service.dart
+import 'dart:convert';
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:http/http.dart' as http;
+import '../data/baza_cestarina_data.dart';
 
 class CestarineService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -16,22 +20,118 @@ class CestarineService {
         .replaceAll('đ', 'd');
   }
 
+  // -------------------------------------------------------------------------
+  // 1. HAVERSINE FORMULA (Zračna udaljenost)
+  // -------------------------------------------------------------------------
+  double _izracunajHaversineKm(double lat1, double lon1, double lat2, double lon2) {
+    const double r = 6371.0;
+    double dLat = (lat2 - lat1) * pi / 180.0;
+    double dLon = (lon2 - lon1) * pi / 180.0;
+    double a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(lat1 * pi / 180.0) * cos(lat2 * pi / 180.0) *
+            sin(dLon / 2) * sin(dLon / 2);
+    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    return r * c;
+  }
+
+  // -------------------------------------------------------------------------
+  // 2. HIBRIDNI ODABIR ČVORA (Haversine Top 3 + OSRM Cestovna potvrda)
+  // -------------------------------------------------------------------------
+  Future<String> pronadjiNajbliziCvorHibridno(double gradLat, double gradLon) async {
+    final cvoroviMap = BazaCestarinaData.cvoroviKoordinate;
+
+    List<Map<String, dynamic>> kandidati = [];
+    cvoroviMap.forEach((cvorId, coords) {
+      double zracnaKm = _izracunajHaversineKm(
+        gradLat, gradLon, 
+        coords['lat']!, coords['lon']!
+      );
+      kandidati.add({'cvorId': cvorId, 'zracnaKm': zracnaKm, 'coords': coords});
+    });
+
+    // Sortiraj i uzmi Top 3 najbliža po zračnoj liniji
+    kandidati.sort((a, b) => (a['zracnaKm'] as double).compareTo(b['zracnaKm'] as double));
+    var topKandidati = kandidati.take(3).toList();
+
+    if (topKandidati.first['zracnaKm'] < 3.0) {
+      return topKandidati.first['cvorId'];
+    }
+
+    String najbliziCvorId = topKandidati.first['cvorId'];
+    double minCestovnaMetara = double.infinity;
+
+    for (var k in topKandidati) {
+      double cvorLat = k['coords']['lat'];
+      double cvorLon = k['coords']['lon'];
+
+      try {
+        final url = Uri.parse(
+          'https://router.project-osrm.org/route/v1/driving/$gradLon,$gradLat;$cvorLon,$cvorLat?overview=false'
+        );
+        final response = await http.get(url, headers: {'User-Agent': 'PrijevozKalkulatorApp'});
+
+        if (response.statusCode == 200) {
+          var data = json.decode(response.body);
+          if (data['code'] == 'Ok' && data['routes'] != null && data['routes'].isNotEmpty) {
+            double distMetara = (data['routes'][0]['distance'] as num).toDouble();
+            if (distMetara < minCestovnaMetara) {
+              minCestovnaMetara = distMetara;
+              najbliziCvorId = k['cvorId'];
+            }
+          }
+        }
+      } catch (e) {
+        // Fallback na zračnu udaljenost ako mreža zakaže
+      }
+    }
+
+    return najbliziCvorId;
+  }
+
+  // -------------------------------------------------------------------------
+  // 3. DOHVAT POSTAJE ZA GRAD (S hibridnim Fallbackom)
+  // -------------------------------------------------------------------------
   Future<Map<String, String>?> dohvatiPostajuZaGrad(String gradNaziv) async {
     if (gradNaziv.trim().isEmpty) return null;
 
     final gradKey = _normalizirajKljuc(gradNaziv);
 
     try {
+      // Prvo provjeri u Firestore bazi
       final docSnapshot = await _db.collection('gradovi_mapiranje').doc(gradKey).get();
 
       if (docSnapshot.exists && docSnapshot.data() != null) {
         final data = docSnapshot.data()!;
         String postajaVal = data['najblizi_ulaz'] ?? data['najblizi_ulaz_a2'] ?? data['izlaz_a2'] ?? '';
         
-        return {
-          'postaja': postajaVal,
-          'koncesionar': data['koncesionar'] ?? 'HAC',
-        };
+        if (postajaVal.isNotEmpty) {
+          return {
+            'postaja': postajaVal,
+            'koncesionar': data['koncesionar'] ?? 'HAC',
+          };
+        }
+      }
+
+      // Ako grad ne postoji u bazi, napravi Dinamički GPS Fallback preko Nominatim API-ja
+      final res = await http.get(
+        Uri.parse('https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(gradNaziv)}&format=json&limit=1'),
+        headers: {'User-Agent': 'PrijevozKalkulatorApp'},
+      );
+
+      if (res.statusCode == 200) {
+        List data = json.decode(res.body);
+        if (data.isNotEmpty) {
+          double lat = double.parse(data[0]['lat']);
+          double lon = double.parse(data[0]['lon']);
+
+          // Pozivamo naš hibridni izračun
+          String izracunatiCvor = await pronadjiNajbliziCvorHibridno(lat, lon);
+
+          return {
+            'postaja': izracunatiCvor,
+            'koncesionar': 'HAC',
+          };
+        }
       }
     } catch (e) {
       print('Greška pri dohvaćanju grada: $e');
@@ -62,7 +162,7 @@ class CestarineService {
       } else if (katLower.contains('iii.') || katLower.contains('midi')) {
         if (kljuc.contains('iii.') || kljuc.contains('midi') || kljuc.contains('skupina3')) return val.toDouble();
       } else if (katLower.contains('iv.') || katLower.contains('veliki')) {
-        if (kljuc.contains('iv.') || kljuc.contains('autobus') || kljuc.contains('skupina4')) return val.toDouble();
+        if (kljuc.contains('iv.') || katLower.contains('autobus') || katLower.contains('skupina4')) return val.toDouble();
       } else if (katLower.contains('i.') || katLower.contains('osobna')) {
         if (kljuc.contains('i.') || kljuc.contains('osobna') || kljuc.contains('skupina1')) return val.toDouble();
       }
@@ -109,19 +209,17 @@ class CestarineService {
     final String ulaznaPostaja = postajaPolaziste['postaja'] ?? '';
     final String izlaznaPostaja = postajaOdrediste['postaja'] ?? '';
 
-    // Pomoćna funkcija za provjeru je li koncesionar uključen putem prekidača
     bool provjeriKoncesionara(String? koncesionarNaziv) {
       if (statusiAutoputeva == null || koncesionarNaziv == null) return true;
       String k = koncesionarNaziv.toLowerCase();
       for (var entry in statusiAutoputeva.entries) {
         if (k.contains(entry.key.toLowerCase())) {
-          return entry.value; // vraća true ako je uključen, false ako je isključen
+          return entry.value;
         }
       }
-      return true; // Zadano uključeno ako nema unosa
+      return true;
     }
 
-    // Ako postoji međustaustajalište (dva segmenta)
     if (medustajaliste != null && medustajaliste.trim().isNotEmpty) {
       final postajaMedu = await dohvatiPostajuZaGrad(medustajaliste);
       final String meduPostaja = postajaMedu?['postaja'] ?? '';
@@ -129,7 +227,6 @@ class CestarineService {
       if (meduPostaja.isNotEmpty) {
         double ukupnoMedu = 0.0;
 
-        // Prvi segment
         var doc1 = await dohvatiDokumentDionice(ulaz: ulaznaPostaja, izlaz: meduPostaja);
         if (doc1 != null) {
           String koncesionar1 = doc1['koncesionar'] ?? 'HAC';
@@ -139,7 +236,6 @@ class CestarineService {
           }
         }
 
-        // Drugi segment
         var doc2 = await dohvatiDokumentDionice(ulaz: meduPostaja, izlaz: izlaznaPostaja);
         if (doc2 != null) {
           String koncesionar2 = doc2['koncesionar'] ?? 'HAC';
@@ -153,18 +249,16 @@ class CestarineService {
       }
     }
 
-    // Direktna relacija
     var direktniDoc = await dohvatiDokumentDionice(ulaz: ulaznaPostaja, izlaz: izlaznaPostaja);
     if (direktniDoc != null) {
       String koncesionar = direktniDoc['koncesionar'] ?? 'HAC';
       if (!provjeriKoncesionara(koncesionar)) {
-        return 0.0; // Ako je koncesionar isključen prekidačem
+        return 0.0;
       }
       double? cijena = _izvuciCijenuIzDokumenta(direktniDoc, kategorijaVozila);
       if (cijena != null && cijena > 0) return cijena;
     }
 
-    // Fallback preko Lučkog / Bosiljeva
     if (ulaznaPostaja == 'lucko' || izlaznaPostaja == 'lucko') {
       String udaljena = (ulaznaPostaja == 'lucko') ? izlaznaPostaja : ulaznaPostaja;
       
