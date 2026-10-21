@@ -1,3 +1,4 @@
+// lib/screens/mapa_rute_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -15,7 +16,7 @@ class MapaRuteScreen extends StatefulWidget {
 
 class _MapaRuteScreenState extends State<MapaRuteScreen> {
   final CestarineService _cestarineService = CestarineService();
-  List<LatLng> _točkeRute = [];
+  List<LatLng> _tockeRute = [];
   bool _ucitavanje = true;
 
   @override
@@ -27,7 +28,7 @@ class _MapaRuteScreenState extends State<MapaRuteScreen> {
   Future<void> _ucitajMapu() async {
     List<LatLng> tocke = await _cestarineService.dohvatiGeometrijuRute(widget.polaziste, widget.odrediste);
     setState(() {
-      _točkeRute = tocke;
+      _tockeRute = tocke;
       _ucitavanje = false;
     });
   }
@@ -37,15 +38,16 @@ class _MapaRuteScreenState extends State<MapaRuteScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Ruta: ${widget.polaziste} -> ${widget.odrediste}'),
+        backgroundColor: Colors.orange,
       ),
       body: _ucitavanje
           ? const Center(child: CircularProgressIndicator())
-          : _točkeRute.isEmpty
-              ? const Center(child: Text('Nije moguće učitati kartu rute.'))
+          : _tockeRute.isEmpty
+              ? const Center(child: Text('Nije moguće učitati kartu rute za ove lokacije.'))
               : FlutterMap(
                   options: MapOptions(
-                    initialCenter: _točkeRute[(_točkeRute.length / 2).floor()],
-                    initialZoom: 7.0,
+                    initialCenter: _tockeRute[(_tockeRute.length / 2).floor()],
+                    initialZoom: 7.5,
                   ),
                   children: [
                     // OpenStreetMap pozadinske pločice (besplatno)
@@ -57,9 +59,9 @@ class _MapaRuteScreenState extends State<MapaRuteScreen> {
                     PolylineLayer(
                       polylines: [
                         Polyline(
-                          points: _točkeRute,
-                          color: Colors.orange,
-                          strokeWidth: 4.0,
+                          points: _tockeRute,
+                          color: Colors.deepOrange,
+                          strokeWidth: 5.0,
                         ),
                       ],
                     ),
