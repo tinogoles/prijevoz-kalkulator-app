@@ -164,7 +164,7 @@ class BazaCestarinaData {
   }
 
   // =========================================================================
-  // 2. MATRICA SLUŽBENIH DIONICA - 100% SVIH UNARSNIH RELACIJA
+  // 2. MATRICA SLUŽBENIH DIONICA - SVE 4 KATEGORIJE
   // =========================================================================
   static Map<String, Map<String, dynamic>> generirajSveDionice() {
     final Map<String, Map<String, dynamic>> dionice = {};
@@ -179,16 +179,16 @@ class BazaCestarinaData {
         'IV. Skupina (Vozila preko 3.5t / veliki autobus)': p4,
       };
 
-      // Zapisivanje u oba smjera + sinogracija čvorišta i naziva gradova
       dionice['${c1}_$c2'] = data;
       dionice['${c2}_$c1'] = data;
     }
 
-    // --- AZM A2 DIONICE (Popravak ključeva za A2) ---
+    // --- AZM A2 DIONICE ---
     dodaj('zapresic', 'krapina', 'AZM (A2)', 'A2: Zaprešić - Krapina', 2.50, 4.00, 10.00, 15.40);
     dodaj('zapresic', 'zabok', 'AZM (A2)', 'A2: Zaprešić - Zabok', 2.00, 3.20, 8.00, 12.00);
     dodaj('zagreb', 'krapina', 'AZM (A2)', 'A2: Zagreb - Krapina', 2.50, 4.00, 10.00, 15.40);
     dodaj('zagreb', 'zabok', 'AZM (A2)', 'A2: Zagreb - Zabok', 2.00, 3.20, 8.00, 12.00);
+    dodaj('zagreb', 'macelj', 'AZM (A2)', 'A2: Zagreb - Macelj', 2.50, 4.00, 10.00, 15.40);
 
     // --- HAC OSNOVNA MREŽA ČVORIŠTA ---
     dodaj('lucko', 'karlovac', 'HAC', 'A1: Lučko - Karlovac', 2.20, 3.50, 5.50, 9.00);
@@ -204,7 +204,7 @@ class BazaCestarinaData {
     dodaj('lucko', 'slavonski_brod_zapad', 'HAC', 'A3: Zagreb - Slavonski Brod', 13.00, 21.00, 31.50, 53.00);
     dodaj('lucko', 'osijek', 'HAC', 'A3/A5: Zagreb - Osijek', 17.50, 28.00, 42.00, 70.00);
 
-    // --- UNAKRSNO SPAJANJE SPLITA (DUGOPOLJE) SA SVIM ČVORIŠTIMA I GRADOVIMA ---
+    // --- DUGOPOLJE UNARKSLI SPOJEVI ---
     dodaj('dugopolje', 'sibenik', 'HAC', 'A1: Dugopolje - Šibenik', 4.70, 8.40, 12.50, 20.50);
     dodaj('dugopolje', 'zadar_istok', 'HAC', 'A1: Dugopolje - Zadar istok', 8.78, 14.20, 21.00, 35.00);
     dodaj('dugopolje', 'gospic', 'HAC', 'A1: Dugopolje - Gospić', 13.00, 21.00, 31.50, 52.00);
@@ -215,8 +215,9 @@ class BazaCestarinaData {
     dodaj('dugopolje', 'varazdin', 'HAC', 'A1/A4: Dugopolje - Varaždin', 30.50, 49.00, 73.50, 123.00);
     dodaj('dugopolje', 'slavonski_brod_zapad', 'HAC', 'A1/A3: Dugopolje - Slavonski Brod', 37.00, 59.50, 89.00, 149.00);
     dodaj('dugopolje', 'osijek', 'HAC', 'A1/A3/A5: Dugopolje - Osijek / Beli Manastir', 41.50, 66.50, 99.50, 166.00);
+    dodaj('dugopolje', 'bijaca', 'HAC', 'A1: Dugopolje - Bijača', 7.80, 12.50, 18.50, 31.00);
 
-    // Diktatni spojevi za nazive gradova u ruti
+    // --- DIREKTNI SPOJEVI ZA GRADOVE U RUTAMA ---
     dodaj('split', 'zagreb', 'HAC', 'A1: Split - Zagreb', 24.00, 38.50, 57.50, 96.00);
     dodaj('split', 'zadar', 'HAC', 'A1: Split - Zadar', 8.78, 14.20, 21.00, 35.00);
     dodaj('split', 'sibenik', 'HAC', 'A1: Split - Šibenik', 4.70, 8.40, 12.50, 20.50);
@@ -230,13 +231,17 @@ class BazaCestarinaData {
     dodaj('split', 'beli_manastir', 'HAC', 'A1/A3/A5: Split - Beli Manastir', 41.50, 66.50, 99.50, 166.00);
     dodaj('split', 'vinkovci', 'HAC', 'A1/A3: Split - Vinkovci', 40.00, 64.00, 96.00, 160.00);
     dodaj('split', 'sisak', 'HAC', 'A1/A11: Split - Sisak', 26.00, 42.00, 62.00, 105.00);
+    dodaj('split', 'medugorje', 'HAC / Autoceste FBiH', 'Split - Međugorje', 8.50, 13.50, 20.00, 33.50);
+    dodaj('split', 'maribor', 'HAC / AZM / DARS', 'Split - Maribor', 31.00, 50.40, 79.50, 130.40);
+    dodaj('split', 'macelj', 'HAC / AZM', 'A1/A2: Split - Macelj', 26.50, 42.50, 67.50, 111.40);
 
-    // --- OSTALI REGIONALNI SPOJEVI I MEĐUDRŽAVNE RUTE ---
+    // --- OSTALI REGIONALNI SPOJEVI ---
     dodaj('zagreb', 'rijeka', 'HAC', 'A1/A6: Zagreb - Rijeka', 9.90, 15.90, 23.50, 39.50);
     dodaj('zagreb', 'varazdin', 'HAC', 'A4: Zagreb - Varaždin', 6.50, 10.50, 16.00, 27.00);
     dodaj('zagreb', 'slavonski_brod', 'HAC', 'A3: Zagreb - Slavonski Brod', 13.00, 21.00, 31.50, 53.00);
     dodaj('zagreb', 'osijek', 'HAC', 'A3/A5: Zagreb - Osijek', 17.50, 28.00, 42.00, 70.00);
     dodaj('zagreb', 'beli_manastir', 'HAC', 'A3/A5: Zagreb - Beli Manastir', 19.00, 31.00, 46.00, 77.00);
+    dodaj('zagreb', 'maribor', 'AZM / DARS', 'A2/A4: Zagreb - Maribor', 7.00, 11.90, 22.00, 34.40);
 
     dodaj('pula', 'grobnik', 'BINA Istra', 'Istarski Ipsilon: Pula - Rijeka', 11.50, 18.20, 28.00, 45.00);
 
