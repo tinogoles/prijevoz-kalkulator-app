@@ -309,8 +309,27 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
         }
       }
 
+      // Privremeni izračun zračne udaljenosti za provjeru kratkih/lokalnih ruta (npr. Split - Omiš)
+      double zracnaProbaKm = 0;
+      for (int i = 0; i < koordinate.length - 1; i++) {
+        const double r = 6371.0;
+        double dLat = (koordinate[i+1]['lat']! - koordinate[i]['lat']!) * pi / 180.0;
+        double dLon = (koordinate[i+1]['lon']! - koordinate[i]['lon']!) * pi / 180.0;
+        double a = sin(dLat / 2) * sin(dLat / 2) +
+            cos(koordinate[i]['lat']! * pi / 180.0) * cos(koordinate[i+1]['lat']! * pi / 180.0) *
+                sin(dLon / 2) * sin(dLon / 2);
+        double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+        zracnaProbaKm += r * c;
+      }
+
+      // Ako je udaljenost manja od 50 km, automatski isključujemo autocestu
+      if (zracnaProbaKm < 50.0) {
+        setState(() {
+          _koristiAutocestu = false;
+        });
+      }
+
       double ukupnoMetara = 0;
-      // Ako nije odabrana autocesta, dodajemo exclude=motorway u OSRM upit za izbjegavanje autocesta
       String osrmModifier = _koristiAutocestu ? '' : '&exclude=motorway';
 
       for (int i = 0; i < koordinate.length - 1; i++) {
@@ -335,7 +354,8 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       String katVozila = _odabranoVoziloMap?['kategorija'] ??
                           'II. Skupina (Vozila do 3.5t / kombi)';
 
-      if (_koristiAutocestu) {
+      // Dionice autoceste računamo SAMO ako je prekidač uključen i ako ruta nije kratka/lokalna (< 50 km)
+      if (_koristiAutocestu && kmJedan >= 50.0) {
         bool zahtijevaSkladisteniSplitaKrapina = 
             (pLower.contains('split') || pLower.contains('sibenik') || pLower.contains('zadar')) && 
             (kLower.contains('krapina') || kLower.contains('macelj') || kLower.contains('zabok'));
@@ -415,7 +435,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
         _gradoviNaRuti = dinamickiGradovi;
         _dioniceAutocesta = dionice;
 
-        double cestarinaUkupno = sumaDionica * (_povratnoPutovanje ? 2.0 : 1.0);
+        double cestarinaUkupno = _koristiAutocestu ? (sumaDionica * (_povratnoPutovanje ? 2.0 : 1.0)) : 0.0;
         _cestarinaController.text = cestarinaUkupno.toStringAsFixed(2);
       });
 
