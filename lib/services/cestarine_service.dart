@@ -68,10 +68,8 @@ class CestarineService {
       dbKljuc = 'skupina1';
     }
 
-    print('CESTARISE_SERVICE: Tražim dionicu Ulaz: "$ulazKey", Izlaz: "$izlazKey" za ključ: "$dbKljuc"');
-
     try {
-      double? pronadjiCijenuUDokumentu(Map<String, dynamic> docData) {
+      double? procitajCijenu(Map<String, dynamic> docData) {
         if (docData.containsKey(dbKljuc) && docData[dbKljuc] != null) {
           return (docData[dbKljuc] as num).toDouble();
         }
@@ -85,31 +83,30 @@ class CestarineService {
       // 1. Pokušaj točnog dohvata po ID-ju: ulaz_izlaz
       var doc1 = await _db.collection('cestarine_dionice').doc('${ulazKey}_$izlazKey').get();
       if (doc1.exists && doc1.data() != null) {
-        double? val = pronadjiCijenuUDokumentu(doc1.data()!);
+        double? val = procitajCijenu(doc1.data()!);
         if (val != null && val > 0) return val;
       }
 
       // 2. Pokušaj obrnutog dohvata po ID-ju: izlaz_ulaz
       var doc2 = await _db.collection('cestarine_dionice').doc('${izlazKey}_$ulazKey').get();
       if (doc2.exists && doc2.data() != null) {
-        double? val = pronadjiCijenuUDokumentu(doc2.data()!);
+        double? val = procitajCijenu(doc2.data()!);
         if (val != null && val > 0) return val;
       }
 
-      // 3. Fleksibilna pretraga preko svih dokumenata (za slučajeve sa sufiksima poput zadar_istok)
+      // 3. Fleksibilna pretraga preko svih dokumenata (za sufikse poput zadar_istok)
       final allDocs = await _db.collection('cestarine_dionice').get();
       for (var d in allDocs.docs) {
         String docId = d.id.toLowerCase();
         if (docId.contains(ulazKey.split('_')[0]) && docId.contains(izlazKey.split('_')[0])) {
-          double? val = pronadjiCijenuUDokumentu(d.data());
+          double? val = procitajCijenu(d.data());
           if (val != null && val > 0) return val;
         }
       }
     } catch (e) {
-      print('Greška pri dohvaćanju cijene dionice s Clouda: $e');
+      print('Greška pri dohvaćanju cijene dionice: $e');
     }
 
-    print('Nije pronađena cijena za dionicu $ulaz -> $izlaz');
     return 0.0;
   }
 
