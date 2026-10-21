@@ -145,9 +145,9 @@ class CestarineService {
       } else if (katLower.contains('iii.') || katLower.contains('midi')) {
         if (kljuc.contains('iii.') || kljuc.contains('midi') || kljuc.contains('skupina3')) return val.toDouble();
       } else if (katLower.contains('iv.') || katLower.contains('veliki')) {
-        if (kljuc.contains('iv.') || katLower.contains('autobus') || kljuc.contains('skupina4')) return val.toDouble();
+        if (kljuc.contains('iv.') || katLower.contains('autobus') || katLower.contains('skupina4')) return val.toDouble();
       } else if (katLower.contains('i.') || katLower.contains('osobna')) {
-        if (kljuc.contains('i.') || katLower.contains('osobna') || katLower.contains('skupina1')) return val.toDouble();
+        if (kljuc.contains('i.') || kljuc.contains('osobna') || kljuc.contains('skupina1')) return val.toDouble();
       }
     }
 
@@ -260,13 +260,11 @@ class CestarineService {
       if (subTotal > 0) return subTotal;
     }
 
-    // Stari fallback za Lučko
+    // 3. KORAK: Fallback za Lučko
     if (ulaznaPostaja == 'lucko' || izlaznaPostaja == 'lucko') {
       String udaljena = (ulaznaPostaja == 'lucko') ? izlaznaPostaja : ulaznaPostaja;
       
       var doc1 = await dohvatiDokumentDionice(ulaz: 'lucko', izlaz: 'bosiljevo');
-      var doc2 = await dohvejDokumentDioniceFallback(ulaz: 'bosiljevo', izlaz: udaljena); // ili standardni dohvat
-      
       var doc3 = await dohvatiDokumentDionice(ulaz: 'bosiljevo', izlaz: udaljena);
       
       double subTotal = 0.0;
