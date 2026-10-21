@@ -71,49 +71,35 @@ class CestarineService {
     return null;
   }
 
-  Future<double> dohvatiCijenuDionice({
+  Future<Map<String, dynamic>?> dohvatiDokumentDionice({
     required String ulaz,
     required String izlaz,
-    required String kategorijaVozila,
   }) async {
-    if (ulaz.isEmpty || izlaz.isEmpty) return 0.0;
+    if (ulaz.isEmpty || izlaz.isEmpty) return null;
 
     String ulazKey = _normalizirajKljuc(ulaz);
     String izlazKey = _normalizirajKljuc(izlaz);
 
     try {
       var doc1 = await _db.collection('cestarine_dionice').doc('${ulazKey}_$izlazKey').get();
-      if (doc1.exists && doc1.data() != null) {
-        double? cijena = _izvuciCijenuIzDokumenta(doc1.data()!, kategorijaVozila);
-        if (cijena != null && cijena > 0) return cijena;
-      }
+      if (doc1.exists && doc1.data() != null) return doc1.data();
 
       var doc2 = await _db.collection('cestarine_dionice').doc('${izlazKey}_$ulazKey').get();
-      if (doc2.exists && doc2.data() != null) {
-        double? cijena = _izvuciCijenuIzDokumenta(doc2.data()!, kategorijaVozila);
-        if (cijena != null && cijena > 0) return cijena;
-      }
-
-      final allDocs = await _db.collection('cestarine_dionice').get();
-      for (var d in allDocs.docs) {
-        String docId = d.id.toLowerCase();
-        if (docId.contains(ulazKey.split('_')[0]) && docId.contains(izlazKey.split('_')[0])) {
-          double? cijena = _izvuciCijenuIzDokumenta(d.data(), kategorijaVozila);
-          if (cijena != null && cijena > 0) return cijena;
-        }
-      }
+      if (doc2.exists && doc2.data() != null) return doc2.data();
     } catch (e) {
-      print('Greška pri dohvaćanju cijene dionice: $e');
+      print('Greška pri dohvaćanju dokumenta dionice: $e');
     }
 
-    return 0.0;
+    return null;
   }
 
+  // Glavna metoda obogaćena provjerom prekidača (toggle stanja po koncesionarima)
   Future<double> izracunajUkupnuCestarinu({
     required String polaziste,
     required String odrediste,
     String? medustajaliste,
     required String kategorijaVozila,
+    Map<String, bool>? statusiAutoputeva,
   }) async {
     final postajaPolaziste = await dohvatiPostajuZaGrad(polaziste);
     final postajaOdrediste = await dohvatiPostajuZaGrad(odrediste);
@@ -123,25 +109,78 @@ class CestarineService {
     final String ulaznaPostaja = postajaPolaziste['postaja'] ?? '';
     final String izlaznaPostaja = postajaOdrediste['postaja'] ?? '';
 
+    // Pomoćna funkcija za provjeru je li koncesionar uključen putem prekidača
+    bool provjeriKoncesionara(String? koncesionarNaziv) {
+      if (statusiAutoputeva == null || koncesionarNaziv == null) return true;
+      String k = koncesionarNaziv.toLowerCase();
+      for (var entry in statusiAutoputeva.entries) {
+        if (k.contains(entry.key.toLowerCase())) {
+          return entry.value; // vraća true ako je uključen, false ako je isključen
+        }
+      }
+      return true; // Zadano uključeno ako nema unosa
+    }
+
+    // Ako postoji međustaustajalište (dva segmenta)
     if (medustajaliste != null && medustajaliste.trim().isNotEmpty) {
       final postajaMedu = await dohvatiPostajuZaGrad(medustajaliste);
       final String meduPostaja = postajaMedu?['postaja'] ?? '';
 
       if (meduPostaja.isNotEmpty) {
-        double c1 = await dohvatiCijenuDionice(ulaz: ulaznaPostaja, izlaz: meduPostaja, kategorijaVozila: kategorijaVozila);
-        double c2 = await dohvatiCijenuDionice(ulaz: meduPostaja, izlaz: izlaznaPostaja, kategorijaVozila: kategorijaVozila);
-        return c1 + c2;
+        double ukupnoMedu = 0.0;
+
+        // Prvi segment
+        var doc1 = await dohvatiDokumentDionice(ulaz: ulaznaPostaja, izlaz: meduPostaja);
+        if (doc1 != null) {
+          String koncesionar1 = doc1['koncesionar'] ?? 'HAC';
+          if (provjeriKoncesionara(koncesionar1)) {
+            double? c1 = _izvuciCijenuIzDokumenta(doc1, kategorijaVozila);
+            if (c1 != null) ukupnoMedu += c1;
+          }
+        }
+
+        // Drugi segment
+        var doc2 = await dohvatiDokumentDionice(ulaz: meduPostaja, izlaz: izlaznaPostaja);
+        if (doc2 != null) {
+          String koncesionar2 = doc2['koncesionar'] ?? 'HAC';
+          if (provjeriKoncesionara(koncesionar2)) {
+            double? c2 = _izvuciCijenuIzDokumenta(doc2, kategorijaVozila);
+            if (c2 != null) ukupnoMedu += c2;
+          }
+        }
+
+        return ukupnoMedu;
       }
     }
 
-    double direktna = await dohvatiCijenuDionice(ulaz: ulaznaPostaja, izlaz: izlaznaPostaja, kategorijaVozila: kategorijaVozila);
-    if (direktna > 0) return direktna;
+    // Direktna relacija
+    var direktniDoc = await dohvatiDokumentDionice(ulaz: ulaznaPostaja, izlaz: izlaznaPostaja);
+    if (direktniDoc != null) {
+      String koncesionar = direktniDoc['koncesionar'] ?? 'HAC';
+      if (!provjeriKoncesionara(koncesionar)) {
+        return 0.0; // Ako je koncesionar isključen prekidačem
+      }
+      double? cijena = _izvuciCijenuIzDokumenta(direktniDoc, kategorijaVozila);
+      if (cijena != null && cijena > 0) return cijena;
+    }
 
+    // Fallback preko Lučkog / Bosiljeva
     if (ulaznaPostaja == 'lucko' || izlaznaPostaja == 'lucko') {
       String udaljena = (ulaznaPostaja == 'lucko') ? izlaznaPostaja : ulaznaPostaja;
-      double c1 = await dohvatiCijenuDionice(ulaz: 'lucko', izlaz: 'bosiljevo', kategorijaVozila: kategorijaVozila);
-      double c2 = await dohvatiCijenuDionice(ulaz: 'bosiljevo', izlaz: udaljena, kategorijaVozila: kategorijaVozila);
-      if (c1 > 0 && c2 > 0) return c1 + c2;
+      
+      var doc1 = await dohvatiDokumentDionice(ulaz: 'lucko', izlaz: 'bosiljevo');
+      var doc2 = await dohvatiDokumentDionice(ulaz: 'bosiljevo', izlaz: udaljena);
+      
+      double subTotal = 0.0;
+      if (doc1 != null && provjeriKoncesionara(doc1['koncesionar'] ?? 'HAC')) {
+        double? c1 = _izvuciCijenuIzDokumenta(doc1, kategorijaVozila);
+        if (c1 != null) subTotal += c1;
+      }
+      if (doc2 != null && provjeriKoncesionara(doc2['koncesionar'] ?? 'HAC')) {
+        double? c2 = _izvuciCijenuIzDokumenta(doc2, kategorijaVozila);
+        if (c2 != null) subTotal += c2;
+      }
+      if (subTotal > 0) return subTotal;
     }
 
     return 0.0;
