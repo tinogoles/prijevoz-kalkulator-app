@@ -9,7 +9,7 @@ class BazaCestarinaData {
   }
 
   // =========================================================================
-  // 1. SVEUKUPNO MAPIRANJE: Svi gradovi, općine i naselja u 4 države
+  // 1. PROŠIRENO OPĆINSKO MAPIRANJE: Obuhvat svih naselja i regija
   // =========================================================================
   static Map<String, Map<String, dynamic>> generirajSveGradove() {
     final Map<String, Map<String, dynamic>> mapa = {};
@@ -26,7 +26,50 @@ class BazaCestarinaData {
       }
     }
 
-    // --- HRVATSKA (Sve županije, gradovi i naselja) ---
+    // --- SLAVONIJA I ISTOČNI KORIDOR (Uključujući Borovo Naselje i Vukovar) ---
+    mapirajNaselja('HR', 'osijek', [
+      'Osijek', 'Borovo Naselje', 'Vukovar', 'Vinkovci', 'Đakovo', 'Našice', 'Belišće', 'Valpovo', 
+      'Donji Miholjac', 'Beli Manastir', 'Čepin', 'Bilje', 'Erdut', 'Županja', 'Ilok', 'Otok', 
+      'Gradište', 'Cerna', 'Drenovci', 'Bošnjaci', 'Vrbanja', 'Trpinja', 'Borovo', 'Markušica', 
+      'Nijemci', 'Nuštar', 'Stari Jankovci', 'Tompojevci', 'Bogdanovci', 'Lovas'
+    ]);
+
+    // --- SJEVEROZADNJA HRVATSKA / ZAGORJE (Ivanec, Klanjec, Kumrovec...) ---
+    mapirajNaselja('HR', 'zapresic', [
+      'Zaprešić', 'Klanjec', 'Kumrovec', 'Desinić', 'Veliko Trgovišće', 'Tuhelj', 'Kraljevec na Sutli', 'Bistra', 'Pušća'
+    ]);
+    
+    mapirajNaselja('HR', 'krapina', [
+      'Krapina', 'Ivanec', 'Zabok', 'Oroslavje', 'Donja Stubica', 'Marija Bistrica', 'Bedekovčina', 
+      'Sveti Križ Začretje', 'Pregrada', 'Hum na Sutli', 'Đurmanec', 'Zlatar', 'Zlatar Bistrica', 
+      'Lobor', 'Mihovljan', 'Radoboj', 'Gornja Stubica', 'Lepoglava'
+    ]);
+
+    // --- LIKA I GORSKI KOTAR (Josipdol, Platak, Senj...) ---
+    mapirajNaselja('HR', 'josipdol', [
+      'Josipdol', 'Plaški', 'Oštarije'
+    ]);
+
+    mapirajNaselja('HR', 'grobnik', [
+      'Rijeka', 'Platak', 'Opatija', 'Kastav', 'Viškovo', 'Čavle', 'Jelenje', 'Delnice', 'Fužine', 
+      'Mrkopalj', 'Ravna Gora', 'Skrad', 'Vrbovsko', 'Brod Moravice', 'Lokve'
+    ]);
+
+    mapirajNaselja('HR', 'zuta_lokva', [
+      'Senj', 'Baške Oštarije', 'Otočac', 'Brinje', 'Perušić'
+    ]);
+
+    // --- ISTRA (Pazin i okolica) ---
+    mapirajNaselja('HR', 'pazin', [
+      'Pazin', 'Žminj', 'Kanfanar', 'Barban', 'Svetvinčenat', 'Karojba', 'Tinjan', 'Gračišće', 'Pićan'
+    ]);
+
+    mapirajNaselja('HR', 'pula', [
+      'Pula', 'Rovinj', 'Poreč', 'Umag', 'Labin', 'Buje', 'Vodnjan', 'Buzet', 'Medulin', 'Fažana',
+      'Vrsar', 'Funtana', 'Tar', 'Novigrad', 'Motovun', 'Grožnjan', 'Bale', 'Ližnjan', 'Marčana', 'Višnjan', 'Vižinada'
+    ]);
+
+    // --- DALMACIJA ---
     mapirajNaselja('HR', 'dugopolje', [
       'Split', 'Solin', 'Kaštela', 'Trogir', 'Omiš', 'Sinj', 'Muć', 'Klis', 'Dugopolje', 'Podstrana',
       'Supetar', 'Hvar', 'Vis', 'Komiža', 'Milna', 'Sutivan', 'Bol', 'Nerežišća', 'Postira', 'Pučišća',
@@ -45,19 +88,6 @@ class BazaCestarinaData {
       'Vir', 'Kali', 'Preko', 'Ugljan', 'Tkon', 'Sali', 'Starigrad', 'Jasenice', 'Brbinj', 'Novalja'
     ]);
 
-    mapirajNaselja('HR', 'zuta_lokva', [
-      'Senj', 'Baške Oštarije', 'Otočac', 'Brinje', 'Perušić', 'Jasenovac'
-    ]);
-
-    mapirajNaselja('HR', 'krizisce', [
-      'Novi Vinodolski', 'Crikvenica', 'Bakar', 'Krk', 'Baška', 'Malinska', 'Punat', 'Dobrinj', 'Kraljevica'
-    ]);
-
-    mapirajNaselja('HR', 'grobnik', [
-      'Rijeka', 'Opatija', 'Kastav', 'Viškovo', 'Čavle', 'Jelenje', 'Delnice', 'Fužine', 'Mrkopalj', 
-      'Ravna Gora', 'Skrad', 'Vrbovsko', 'Brod Moravice', 'Cres', 'Rab', 'Lopar', 'Mali Lošinj', 'Veli Lošinj', 'Lokve'
-    ]);
-
     mapirajNaselja('HR', 'sestanovac', [
       'Makarska', 'Baška Voda', 'Brela', 'Tučepi', 'Podgora', 'Gradac', 'Imotski', 'Cista Provo', 'Zagvozd', 
       'Runovići', 'Zmijavci', 'Proložac', 'Lokvičići', 'Zadvarje', 'Drvenik', 'Brist', 'Šestanovac'
@@ -69,33 +99,23 @@ class BazaCestarinaData {
     ]);
 
     mapirajNaselja('HR', 'gospic', [
-      'Gospić', 'Udbina', 'Plitvička Jezera', 'Korenica', 'Vrhovine', 'Donji Lapac', 'Josipdol'
+      'Gospić', 'Udbina', 'Plitvička Jezera', 'Korenica', 'Vrhovine', 'Donji Lapac'
     ]);
 
     mapirajNaselja('HR', 'lucko', [
       'Zagreb', 'Velika Gorica', 'Samobor', 'Sveta Nedelja', 'Jastrebarsko', 'Stupnik', 'Klinča Sela',
-      'Pisarovina', 'Krašić', 'Žumberak', 'Rugvica', 'Dugo Selo', 'Ivanić-Grad', 'Zaprešić', 'Vrbovec',
+      'Pisarovina', 'Krašić', 'Žumberak', 'Rugvica', 'Dugo Selo', 'Ivanić-Grad', 'Vrbovec',
       'Sveti Ivan Zelina', 'Križevci', 'Koprivnica', 'Bjelovar', 'Virovitica', 'Čazma', 'Garešnica', 'Kutina', 'Novska', 'Sisak', 'Petrinja', 'Glina', 'Hrvatska Kostajnica', 'Topusko', 'Dvor', 'Sunja', 'Lekenik', 'Popovača'
     ]);
 
     mapirajNaselja('HR', 'karlovac', [
       'Karlovac', 'Duga Resa', 'Ogulin', 'Slunj', 'Ozalj', 'Vojnić', 'Krnjak', 'Lasinja', 'Žakanje', 'Netretić', 'Bosiljevo',
-      'Rakovica', 'Cetingrad', 'Barilović', 'Plaški', 'Generalski Stol', 'Kamanje', 'Ribnik'
-    ]);
-
-    mapirajNaselja('HR', 'osijek', [
-      'Osijek', 'Đakovo', 'Našice', 'Belišće', 'Valpovo', 'Donji Miholjac', 'Beli Manastir', 'Čepin', 'Bilje', 'Erdut', 'Vukovar', 'Vinkovci',
-      'Županja', 'Ilok', 'Otok', 'Gradište', 'Cerna', 'Drenovci', 'Bošnjaci', 'Vrbanja', 'Trpinja', 'Borovo', 'Markušica', 'Nijemci', 'Nuštar', 'Stari Jankovci', 'Tompojevci', 'Bogdanovci', 'Lovas'
+      'Rakovica', 'Cetingrad', 'Barilović', 'Generalski Stol', 'Kamanje', 'Ribnik'
     ]);
 
     mapirajNaselja('HR', 'slavonski_brod_zapad', [
       'Slavonski Brod', 'Nova Gradiška', 'Oriovac', 'Sibinj', 'Garčin', 'Vrpolje', 'Sikirevci', 'Gundinci', 'Požega', 'Pakrac',
       'Lipik', 'Kutjevo', 'Pleternica', 'Brestovac', 'Rešetari', 'Okučani', 'Stara Gradiška', 'Davor', 'Bukovlje', 'Cernik', 'Gornji Bogićevci', 'Dragalić'
-    ]);
-
-    mapirajNaselja('HR', 'pula', [
-      'Pula', 'Rovinj', 'Poreč', 'Umag', 'Pazin', 'Labin', 'Buje', 'Vodnjan', 'Buzet', 'Žminj', 'Medulin', 'Fažana',
-      'Vrsar', 'Funtana', 'Tar', 'Novigrad', 'Motovun', 'Grožnjan', 'Bale', 'Kanfanar', 'Barban', 'Ližnjan', 'Marčana', 'Svetvinčenat', 'Lanišće', 'Karojba', 'Višnjan', 'Vižinada'
     ]);
 
     // --- SLOVENIJA ---
@@ -162,7 +182,7 @@ class BazaCestarinaData {
   }
 
   // =========================================================================
-  // 2. MATRICA ČVORIŠTA S CIJENAMA ZA SVE 4 KATEGORIJE VOZILA
+  // 2. MATRICA ČVORIŠTA SA CIJENAMA ZA SVE 4 KATEGORIJE
   // =========================================================================
   static Map<String, Map<String, dynamic>> generirajSveDionice() {
     final Map<String, Map<String, dynamic>> dionice = {};
@@ -180,21 +200,23 @@ class BazaCestarinaData {
       dionice['${c2}_$c1'] = data;
     }
 
-    // Službeni cjenici između glavnih čvorišta za sve 4 kategorije
-    dodaj('lucko', 'karlovac', 'HAC', 'A1: Lučko - Karlovac', 2.20, 3.50, 5.50, 9.00);
-    dodaj('lucko', 'gospic', 'HAC', 'A1: Lučko - Gospić', 11.00, 17.50, 26.00, 44.00);
+    // Dodani čvorovi za Josipdol, Pazin, Zaprešić itd.
+    dodaj('lucko', 'josipdol', 'HAC', 'A1: Lučko - Josipdol', 6.50, 10.50, 15.50, 26.00);
     dodaj('lucko', 'zuta_lokva', 'HAC', 'A1: Lučko - Žuta Lokva', 9.50, 15.00, 22.50, 37.50);
-    dodaj('lucko', 'krizisce', 'HAC / ARZ', 'A1/A6: Lučko - Križišće', 9.90, 15.90, 23.50, 39.50);
     dodaj('lucko', 'grobnik', 'HAC / ARZ', 'A1/A6: Lučko - Rijeka (Grobnik)', 9.90, 15.90, 23.50, 39.50);
     dodaj('lucko', 'dugopolje', 'HAC', 'A1: Lučko - Dugopolje', 24.00, 38.50, 57.50, 96.00);
-    dodaj('lucko', 'ploce', 'HAC', 'A1: Lučko - Ploče', 30.00, 48.00, 72.00, 120.00);
-    
+    dodaj('lucko', 'osijek', 'HAC', 'A3/A5: Zagreb - Osijek', 17.50, 28.00, 42.00, 70.00);
+    dodaj('lucko', 'zapresic', 'AZM (A2)', 'A2: Zagreb - Zaprešić', 1.50, 2.50, 5.00, 8.00);
+    dodaj('lucko', 'krapina', 'AZM (A2)', 'A2: Zagreb - Krapina', 2.50, 4.00, 10.00, 15.40);
+
+    // Unakrsni spojevi iz Splita prema novim čvorovima
+    dodaj('dugopolje', 'josipdol', 'HAC', 'A1: Dugopolje - Josipdol', 17.50, 28.00, 42.00, 70.00);
     dodaj('dugopolje', 'zuta_lokva', 'HAC', 'A1: Dugopolje - Žuta Lokva', 14.50, 23.00, 34.50, 58.00);
-    dodaj('dugopolje', 'krizisce', 'HAC', 'A1: Dugopolje - Križišće', 15.00, 24.00, 36.00, 60.00);
     dodaj('dugopolje', 'grobnik', 'HAC', 'A1: Dugopolje - Grobnik', 30.00, 48.00, 72.00, 120.00);
-    dodaj('dugopolje', 'sibenik', 'HAC', 'A1: Dugopolje - Šibenik', 4.70, 8.40, 12.50, 20.50);
-    dodaj('dugopolje', 'zadar_istok', 'HAC', 'A1: Dugopolje - Zadar istok', 8.78, 14.20, 21.00, 35.00);
-    dodaj('dugopolje', 'bijaca', 'HAC', 'A1: Dugopolje - Bijača', 7.80, 12.50, 18.50, 31.00);
+    dodaj('dugopolje', 'osijek', 'HAC', 'A1/A3/A5: Dugopolje - Osijek', 41.50, 66.50, 99.50, 166.00);
+    dodaj('dugopolje', 'zapresic', 'A1/A2', 'Split - Zaprešić', 25.50, 41.00, 62.50, 104.00);
+    dodaj('dugopolje', 'krapina', 'A1/A2', 'Split - Krapina', 26.50, 42.50, 67.50, 111.40);
+    dodaj('dugopolje', 'pazin', 'A1/A8', 'Split - Pazin', 33.00, 53.00, 80.00, 132.00);
 
     return dionice;
   }
