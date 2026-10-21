@@ -287,8 +287,16 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
 
     try {
       Future<Map<String, double>?> getCoords(String q) async {
+        String upit = q.trim();
+        // Pametna dopuna za naselja s više istoimenih lokacija (npr. Podgrađe kod Omiša)
+        if (upit.toLowerCase() == 'podgrađe' || upit.toLowerCase() == 'podgrade') {
+          upit = 'Podgrađe, Omiš, Hrvatska';
+        } else if (!upit.toLowerCase().contains('hrvatska')) {
+          upit = '$upit, Hrvatska';
+        }
+
         final res = await http.get(
-          Uri.parse('https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(q)}&format=json&limit=1'),
+          Uri.parse('https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(upit)}&format=json&limit=1'),
           headers: {'User-Agent': 'PrijevozKalkulatorApp'},
         );
         if (res.statusCode == 200) {
@@ -310,7 +318,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
         }
       }
 
-      // Privremeni izračun zračne udaljenosti za provjeru kratkih/lokalnih ruta (npr. Split - Omiš)
+      // Privremeni izračun zračne udaljenosti za provjeru kratkih/lokalnih ruta (npr. Podgrađe - Omiš)
       double zracnaProbaKm = 0;
       for (int i = 0; i < koordinate.length - 1; i++) {
         const double r = 6371.0;
