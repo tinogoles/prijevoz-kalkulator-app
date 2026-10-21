@@ -14,6 +14,9 @@ dependencies:
   printing: ^5.11.1
   http: ^1.2.0
   shared_preferences: ^2.2.3
+  # Mape i lokacije
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.0
   # Firebase paketi:
   firebase_core: ^2.27.0
   cloud_firestore: ^4.15.5
