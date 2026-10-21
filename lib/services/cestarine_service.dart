@@ -89,30 +89,13 @@ class CestarineService {
   }
 
   // -------------------------------------------------------------------------
-  // 3. DOHVAT POSTAJE ZA GRAD (S hibridnim Fallbackom)
+  // 3. DOHVAT POSTAJE ZA GRAD (Dinamički GPS Fallback)
   // -------------------------------------------------------------------------
   Future<Map<String, String>?> dohvatiPostajuZaGrad(String gradNaziv) async {
     if (gradNaziv.trim().isEmpty) return null;
 
-    final gradKey = _normalizirajKljuc(gradNaziv);
-
     try {
-      // Prvo provjeri u Firestore bazi
-      final docSnapshot = await _db.collection('gradovi_mapiranje').doc(gradKey).get();
-
-      if (docSnapshot.exists && docSnapshot.data() != null) {
-        final data = docSnapshot.data()!;
-        String postajaVal = data['najblizi_ulaz'] ?? data['najblizi_ulaz_a2'] ?? data['izlaz_a2'] ?? '';
-        
-        if (postajaVal.isNotEmpty) {
-          return {
-            'postaja': postajaVal,
-            'koncesionar': data['koncesionar'] ?? 'HAC',
-          };
-        }
-      }
-
-      // Ako grad ne postoji u bazi, napravi Dinamički GPS Fallback preko Nominatim API-ja
+      // Dinamički poziv Nominatim API-ja za bilo koje uneseno mjesto
       final res = await http.get(
         Uri.parse('https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(gradNaziv)}&format=json&limit=1'),
         headers: {'User-Agent': 'PrijevozKalkulatorApp'},
@@ -124,7 +107,7 @@ class CestarineService {
           double lat = double.parse(data[0]['lat']);
           double lon = double.parse(data[0]['lon']);
 
-          // Pozivamo naš hibridni izračun
+          // Pozivamo naš hibridni izračun najbližeg čvora
           String izracunatiCvor = await pronadjiNajbliziCvorHibridno(lat, lon);
 
           return {
@@ -134,7 +117,7 @@ class CestarineService {
         }
       }
     } catch (e) {
-      print('Greška pri dohvaćanju grada: $e');
+      print('Greška pri dohvaćanju grada preko API-ja: $e');
     }
 
     return null;
@@ -164,7 +147,7 @@ class CestarineService {
       } else if (katLower.contains('iv.') || katLower.contains('veliki')) {
         if (kljuc.contains('iv.') || katLower.contains('autobus') || katLower.contains('skupina4')) return val.toDouble();
       } else if (katLower.contains('i.') || katLower.contains('osobna')) {
-        if (kljuc.contains('i.') || kljuc.contains('osobna') || kljuc.contains('skupina1')) return val.toDouble();
+        if (kljuc.contains('i.') || katLower.contains('osobna') || kljuc.contains('skupina1')) return val.toDouble();
       }
     }
 
