@@ -7,8 +7,14 @@ import '../services/cestarine_service.dart';
 class MapaRuteScreen extends StatefulWidget {
   final String polaziste;
   final String odrediste;
+  final bool koristiAutocestu;
 
-  const MapaRuteScreen({Key? key, required this.polaziste, required this.odrediste}) : super(key: key);
+  const MapaRuteScreen({
+    Key? key, 
+    required this.polaziste, 
+    required this.odrediste, 
+    this.koristiAutocestu = true,
+  }) : super(key: key);
 
   @override
   _MapaRuteScreenState createState() => _MapaRuteScreenState();
@@ -26,7 +32,11 @@ class _MapaRuteScreenState extends State<MapaRuteScreen> {
   }
 
   Future<void> _ucitajMapu() async {
-    List<LatLng> tocke = await _cestarineService.dohvatiGeometrijuRute(widget.polaziste, widget.odrediste);
+    List<LatLng> tocke = await _cestarineService.dohvatiGeometrijuRute(
+      widget.polaziste, 
+      widget.odrediste, 
+      koristiAutocestu: widget.koristiAutocestu,
+    );
     setState(() {
       _tockeRute = tocke;
       _ucitavanje = false;
@@ -50,12 +60,10 @@ class _MapaRuteScreenState extends State<MapaRuteScreen> {
                     initialZoom: 7.5,
                   ),
                   children: [
-                    // OpenStreetMap pozadinske pločice (besplatno)
                     TileLayer(
                       urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'com.example.prijevoz_kalkulator',
                     ),
-                    // Iscrtavanje linije rute
                     PolylineLayer(
                       polylines: [
                         Polyline(
