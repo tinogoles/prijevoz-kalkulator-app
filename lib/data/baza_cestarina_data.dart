@@ -9,6 +9,46 @@ class BazaCestarinaData {
   }
 
   // =========================================================================
+  // 0. GPS KOORDINATE GLAVNIH ČVOROVA (Potrebno za hibridni algoritam)
+  // =========================================================================
+  static final Map<String, Map<String, double>> cvoroviKoordinate = {
+    'lucko': {'lat': 45.7481, 'lon': 15.8903},
+    'zagreb_istok': {'lat': 45.8150, 'lon': 16.1500},
+    'zapresic': {'lat': 45.8575, 'lon': 15.8086},
+    'krapina': {'lat': 46.1625, 'lon': 15.8783},
+    'macelj': {'lat': 46.2514, 'lon': 15.8450},
+    'josipdol': {'lat': 45.2342, 'lon': 15.2356},
+    'zuta_lokva': {'lat': 44.9850, 'lon': 15.0817},
+    'grobnik': {'lat': 45.3683, 'lon': 14.5167},
+    'bosiljevo': {'lat': 45.4122, 'lon': 15.2858},
+    'pazin': {'lat': 45.2392, 'lon': 13.9358},
+    'pula': {'lat': 44.8783, 'lon': 13.8514},
+    'dugopolje': {'lat': 43.5683, 'lon': 16.5708},
+    'zagvozd': {'lat': 43.4333, 'lon': 16.9667},
+    'blato_na_cetini': {'lat': 43.4475, 'lon': 16.7911},
+    'sestanovac': {'lat': 43.4500, 'lon': 16.8833},
+    'sibenik': {'lat': 43.7250, 'lon': 15.9167},
+    'zadar_istok': {'lat': 44.1197, 'lon': 15.3900},
+    'posedarje': {'lat': 44.2250, 'lon': 15.4833},
+    'gospic': {'lat': 44.5461, 'lon': 15.3778},
+    'ploce': {'lat': 43.0550, 'lon': 17.4350},
+    'slavonski_brod_zapad': {'lat': 45.1639, 'lon': 18.0147},
+    'osijek': {'lat': 45.5511, 'lon': 18.6939},
+    'karlovac': {'lat': 45.4929, 'lon': 15.5553},
+    'pazins_krak': {'lat': 45.2392, 'lon': 13.9358},
+    'ljubljana_jug': {'lat': 46.0350, 'lon': 14.5100},
+    'maribor_jug': {'lat': 46.5167, 'lon': 15.6500},
+    'obrezje': {'lat': 45.8817, 'lon': 15.6933},
+    'sarajevo_sjever': {'lat': 43.9167, 'lon': 18.2333},
+    'zenica_jug': {'lat': 44.1833, 'lon': 17.9000},
+    'bijaca': {'lat': 43.1500, 'lon': 17.5833},
+    'mahovljani': {'lat': 44.9000, 'lon': 17.3167},
+    'smokovac': {'lat': 42.4750, 'lon': 19.3000},
+    'matesevo': {'lat': 42.8000, 'lon': 19.5333},
+    'sozina': {'lat': 42.2333, 'lon': 19.0833},
+  };
+
+  // =========================================================================
   // 1. PROŠIRENO OPĆINSKO MAPIRANJE: Obuhvat svih naselja i regija
   // =========================================================================
   static Map<String, Map<String, dynamic>> generirajSveGradove() {
@@ -200,7 +240,6 @@ class BazaCestarinaData {
       dionice['${c2}_$c1'] = data;
     }
 
-    // Dodani čvorovi za Josipdol, Pazin, Zaprešić itd.
     dodaj('lucko', 'josipdol', 'HAC', 'A1: Lučko - Josipdol', 6.50, 10.50, 15.50, 26.00);
     dodaj('lucko', 'zuta_lokva', 'HAC', 'A1: Lučko - Žuta Lokva', 9.50, 15.00, 22.50, 37.50);
     dodaj('lucko', 'grobnik', 'HAC / ARZ', 'A1/A6: Lučko - Rijeka (Grobnik)', 9.90, 15.90, 23.50, 39.50);
@@ -209,7 +248,6 @@ class BazaCestarinaData {
     dodaj('lucko', 'zapresic', 'AZM (A2)', 'A2: Zagreb - Zaprešić', 1.50, 2.50, 5.00, 8.00);
     dodaj('lucko', 'krapina', 'AZM (A2)', 'A2: Zagreb - Krapina', 2.50, 4.00, 10.00, 15.40);
 
-    // Unakrsni spojevi iz Splita prema novim čvorovima
     dodaj('dugopolje', 'josipdol', 'HAC', 'A1: Dugopolje - Josipdol', 17.50, 28.00, 42.00, 70.00);
     dodaj('dugopolje', 'zuta_lokva', 'HAC', 'A1: Dugopolje - Žuta Lokva', 14.50, 23.00, 34.50, 58.00);
     dodaj('dugopolje', 'grobnik', 'HAC', 'A1: Dugopolje - Grobnik', 30.00, 48.00, 72.00, 120.00);
