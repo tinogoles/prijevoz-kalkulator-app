@@ -337,7 +337,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       if (_koristiAutocestu) {
         // 1) Ako ruta ide iz Splita u Krapinu (ili obratno) -> dijeli se na HAC A1 i AZM A2
         if ((pLower.contains('split') && kLower.contains('krapina')) ||
-            (pLower.contains('krapina') && pLower.contains('split'))) {
+            (pLower.contains('krapina') && kLower.contains('split'))) {
           
           dinamickiGradovi = [
             _polazisteController.text,
