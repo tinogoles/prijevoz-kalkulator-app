@@ -329,7 +329,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       List<Map<String, dynamic>> dionice = [];
 
       String katVozila = _odabranoVoziloMap?['kategorija'] ??
-                          'II. Skupina (Vozila do 3.5t / kombi)';
+                        'II. Skupina (Vozila do 3.5t / kombi)';
 
       if (_koristiAutocestu) {
         bool zahtijevaSkladisteniSplitaKrapina = 
