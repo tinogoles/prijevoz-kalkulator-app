@@ -713,8 +713,9 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
                 });
               },
               fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
-                if (controller.text.isEmpty && _polazisteController.text.isNotEmpty) {
+                if (controller.text != _polazisteController.text) {
                   controller.text = _polazisteController.text;
+                  controller.selection = TextSelection.fromPosition(TextPosition(offset: controller.text.length));
                 }
                 return TextField(
                   controller: controller,
@@ -763,8 +764,9 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
                 });
               },
               fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
-                if (controller.text.isEmpty && _konacnoOdredisteController.text.isNotEmpty) {
+                if (controller.text != _konacnoOdredisteController.text) {
                   controller.text = _konacnoOdredisteController.text;
+                  controller.selection = TextSelection.fromPosition(TextPosition(offset: controller.text.length));
                 }
                 return TextField(
                   controller: controller,
@@ -998,6 +1000,8 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
                       polaziste: _skratiNazivLokacije(_polazisteController.text.trim()),
                       odrediste: _skratiNazivLokacije(_konacnoOdredisteController.text.trim()),
                       koristiAutocestu: _koristiAutocestu,
+                      polazisteCoords: _polazisteCoords,
+                      odredisteCoords: _konacnoOdredisteCoords,
                     ),
                   ),
                 );
