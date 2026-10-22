@@ -279,13 +279,31 @@ mixin IzracunLogicMixin<T extends StatefulWidget> on State<T> {
       else throw Exception('Lokacija "${konacnoOdredisteController.text}" nije pronađena.');
 
       double ukupnoMetara = 0;
+      // Ako je isključeno korištenje autoceste, dodajemo OSRM modifikator za izbjegavanje autocesta
+      String osrmModifier = !koristiAutocestu ? '&exclude=motorway' : '';
+
       for (int i = 0; i < koordinate.length - 1; i++) {
-        String urlRute = 'https://router.project-osrm.org/route/v1/driving/${koordinate[i]['lon']},${koordinate[i]['lat']};${koordinate[i + 1]['lon']},${koordinate[i + 1]['lat']}?overview=false';
+        String urlRute = 'https://router.project-osrm.org/route/v1/driving/${koordinate[i]['lon']},${koordinate[i]['lat']};${koordinate[i + 1]['lon']},${koordinate[i + 1]['lat']}?overview=false$osrmModifier';
         final res = await http.get(Uri.parse(urlRute));
+        bool uspjeh = false;
+
         if (res.statusCode == 200) {
           var data = json.decode(res.body);
           if (data['code'] == 'Ok') {
             ukupnoMetara += data['routes'][0]['distance'];
+            uspjeh = true;
+          }
+        }
+
+        // Fallback poziv ako OSRM odbije zahtjev s modifikatorom
+        if (!uspjeh) {
+          final fallbackRes = await http.get(Uri.parse(
+              'https://router.project-osrm.org/route/v1/driving/${koordinate[i]['lon']},${koordinate[i]['lat']};${koordinate[i + 1]['lon']},${koordinate[i + 1]['lat']}?overview=false'));
+          if (fallbackRes.statusCode == 200) {
+            var fallbackData = json.decode(fallbackRes.body);
+            if (fallbackData['code'] == 'Ok') {
+              ukupnoMetara += fallbackData['routes'][0]['distance'];
+            }
           }
         }
       }
