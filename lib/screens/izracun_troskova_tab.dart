@@ -273,6 +273,17 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     } catch (_) {}
   }
 
+  // Pomoćna funkcija za skraćivanje dugačkog naziva lokacije s API-ja
+  String _skratiNazivLokacije(String puniNaziv) {
+    List<String> dijelovi = puniNaziv.split(',');
+    if (dijelovi.isEmpty) return puniNaziv;
+    if (dijelovi.length == 1) return dijelovi[0].trim();
+    
+    String prvo = dijelovi[0].trim();
+    String drugo = dijelovi[1].replaceAll('Grad ', '').trim();
+    return '$prvo, $drugo';
+  }
+
   // Pomoćna funkcija za dohvat prijedloga lokacija sa Nominatim API-ja
   Future<List<Map<String, dynamic>>> _dohvatiPrijedlogeLokacija(String query) async {
     if (query.trim().length < 2) return [];
@@ -693,7 +704,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               },
               onSelected: (Map<String, dynamic> selection) {
                 setState(() {
-                  _polazisteController.text = selection['display_name'];
+                  _polazisteController.text = _skratiNazivLokacije(selection['display_name']);
                   _polazisteCoords = {
                     'lat': selection['lat'],
                     'lon': selection['lon'],
@@ -709,7 +720,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
                   focusNode: focusNode,
                   onChanged: (val) {
                     _polazisteController.text = val;
-                    _polazisteCoords = null; // Resetiramo ako korisnik ručno mjenja tekst
+                    _polazisteCoords = null;
                   },
                   decoration: const InputDecoration(
                     labelText: '4) Polazište',
@@ -742,7 +753,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
               },
               onSelected: (Map<String, dynamic> selection) {
                 setState(() {
-                  _konacnoOdredisteController.text = selection['display_name'];
+                  _konacnoOdredisteController.text = _skratiNazivLokacije(selection['display_name']);
                   _konacnoOdredisteCoords = {
                     'lat': selection['lat'],
                     'lon': selection['lon'],
@@ -792,7 +803,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
                   children: [
                     const Text('8) Gradovi na ruti (dinamički):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                     const SizedBox(height: 4),
-                    Text(_gradoviNaRuti.join(' -> '), style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w600)),
+                    Text(_gradoviNaRuti.map((g) => _skratiNazivLokacije(g)).join(' -> '), style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
@@ -982,8 +993,8 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => MapaRuteScreen(
-                      polaziste: _polazisteController.text.trim(),
-                      odrediste: _konacnoOdredisteController.text.trim(),
+                      polaziste: _skratiNazivLokacije(_polazisteController.text.trim()),
+                      odrediste: _skratiNazivLokacije(_konacnoOdredisteController.text.trim()),
                       koristiAutocestu: _koristiAutocestu,
                     ),
                   ),
