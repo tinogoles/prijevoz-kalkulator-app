@@ -79,10 +79,13 @@ class _MapaRuteScreenState extends State<MapaRuteScreen> {
       }
 
       if (pCoords != null && oCoords != null) {
-        // 3. Pozovi OSRM servis za geometriju rute
-        String url = 'https://router.project-osrm.org/route/v1/driving/${pCoords['lon']},${pCoords['lat']};${oCoords['lon']},${oCoords['lat']}?overview=full&geometries=geojson';
+        // 3. Modifikator za isključivanje autoceste ako je prekidač isključen
+        String osrmModifier = !widget.koristiAutocestu ? '&exclude=motorway' : '';
+        String url = 'https://router.project-osrm.org/route/v1/driving/${pCoords['lon']},${pCoords['lat']};${oCoords['lon']},${oCoords['lat']}?overview=full&geometries=geojson$osrmModifier';
         
-        final response = await http.get(Uri.parse(url));
+        var response = await http.get(Uri.parse(url));
+        bool uspjeh = false;
+
         if (response.statusCode == 200) {
           var data = json.decode(response.body);
           if (data['code'] == 'Ok') {
@@ -91,8 +94,27 @@ class _MapaRuteScreenState extends State<MapaRuteScreen> {
               _tockeRute = coordsList.map((c) => LatLng(c[1], c[0])).toList();
               _ucitavanje = false;
             });
-            return;
+            uspjeh = true;
           }
+        }
+
+        // Fallback ako OSRM odbije zahtjev s modifikatorom
+        if (!uspjeh) {
+          String fallbackUrl = 'https://router.project-osrm.org/route/v1/driving/${pCoords['lon']},${pCoords['lat']};${oCoords['lon']},${oCoords['lat']}?overview=full&geometries=geojson';
+          final fallbackResponse = await http.get(Uri.parse(fallbackUrl));
+          if (fallbackResponse.statusCode == 200) {
+            var fallbackData = json.decode(fallbackResponse.body);
+            if (fallbackData['code'] == 'Ok') {
+              List coordsList = fallbackData['routes'][0]['geometry']['coordinates'];
+              setState(() {
+                _tockeRute = coordsList.map((c) => LatLng(c[1], c[0])).toList();
+                _ucitavanje = false;
+              });
+              return;
+            }
+          }
+        } else {
+          return;
         }
       }
     } catch (e) {
