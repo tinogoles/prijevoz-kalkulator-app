@@ -40,6 +40,10 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
   List<Map<String, dynamic>> _dostupnaVozila = [];
   Map<String, dynamic>? _odabranoVoziloMap;
 
+  // Pohrana koordinata za odabrane lokacije putem Autocomplete-a
+  Map<String, double>? _polazisteCoords;
+  Map<String, double>? _konacnoOdredisteCoords;
+
   String get _userId => FirebaseAuth.instance.currentUser?.uid ?? '';
 
   final TextEditingController _nazivKalkulacijeController = TextEditingController(text: 'Izlet - Ruta');
@@ -269,6 +273,30 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     } catch (_) {}
   }
 
+  // Pomoćna funkcija za dohvat prijedloga lokacija sa Nominatim API-ja
+  Future<List<Map<String, dynamic>>> _dohvatiPrijedlogeLokacija(String query) async {
+    if (query.trim().length < 2) return [];
+    try {
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(query)}&format=json&addressdetails=1&limit=5'
+      );
+      final response = await http.get(url, headers: {'User-Agent': 'PrijevozKalkulatorApp'});
+      if (response.statusCode == 200) {
+        List data = json.decode(response.body);
+        return data.map<Map<String, dynamic>>((item) {
+          return {
+            'display_name': item['display_name'] ?? '',
+            'lat': double.parse(item['lat']),
+            'lon': double.parse(item['lon']),
+          };
+        }).toList();
+      }
+    } catch (e) {
+      print('Greška pri dohvatu prijedloga: $e');
+    }
+    return [];
+  }
+
   Future<void> _izracunajRutuIKilometre() async {
     List<String> tocke = [];
     if (_polazisteController.text.trim().isNotEmpty) tocke.add(_polazisteController.text.trim());
@@ -286,9 +314,10 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
     setState(() => _isLoadingRoute = true);
 
     try {
-      Future<Map<String, double>?> getCoords(String q) async {
+      Future<Map<String, double>?> getCoords(String q, {Map<String, double>? predefinisaneKoordinate}) async {
+        if (predefinisaneKoordinate != null) return predefinisaneKoordinate;
+
         String upit = q.trim();
-        // Pametna dopuna za naselja s više istoimenih lokacija (npr. Podgrađe kod Omiša)
         if (upit.toLowerCase() == 'podgrađe' || upit.toLowerCase() == 'podgrade') {
           upit = 'Podgrađe, Omiš, Hrvatska';
         } else if (!upit.toLowerCase().contains('hrvatska')) {
@@ -309,16 +338,32 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       }
 
       List<Map<String, double>> koordinate = [];
-      for (String t in tocke) {
-        var c = await getCoords(t);
-        if (c != null) {
-          koordinate.add(c);
-        } else {
-          throw Exception('Lokacija "$t" nije pronađena.');
-        }
+      
+      // 1. Polazište (s provjerom je li odabrano iz autocomplete-a)
+      var cPolaziste = await getCoords(_polazisteController.text, predefinisaneKoordinate: _polazisteCoords);
+      if (cPolaziste != null) koordinate.add(cPolaziste);
+      else throw Exception('Lokacija "${_polazisteController.text}" nije pronađena.');
+
+      // 2. Međuodredište A
+      if (_odrediste1Controller.text.trim().isNotEmpty) {
+        var c1 = await getCoords(_odrediste1Controller.text);
+        if (c1 != null) koordinate.add(c1);
+        else throw Exception('Lokacija "${_odrediste1Controller.text}" nije pronađena.');
       }
 
-      // Privremeni izračun zračne udaljenosti za provjeru kratkih/lokalnih ruta (npr. Podgrađe - Omiš)
+      // 3. Međuodredište B
+      if (_odrediste2Controller.text.trim().isNotEmpty) {
+        var c2 = await getCoords(_odrediste2Controller.text);
+        if (c2 != null) koordinate.add(c2);
+        else throw Exception('Lokacija "${_odrediste2Controller.text}" nije pronađena.');
+      }
+
+      // 4. Konačno odredište
+      var cKonacno = await getCoords(_konacnoOdredisteController.text, predefinisaneKoordinate: _konacnoOdredisteCoords);
+      if (cKonacno != null) koordinate.add(cKonacno);
+      else throw Exception('Lokacija "${_konacnoOdredisteController.text}" nije pronađena.');
+
+      // Privremeni izračun zračne udaljenosti za provjeru kratkih/lokalnih ruta
       double zracnaProbaKm = 0;
       for (int i = 0; i < koordinate.length - 1; i++) {
         const double r = 6371.0;
@@ -339,15 +384,32 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
       }
 
       double ukupnoMetara = 0;
-      String osrmModifier = _koristiAutocestu ? '' : '&exclude=motorway';
+      // Parametar exclude=motorway šaljemo SAMO ako je korisnik isključio autocestu I ruta je duga >= 50 km
+      String osrmModifier = (!_koristiAutocestu && zracnaProbaKm >= 50.0) ? '&exclude=motorway' : '';
 
       for (int i = 0; i < koordinate.length - 1; i++) {
-        final res = await http.get(Uri.parse(
-            'https://router.project-osrm.org/route/v1/driving/${koordinate[i]['lon']},${koordinate[i]['lat']};${koordinate[i + 1]['lon']},${koordinate[i + 1]['lat']}?overview=false$osrmModifier'));
+        String urlRute = 'https://router.project-osrm.org/route/v1/driving/${koordinate[i]['lon']},${koordinate[i]['lat']};${koordinate[i + 1]['lon']},${koordinate[i + 1]['lat']}?overview=false$osrmModifier';
+        
+        final res = await http.get(Uri.parse(urlRute));
+        bool uspjeh = false;
+
         if (res.statusCode == 200) {
           var data = json.decode(res.body);
           if (data['code'] == 'Ok') {
             ukupnoMetara += data['routes'][0]['distance'];
+            uspjeh = true;
+          }
+        }
+
+        // FALLBACK: Ako OSRM odbije zahtjev s modifikatorom, radimo standardni poziv da ne dobijemo 0 km
+        if (!uspjeh) {
+          final fallbackRes = await http.get(Uri.parse(
+              'https://router.project-osrm.org/route/v1/driving/${koordinate[i]['lon']},${koordinate[i]['lat']};${koordinate[i + 1]['lon']},${koordinate[i + 1]['lat']}?overview=false'));
+          if (fallbackRes.statusCode == 200) {
+            var fallbackData = json.decode(fallbackRes.body);
+            if (fallbackData['code'] == 'Ok') {
+              ukupnoMetara += fallbackData['routes'][0]['distance'];
+            }
           }
         }
       }
@@ -623,9 +685,40 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ]),
             const SizedBox(height: 12),
 
-            TextField(
-              controller: _polazisteController,
-              decoration: const InputDecoration(labelText: '4) Polazište', border: OutlineInputBorder()),
+            // Autocomplete za Polazište
+            Autocomplete<Map<String, dynamic>>(
+              displayStringForOption: (option) => option['display_name'],
+              optionsBuilder: (TextEditingValue textEditingValue) async {
+                return await _dohvatiPrijedlogeLokacija(textEditingValue.text);
+              },
+              onSelected: (Map<String, dynamic> selection) {
+                setState(() {
+                  _polazisteController.text = selection['display_name'];
+                  _polazisteCoords = {
+                    'lat': selection['lat'],
+                    'lon': selection['lon'],
+                  };
+                });
+              },
+              fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
+                if (_polazisteController.text.isNotEmpty && controller.text.isEmpty) {
+                  controller.text = _polazisteController.text;
+                }
+                return TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  onChanged: (val) {
+                    _polazisteController.text = val;
+                    _polazisteCoords = null; // Resetiramo ako korisnik ručno mjenja tekst
+                  },
+                  decoration: const InputDecoration(
+                    labelText: '4) Polazište',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.location_on),
+                  ),
+                  onEditingComplete: onEditingComplete,
+                );
+              },
             ),
             const SizedBox(height: 8),
 
@@ -641,9 +734,40 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ),
             const SizedBox(height: 8),
 
-            TextField(
-              controller: _konacnoOdredisteController,
-              decoration: const InputDecoration(labelText: '7) Konačno odredište', border: OutlineInputBorder()),
+            // Autocomplete za Konačno odredište
+            Autocomplete<Map<String, dynamic>>(
+              displayStringForOption: (option) => option['display_name'],
+              optionsBuilder: (TextEditingValue textEditingValue) async {
+                return await _dohvatiPrijedlogeLokacija(textEditingValue.text);
+              },
+              onSelected: (Map<String, dynamic> selection) {
+                setState(() {
+                  _konacnoOdredisteController.text = selection['display_name'];
+                  _konacnoOdredisteCoords = {
+                    'lat': selection['lat'],
+                    'lon': selection['lon'],
+                  };
+                });
+              },
+              fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
+                if (_konacnoOdredisteController.text.isNotEmpty && controller.text.isEmpty) {
+                  controller.text = _konacnoOdredisteController.text;
+                }
+                return TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  onChanged: (val) {
+                    _konacnoOdredisteController.text = val;
+                    _konacnoOdredisteCoords = null;
+                  },
+                  decoration: const InputDecoration(
+                    labelText: '7) Konačno odredište',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.location_on),
+                  ),
+                  onEditingComplete: onEditingComplete,
+                );
+              },
             ),
             const SizedBox(height: 8),
 
@@ -852,7 +976,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
             ),
             const SizedBox(height: 12),
 
-            // GUMB ZA PRIKAZ RUTE NA MAPI (prosljeđuje i uvjet _koristiAutocestu)
             ElevatedButton.icon(
               onPressed: () {
                 Navigator.push(
