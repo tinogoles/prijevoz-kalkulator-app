@@ -149,6 +149,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> with IzracunLog
             ]),
             const SizedBox(height: 12),
 
+            // 4) Polazište (Autocomplete)
             LokacijeAutocompleteWidget(
               label: '4) Polazište',
               controller: polazisteController,
@@ -163,18 +164,35 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> with IzracunLog
             ),
             const SizedBox(height: 8),
 
-            TextField(
+            // 5) Međuodredište A (Autocomplete)
+            LokacijeAutocompleteWidget(
+              label: '5) Međuodredište A (opcionalno)',
               controller: odrediste1Controller,
-              decoration: const InputDecoration(labelText: '5) Međuodredište A (opcionalno)', border: OutlineInputBorder()),
+              onSuggestionsFetch: dohvatiPrijedlogeLokacija,
+              onSelected: (selection) {
+                setState(() {
+                  odrediste1Controller.text = selection['display_name'];
+                });
+              },
+              onChanged: (val) {},
             ),
             const SizedBox(height: 8),
 
-            TextField(
+            // 6) Međuodredište B (Autocomplete)
+            LokacijeAutocompleteWidget(
+              label: '6) Međuodredište B (opcionalno)',
               controller: odrediste2Controller,
-              decoration: const InputDecoration(labelText: '6) Međuodredište B (opcionalno)', border: OutlineInputBorder()),
+              onSuggestionsFetch: dohvatiPrijedlogeLokacija,
+              onSelected: (selection) {
+                setState(() {
+                  odrediste2Controller.text = selection['display_name'];
+                });
+              },
+              onChanged: (val) {},
             ),
             const SizedBox(height: 8),
 
+            // 7) Konačno odredište (Autocomplete)
             LokacijeAutocompleteWidget(
               label: '7) Konačno odredište',
               controller: konacnoOdredisteController,
@@ -217,7 +235,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> with IzracunLog
               const SizedBox(height: 12),
             ],
 
-            // Izdvojeni widget za Autoput i cestarine
             SekcijaAutoputWidget(
               koristiAutocestu: koristiAutocestu,
               onAutocestaChanged: (val) {
@@ -257,7 +274,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> with IzracunLog
             ),
             const SizedBox(height: 12),
 
-            // Izdvojeni widget za vozilo, gorivo, dnevnice, noćenja i maržu
             SekcijaParametriTroskovaWidget(
               dostupnaVozila: dostupnaVozila,
               odabranoVoziloMap: odabranoVoziloMap,
