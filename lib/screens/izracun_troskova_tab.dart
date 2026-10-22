@@ -4,6 +4,8 @@ import '../models/klijent_model.dart';
 import '../models/prijevoznik_model.dart';
 import 'lokacije_autocomplete_widget.dart';
 import 'izracun_logic_mixin.dart';
+import 'sekcija_autoput_widget.dart';
+import 'sekcija_parametri_troskova_widget.dart';
 import 'mapa_rute_screen.dart';
 
 class IzracunTroskovaTab extends StatefulWidget {
@@ -147,7 +149,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> with IzracunLog
             ]),
             const SizedBox(height: 12),
 
-            // Autocomplete Polazište
             LokacijeAutocompleteWidget(
               label: '4) Polazište',
               controller: polazisteController,
@@ -174,7 +175,6 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> with IzracunLog
             ),
             const SizedBox(height: 8),
 
-            // Autocomplete Konačno odredište
             LokacijeAutocompleteWidget(
               label: '7) Konačno odredište',
               controller: konacnoOdredisteController,
@@ -200,12 +200,90 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> with IzracunLog
                 });
               },
             ),
+
+            if (gradoviNaRuti.isNotEmpty) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('8) Gradovi na ruti (dinamički):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    const SizedBox(height: 4),
+                    Text(gradoviNaRuti.map((g) => skratiNazivLokacije(g)).join(' -> '), style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // Izdvojeni widget za Autoput i cestarine
+            SekcijaAutoputWidget(
+              koristiAutocestu: koristiAutocestu,
+              onAutocestaChanged: (val) {
+                setState(() {
+                  koristiAutocestu = val ?? true;
+                  if (!koristiAutocestu) {
+                    cestarinaController.text = '0.00';
+                  } else {
+                    preracunajCestarinuSOmogucenimDionicama();
+                  }
+                });
+              },
+              dioniceAutocesta: dioniceAutocesta,
+              onDionicaToggled: (index, val) {
+                setState(() {
+                  dioniceAutocesta[index]['ukljuceno'] = val;
+                  preracunajCestarinuSOmogucenimDionicama();
+                });
+              },
+              cestarinaController: cestarinaController,
+            ),
             const SizedBox(height: 12),
+
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('13) Izračunato trajanje:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(
+                    '$izracunatiBrojDana dana (${izracunatiBrojDana > 1 ? izracunatiBrojDana - 1 : 0} noćenja)',
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Izdvojeni widget za vozilo, gorivo, dnevnice, noćenja i maržu
+            SekcijaParametriTroskovaWidget(
+              dostupnaVozila: dostupnaVozila,
+              odabranoVoziloMap: odabranoVoziloMap,
+              onVoziloChanged: (idVozila) {
+                if (idVozila != null) {
+                  setState(() {
+                    odabranoVoziloMap = dostupnaVozila.firstWhere((v) => v['id'] == idVozila);
+                  });
+                }
+              },
+              cijenaGorivaController: cijenaGorivaController,
+              dnevnicaController: dnevnicaController,
+              tkoPlacaNocenje: tkoPlacaNocenje,
+              opcijeNocenja: opcijeNocenja,
+              onNocenjeTkoPlacaChanged: (val) {
+                if (val != null) setState(() => tkoPlacaNocenje = val);
+              },
+              cijenaNocenjaController: cijenaNocenjaController,
+              marzaController: marzaController,
+            ),
+            const SizedBox(height: 24),
 
             ElevatedButton.icon(
               onPressed: isLoadingRoute ? null : () => izracunajRutuIKilometre(context),
               icon: isLoadingRoute ? const CircularProgressIndicator(color: Colors.white) : const Icon(Icons.route),
-              label: Text(isLoadingRoute ? 'Izračunavam rutu...' : 'Izračunaj rutu, km i cestarinu'),
+              label: Text(isLoadingRoute ? 'Izračunavam rutu i cestarinu...' : 'Izračunaj rutu, km i cestarinu'),
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(16)),
             ),
             const SizedBox(height: 12),
