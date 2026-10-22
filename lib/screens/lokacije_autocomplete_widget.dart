@@ -21,6 +21,7 @@ class LokacijeAutocompleteWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Autocomplete<Map<String, dynamic>>(
+      textEditingController: controller, // Direktno povezujemo vanjski kontroler ovdje
       displayStringForOption: (option) => option['display_name'] ?? '',
       optionsBuilder: (TextEditingValue textEditingValue) async {
         return await onSuggestionsFetch(textEditingValue.text);
@@ -29,15 +30,10 @@ class LokacijeAutocompleteWidget extends StatelessWidget {
         onSelected(selection);
       },
       fieldViewBuilder: (context, textEditingController, focusNode, onEditingComplete) {
-        if (textEditingController.text.isEmpty && controller.text.isNotEmpty) {
-          textEditingController.text = controller.text;
-        }
-
         return TextField(
           controller: textEditingController,
           focusNode: focusNode,
           onChanged: (val) {
-            controller.text = val;
             onChanged(val);
             if (onClearedCoords != null) onClearedCoords!();
           },
