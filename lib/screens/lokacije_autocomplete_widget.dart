@@ -1,6 +1,7 @@
+// lib/screens/lokacije_autocomplete_widget.dart
 import 'package:flutter/material.dart';
 
-class LokacijeAutocompleteWidget extends StatelessWidget {
+class LokacijeAutocompleteWidget extends StatefulWidget {
   final String label;
   final TextEditingController controller;
   final Future<List<Map<String, dynamic>>> Function(String) onSuggestionsFetch;
@@ -19,31 +20,40 @@ class LokacijeAutocompleteWidget extends StatelessWidget {
   });
 
   @override
+  State<LokacijeAutocompleteWidget> createState() => _LokacijeAutocompleteWidgetState();
+}
+
+class _LokacijeAutocompleteWidgetState extends State<LokacijeAutocompleteWidget> {
+  @override
   Widget build(BuildContext context) {
     return Autocomplete<Map<String, dynamic>>(
       displayStringForOption: (option) => option['display_name'] ?? '',
       optionsBuilder: (TextEditingValue textEditingValue) async {
-        return await onSuggestionsFetch(textEditingValue.text);
+        return await widget.onSuggestionsFetch(textEditingValue.text);
       },
       onSelected: (Map<String, dynamic> selection) {
-        onSelected(selection);
+        widget.controller.text = selection['display_name'] ?? '';
+        widget.onSelected(selection);
       },
       fieldViewBuilder: (context, textEditingController, focusNode, onEditingComplete) {
-        // Inicijalno postavi tekst ako je unutrašnji prazan, a vanjski ima vrijednost (npr. kod uređivanja)
-        if (textEditingController.text.isEmpty && controller.text.isNotEmpty) {
-          textEditingController.text = controller.text;
+        // Sigurna sinkronizacija bez skakanja kursora i blokiranja tipkanja
+        if (textEditingController.text != widget.controller.text) {
+          textEditingController.text = widget.controller.text;
+          textEditingController.selection = TextSelection.fromPosition(
+            TextPosition(offset: textEditingController.text.length),
+          );
         }
 
         return TextField(
           controller: textEditingController,
           focusNode: focusNode,
           onChanged: (val) {
-            controller.text = val;
-            onChanged(val);
-            if (onClearedCoords != null) onClearedCoords!();
+            widget.controller.text = val;
+            widget.onChanged(val);
+            if (widget.onClearedCoords != null) widget.onClearedCoords!();
           },
           decoration: InputDecoration(
-            labelText: label,
+            labelText: widget.label,
             border: const OutlineInputBorder(),
             prefixIcon: const Icon(Icons.location_on),
           ),
