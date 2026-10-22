@@ -698,13 +698,14 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
 
             // Autocomplete za Polazište
             Autocomplete<Map<String, dynamic>>(
-              displayStringForOption: (option) => option['display_name'],
+              displayStringForOption: (option) => _skratiNazivLokacije(option['display_name']),
               optionsBuilder: (TextEditingValue textEditingValue) async {
                 return await _dohvatiPrijedlogeLokacija(textEditingValue.text);
               },
               onSelected: (Map<String, dynamic> selection) {
                 setState(() {
-                  _polazisteController.text = _skratiNazivLokacije(selection['display_name']);
+                  String cistiNaziv = _skratiNazivLokacije(selection['display_name']);
+                  _polazisteController.text = cistiNaziv;
                   _polazisteCoords = {
                     'lat': selection['lat'],
                     'lon': selection['lon'],
@@ -712,7 +713,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
                 });
               },
               fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
-                if (_polazisteController.text.isNotEmpty && controller.text.isEmpty) {
+                if (controller.text.isEmpty && _polazisteController.text.isNotEmpty) {
                   controller.text = _polazisteController.text;
                 }
                 return TextField(
@@ -747,13 +748,14 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
 
             // Autocomplete za Konačno odredište
             Autocomplete<Map<String, dynamic>>(
-              displayStringForOption: (option) => option['display_name'],
+              displayStringForOption: (option) => _skratiNazivLokacije(option['display_name']),
               optionsBuilder: (TextEditingValue textEditingValue) async {
                 return await _dohvatiPrijedlogeLokacija(textEditingValue.text);
               },
               onSelected: (Map<String, dynamic> selection) {
                 setState(() {
-                  _konacnoOdredisteController.text = _skratiNazivLokacije(selection['display_name']);
+                  String cistiNaziv = _skratiNazivLokacije(selection['display_name']);
+                  _konacnoOdredisteController.text = cistiNaziv;
                   _konacnoOdredisteCoords = {
                     'lat': selection['lat'],
                     'lon': selection['lon'],
@@ -761,7 +763,7 @@ class _IzracunTroskovaTabState extends State<IzracunTroskovaTab> {
                 });
               },
               fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
-                if (_konacnoOdredisteController.text.isNotEmpty && controller.text.isEmpty) {
+                if (controller.text.isEmpty && _konacnoOdredisteController.text.isNotEmpty) {
                   controller.text = _konacnoOdredisteController.text;
                 }
                 return TextField(
